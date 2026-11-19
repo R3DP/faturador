@@ -1,15 +1,29 @@
-import { PageHeader } from "@/components/shared/page-header";
+'use client'
 
-export default async function AgentsPage() {
+import { Suspense } from 'react'
+import { Loader2 } from 'lucide-react'
+import { PageHeader } from '@/components/shared/page-header'
+import { AgentsTabs } from '@/components/agents/agents-tabs'
+
+export default function AgentsPage() {
   return (
-    <div className="space-y-6">
+    <div className="p-6 lg:p-8">
       <PageHeader
-        title="Agentes e Conexões"
-        description="Gerencie chaves de API, permissões e conexões MCP para Claude, Cursor e Codex."
+        title="Agents"
+        description="Connect agents to your Billr account and manage keys, payments, activity, and recipes"
       />
-      <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">Nenhuma chave de agente configurada.</p>
+
+      <div className="mt-6">
+        <Suspense
+          fallback={
+            <div className="flex h-32 items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          }
+        >
+          <AgentsTabs />
+        </Suspense>
       </div>
     </div>
-  );
+  )
 }
