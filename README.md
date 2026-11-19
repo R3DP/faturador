@@ -1,13 +1,13 @@
-<p align="center">
-  <img src="docs/images/wordmark.png" alt="Faturador" width="180">
-</p>
+<div align="center">
 
-<p align="center"><strong>Faturamento autônomo para o seu negócio e para os agentes que trabalham nele.</strong></p>
+# 🧾 FATURADOR
+### Faturamento autônomo para o seu negócio e para os agentes que trabalham nele.
 
-<p align="center">
-O Faturador é a versão em português e adaptada para o Brasil (baseada no fork do <a href="https://github.com/ethanplusai/billr">Billr</a>) para gerenciar clientes, faturas, orçamentos, compromissos, horas, despesas, pagamentos e relatórios.
-Ele também é um servidor MCP integrado, permitindo que agentes de IA (como Claude Code, Codex, Cursor) executem tarefas de faturamento com segurança e controle de chaves revogáveis.
-</p>
+</div>
+
+O **Faturador** é a versão em português e adaptada para o Brasil (baseada no fork do [Billr](https://github.com/ethanplusai/billr)) para gerenciar clientes, faturas, orçamentos, compromissos, horas, despesas, pagamentos e relatórios.
+
+Ele também é um servidor MCP integrado, permitindo que agentes de IA (como Claude Code, Codex, Cursor e OpenClaw) executem tarefas de faturamento com segurança e controle de chaves revogáveis.
 
 <p align="center">
   <a href="LICENSE"><img alt="Licença: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
@@ -40,4 +40,4 @@ Abra `http://localhost:3000` e crie sua conta.
 
 ## Documentação e Arquivos de Apoio
 
-Consulte a pasta `arquivos/` para especificações adicionais e notas de tradução e integrações (como PostgreSQL/Split).
+Consulte a pasta `arquivos/` para especificações adicionais, notas de tradução e integrações (como PostgreSQL/Split).
