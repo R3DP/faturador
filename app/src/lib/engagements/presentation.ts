@@ -18,43 +18,58 @@ export function formatContractDate(date: string) {
   }).format(new Date(`${date}T00:00:00.000Z`))
 }
 
-const BUILT_IN_TEMPLATE_TRANSLATIONS: Record<
-  string,
-  { sourceName: string; name: string; entryLabels: Record<string, string> }
-> = {
+type BuiltInTemplateTranslation = {
+  sourceName: string
+  name: string
+  sourceLabels: string[]
+  labels: string[]
+}
+
+const LEGACY_BUILT_IN_TEMPLATE_TRANSLATIONS: Record<string, BuiltInTemplateTranslation> = {
   '50_50': {
     sourceName: '50/50',
     name: '50/50',
-    entryLabels: { Deposit: 'Entrada', 'On completion': 'Na conclusão' },
+    sourceLabels: ['Deposit', 'On completion'],
+    labels: ['Entrada', 'Na conclusão'],
   },
   '30_70': {
     sourceName: '30/70',
     name: '30/70',
-    entryLabels: { Deposit: 'Entrada', 'On completion': 'Na conclusão' },
+    sourceLabels: ['Deposit', 'On completion'],
+    labels: ['Entrada', 'Na conclusão'],
   },
   design_build_launch: {
     sourceName: 'Design / Build / Launch',
     name: 'Design / Desenvolvimento / Lançamento',
-    entryLabels: { Build: 'Desenvolvimento', Launch: 'Lançamento' },
+    sourceLabels: ['Design', 'Build', 'Launch'],
+    labels: ['Design', 'Desenvolvimento', 'Lançamento'],
   },
   '10_equal': {
     sourceName: '10 equal installments',
     name: '10 parcelas iguais',
-    entryLabels: {},
+    sourceLabels: [],
+    labels: [],
   },
 }
 
-/** Traduz somente os valores originais dos modelos incluídos no produto. */
+/** Localiza apenas os modelos legados intactos; valores personalizados ficam como estão. */
 export function localizeBuiltInScheduleTemplate(template: ScheduleTemplate): ScheduleTemplate {
-  const translation = BUILT_IN_TEMPLATE_TRANSLATIONS[template.key]
-  if (!translation) return template
+  const translation = LEGACY_BUILT_IN_TEMPLATE_TRANSLATIONS[template.key]
+  if (
+    !translation ||
+    template.name !== translation.sourceName ||
+    (template.entries ?? []).length !== translation.sourceLabels.length ||
+    (template.entries ?? []).some((entry, index) => entry.label !== translation.sourceLabels[index])
+  ) {
+    return template
+  }
 
   return {
     ...template,
-    name: template.name === translation.sourceName ? translation.name : template.name,
-    entries: template.entries?.map((entry) => ({
+    name: translation.name,
+    entries: template.entries?.map((entry, index) => ({
       ...entry,
-      label: entry.label ? translation.entryLabels[entry.label] ?? entry.label : entry.label,
+      label: entry.label ? translation.labels[index] : entry.label,
     })),
   }
 }

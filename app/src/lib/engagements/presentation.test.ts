@@ -5,7 +5,7 @@ import {
   localizeBuiltInScheduleTemplate,
 } from './presentation'
 import { ENGAGEMENT_STATUS_LABELS } from './types'
-import { ENGAGEMENT_STATUSES } from './schedule'
+import { DEFAULT_SCHEDULE_TEMPLATES, ENGAGEMENT_STATUSES } from './schedule'
 
 describe('formatação exibida nos contratos', () => {
   it('traduz os status sem alterar seus códigos internos', () => {
@@ -28,23 +28,36 @@ describe('formatação exibida nos contratos', () => {
     expect(formatContractDate('2026-03-15')).toBe('15 de mar. de 2026')
   })
 
-  it('localiza nomes e lançamentos dos modelos embutidos sem mudar suas chaves', () => {
-    const localized = localizeBuiltInScheduleTemplate({
+  it('mantém os modelos padrão reais em português sem alterar chaves ou valores', () => {
+    expect(DEFAULT_SCHEDULE_TEMPLATES.map(localizeBuiltInScheduleTemplate)).toEqual(
+      DEFAULT_SCHEDULE_TEMPLATES,
+    )
+  })
+
+  it('localiza o modelo legado do banco e preserva personalizações', () => {
+    // Replica o default legado de businesses.schedule_templates em 00001_baseline.sql.
+    const legacyTemplate = {
       key: 'design_build_launch',
       name: 'Design / Build / Launch',
-      billing_mode: 'equal_installments',
+      billing_mode: 'equal_installments' as const,
       installments: 3,
       entries: [
+        { label: 'Design', due_rule: 'on_start' as const },
+        { label: 'Build', due_rule: 'on_milestone' as const },
+        { label: 'Launch', due_rule: 'on_complete' as const },
+      ],
+    }
+    expect(localizeBuiltInScheduleTemplate(legacyTemplate)).toEqual({
+      ...legacyTemplate,
+      name: 'Design / Desenvolvimento / Lançamento',
+      entries: [
         { label: 'Design', due_rule: 'on_start' },
-        { label: 'Build', due_rule: 'on_milestone' },
-        { label: 'Launch', due_rule: 'on_complete' },
+        { label: 'Desenvolvimento', due_rule: 'on_milestone' },
+        { label: 'Lançamento', due_rule: 'on_complete' },
       ],
     })
 
-    expect(localized).toMatchObject({
-      key: 'design_build_launch',
-      name: 'Design / Desenvolvimento / Lançamento',
-      entries: [{ label: 'Design' }, { label: 'Desenvolvimento' }, { label: 'Lançamento' }],
-    })
+    const customizedTemplate = { ...legacyTemplate, name: 'Plano sob medida' }
+    expect(localizeBuiltInScheduleTemplate(customizedTemplate)).toEqual(customizedTemplate)
   })
 })
