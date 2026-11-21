@@ -11,8 +11,8 @@ Billr is self-hosted invoicing that people and their agents run to bill their ow
 You need Node.js 22+, Docker and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) 2.67.1 or newer.
 
 ```sh
-git clone https://github.com/ethanplusai/billr.git
-cd billr/app
+git clone https://github.com/R3DP/faturador.git
+cd faturador/app
 npm run doctor
 npm ci
 npm run setup:local

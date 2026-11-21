@@ -18,8 +18,8 @@ Install links: [Node.js](https://nodejs.org/), [Docker Desktop](https://docs.doc
 ## 1. Clone
 
 ```sh
-git clone https://github.com/ethanplusai/billr.git
-cd billr/app
+git clone https://github.com/R3DP/faturador.git
+cd faturador/app
 ```
 
 Pass: the clone finishes and `ls` shows `package.json`, `Dockerfile` and `scripts`.
