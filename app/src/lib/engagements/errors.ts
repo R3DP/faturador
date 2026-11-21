@@ -18,13 +18,13 @@ const ENGAGEMENT_ERRORS: Record<string, string> = {
   client_not_found: 'Cliente não encontrado',
   estimate_not_found: 'Orçamento não encontrado',
   request_id_reused:
-    'Esse request_id já foi usado em outra gravação de contrato. Use um novo request_id.',
+    'Esse identificador de solicitação já foi usado em outra gravação de contrato. Use um novo identificador.',
   key_cannot_manage_engagements:
     'Esta chave de API não tem a permissão de gravação, necessária para criar ou alterar um contrato.',
   engagement_closed:
-    'Este contrato já foi concluído ou cancelado, então seu status não pode ser alterado novamente.',
-  invalid_status_transition: 'Não é possível mudar o contrato do status atual para esse status.',
-  invalid_status: 'Escolha um status: draft, active, paused, completed ou cancelled.',
+    'Este contrato já foi concluído ou cancelado, então sua situação não pode ser alterada novamente.',
+  invalid_status_transition: 'Não é possível mudar a situação atual do contrato para essa opção.',
+  invalid_status: 'Escolha uma situação válida para o contrato.',
   engagement_cancelled: 'Este contrato foi cancelado, então não é possível faturar mais nada nele.',
   entry_already_invoiced:
     'Esse item já foi faturado. O valor faturado não pode ser alterado aqui; faça a correção na fatura.',
@@ -36,10 +36,10 @@ const ENGAGEMENT_ERRORS: Record<string, string> = {
     'Os itens do cronograma devem somar exatamente o valor total do contrato.',
   invalid_name: 'O nome do contrato deve ter entre 1 e 200 caracteres.',
   invalid_currency: 'Use um código de moeda com três letras, por exemplo USD.',
-  invalid_initial_status: 'Um contrato novo só pode começar como draft ou active.',
+  invalid_initial_status: 'Um contrato novo só pode começar como rascunho ou ativo.',
   invalid_actor: 'Não foi possível atribuir esta gravação a ninguém, então ela foi recusada.',
   invalid_agent_key: 'Essa chave de API não pode ser usada para esta empresa.',
-  request_id_required: 'É necessário informar um request_id para esta gravação.',
+  request_id_required: 'É necessário informar um identificador de solicitação para esta gravação.',
 
   // Parte B: faturamento de um item do cronograma em uma fatura e
   // conversão de um orçamento aceito em contrato.

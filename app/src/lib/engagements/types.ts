@@ -44,6 +44,15 @@ export const ENGAGEMENT_STATUS_COLORS: Record<EngagementStatus, string> = {
   cancelled: 'bg-red-100 text-red-700',
 }
 
+/** Rótulos humanos dos status; os códigos persistidos permanecem em inglês. */
+export const ENGAGEMENT_STATUS_LABELS: Record<EngagementStatus, string> = {
+  draft: 'Rascunho',
+  active: 'Ativo',
+  paused: 'Pausado',
+  completed: 'Concluído',
+  cancelled: 'Cancelado',
+}
+
 export const ENTRY_STATUS_COLORS: Record<EntryStatus, string> = {
   pending: 'bg-gray-100 text-gray-700',
   ready_to_bill: 'bg-emerald-100 text-emerald-700',

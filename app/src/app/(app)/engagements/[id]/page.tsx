@@ -32,6 +32,7 @@ import type { EngagementStatus } from '@/lib/engagements/schedule'
 import {
   DUE_RULE_LABELS,
   ENGAGEMENT_STATUS_COLORS,
+  ENGAGEMENT_STATUS_LABELS,
   ENTRY_STATUS_COLORS,
   ENTRY_STATUS_LABELS,
   BILLING_MODE_LABELS,
@@ -39,6 +40,7 @@ import {
   type EngagementRow,
   type EngagementSummaryRow,
 } from '@/lib/engagements/types'
+import { formatContractDate, formatContractMoney } from '@/lib/engagements/presentation'
 
 interface InvoiceLink {
   id: string
@@ -119,10 +121,7 @@ export default function EngagementDetailPage() {
   }, [load])
 
   const money = (amount: number | null | undefined) =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: engagement?.currency || 'USD',
-    }).format(amount ?? 0)
+    formatContractMoney(amount, engagement?.currency)
 
   async function changeStatus(status: EngagementStatus, label: string) {
     setIsBusy(true)
@@ -218,7 +217,9 @@ export default function EngagementDetailPage() {
         title={engagement.name}
         description={`${clientName ?? 'Cliente desconhecido'} · ${BILLING_MODE_LABELS[engagement.billing_mode]}`}
       >
-        <Badge className={ENGAGEMENT_STATUS_COLORS[engagement.status]}>{engagement.status}</Badge>
+        <Badge className={ENGAGEMENT_STATUS_COLORS[engagement.status]}>
+          {ENGAGEMENT_STATUS_LABELS[engagement.status]}
+        </Badge>
         {canDraftInvoice && (
           <Button size="sm" asChild>
             <Link href={draftInvoiceHref}>
@@ -312,7 +313,7 @@ export default function EngagementDetailPage() {
                     <TableCell className="font-medium">{entry.label}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {DUE_RULE_LABELS[entry.due_rule]}
-                      {entry.due_on ? ` (${entry.due_on})` : ''}
+                      {entry.due_on ? ` (${formatContractDate(entry.due_on)})` : ''}
                     </TableCell>
                     <TableCell className="text-right">
                       {money(entry.amount)}

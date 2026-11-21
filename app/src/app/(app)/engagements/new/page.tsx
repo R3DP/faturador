@@ -32,6 +32,7 @@ import {
   type ScheduleTemplate,
 } from '@/lib/engagements/schedule'
 import { BILLING_MODE_LABELS, DUE_RULE_LABELS } from '@/lib/engagements/types'
+import { formatContractMoney, localizeBuiltInScheduleTemplate } from '@/lib/engagements/presentation'
 import type { Client } from '@/types'
 
 interface DraftEntry {
@@ -224,6 +225,7 @@ export default function NewEngagementPage() {
   const showPercent = billingMode === 'percent_split'
   const showAmount = billingMode === 'milestones' || billingMode === 'manual'
   const showEntries = billingMode !== 'equal_installments' || entries.length > 0
+  const localizedTemplates = templates.map(localizeBuiltInScheduleTemplate)
 
   return (
     <div className="p-6 lg:p-8">
@@ -461,7 +463,7 @@ export default function NewEngagementPage() {
               <CardTitle>Modelos</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {templates.map((template) => (
+              {localizedTemplates.map((template) => (
                 <Button
                   key={template.key}
                   type="button"
@@ -492,20 +494,17 @@ export default function NewEngagementPage() {
                     <div key={entry.position} className="flex items-baseline justify-between gap-3">
                       <span className="truncate text-muted-foreground">{entry.label}</span>
                       <span className="font-medium">
-                        {new Intl.NumberFormat('en-US', {
-                          style: 'currency',
-                          currency: currencyCode,
-                        }).format(entry.amount)}
+                        {formatContractMoney(entry.amount, currencyCode)}
                       </span>
                     </div>
                   ))}
                   <div className="flex items-baseline justify-between gap-3 border-t pt-2 font-medium">
                     <span>Total</span>
                     <span>
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: currencyCode,
-                      }).format(preview.entries.reduce((sum, entry) => sum + entry.amount, 0))}
+                      {formatContractMoney(
+                        preview.entries.reduce((sum, entry) => sum + entry.amount, 0),
+                        currencyCode,
+                      )}
                     </span>
                   </div>
                 </>

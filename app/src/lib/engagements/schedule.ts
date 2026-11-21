@@ -102,7 +102,7 @@ export class ScheduleError extends Error {
 
 /** Uma frase por recusa, compartilhada pela prévia da interface e pela camada de ferramentas. */
 const SCHEDULE_ERROR_MESSAGES: Record<ScheduleErrorCode, string> = {
-  invalid_billing_mode: 'Escolha uma forma de faturamento: percent_split, equal_installments, milestones ou manual.',
+  invalid_billing_mode: 'Escolha uma forma de faturamento válida.',
   invalid_total: 'O valor total do contrato deve ser maior que zero.',
   entries_required: 'Esta forma de faturamento exige pelo menos um item no cronograma.',
   too_many_entries: `Um cronograma pode ter no máximo ${MAX_ENTRIES} itens.`,
@@ -112,7 +112,7 @@ const SCHEDULE_ERROR_MESSAGES: Record<ScheduleErrorCode, string> = {
   invalid_entry_amount: 'O valor de cada item deve ser maior que zero.',
   entries_must_total_engagement: 'Os valores dos itens devem somar exatamente o valor total do contrato.',
   invalid_installments: `Escolha entre 1 e ${MAX_ENTRIES} parcelas.`,
-  invalid_due_rule: 'Escolha uma regra de vencimento: on_start, on_complete, on_milestone, on_date ou manual.',
+  invalid_due_rule: 'Escolha uma regra de vencimento válida.',
   due_on_required: 'Informe a data de vencimento do item.',
 }
 

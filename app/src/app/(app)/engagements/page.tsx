@@ -27,14 +27,12 @@ import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState } from '@/components/shared/empty-state'
 import { useBusiness } from '@/lib/hooks/use-business'
 import { ENGAGEMENT_STATUSES } from '@/lib/engagements/schedule'
-import { ENGAGEMENT_STATUS_COLORS, type EngagementListRow } from '@/lib/engagements/types'
-
-function formatMoney(amount: number | null, currency: string | null) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency || 'USD',
-  }).format(amount ?? 0)
-}
+import {
+  ENGAGEMENT_STATUS_COLORS,
+  ENGAGEMENT_STATUS_LABELS,
+  type EngagementListRow,
+} from '@/lib/engagements/types'
+import { formatContractMoney } from '@/lib/engagements/presentation'
 
 export default function EngagementsPage() {
   return (
@@ -128,13 +126,13 @@ function EngagementsPageInner() {
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filtrar por status" />
+            <SelectValue placeholder="Filtrar por situação" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
+            <SelectItem value="all">Todas as situações</SelectItem>
             {ENGAGEMENT_STATUSES.map((status) => (
               <SelectItem key={status} value={status}>
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+                {ENGAGEMENT_STATUS_LABELS[status]}
               </SelectItem>
             ))}
           </SelectContent>
@@ -223,17 +221,19 @@ function EngagementsPageInner() {
                               : undefined
                           }
                         >
-                          {engagement.status}
+                          {engagement.status
+                            ? ENGAGEMENT_STATUS_LABELS[engagement.status]
+                            : 'Desconhecida'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        {formatMoney(engagement.total, engagement.currency)}
+                        {formatContractMoney(engagement.total, engagement.currency)}
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                        {formatMoney(engagement.amount_billed, engagement.currency)}
+                        {formatContractMoney(engagement.amount_billed, engagement.currency)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        {formatMoney(engagement.amount_remaining, engagement.currency)}
+                        {formatContractMoney(engagement.amount_remaining, engagement.currency)}
                       </TableCell>
                       <TableCell className="text-right">
                         {(engagement.ready_count ?? 0) > 0 && (
