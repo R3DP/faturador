@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 76" role="img" aria-labelledby="title desc">
+  <title id="title">Faturador</title>
+  <desc id="desc">Marca do Faturador: uma fatura estilizada ao lado do nome.</desc>
+  <rect x="4" y="8" width="48" height="60" rx="9" fill="#163b70"/>
+  <path d="M17 23h22M17 33h22M17 43h14" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  <path d="m31 55 5 5 10-12" fill="none" stroke="#72d6b2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="67" y="55" fill="#163b70" font-family="Arial, Helvetica, sans-serif" font-size="45" font-weight="700">Faturador</text>
+</svg>

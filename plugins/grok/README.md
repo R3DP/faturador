@@ -1,24 +1,24 @@
-# Billr for Grok Bot and Grok
+# Integração upstream Billr para Grok Bot e Grok
 
 ## Grok Bot
 
-Grok Bot is a distinct product with plugins and skills. The shared Cursor
-package is maintained separately from this self-hosted repository. See the
-[hosted connection guide](https://billr.cc/docs/connect) for setup.
-The endpoint is `https://mcp.billr.cc`.
+Grok Bot é um produto distinto, com plugins e skills. O pacote compartilhado
+do Cursor é mantido separadamente deste repositório de auto-hospedagem. Consulte
+o [guia de conexão com o serviço upstream hospedado](https://billr.cc/docs/connect) para configurar.
+O endpoint `https://mcp.billr.cc` pertence ao Billr upstream hospedado, não ao Faturador auto-hospedado.
 
-Before marketplace publication, test a custom MCP connection by asking Grok
-Bot to add that endpoint, then approve only the intended business and scopes
-on Billr's sign-in page. Do not paste passwords or keys into chat.
+Antes de publicar no marketplace, teste uma conexão MCP personalizada pedindo
+ao Grok Bot que adicione o endpoint upstream hospedado. Depois, aprove somente a empresa e os
+escopos desejados na página de login do serviço Billr hospedado. Não cole senhas ou chaves no chat.
 
-## Grok web and the xAI API
+## Grok web e a API xAI
 
-These are separate integration surfaces. For Grok web, use its custom MCP
-connector flow with the same hosted URL. For the xAI API, use a remote MCP
-tool and a narrowly scoped Billr bearer key loaded from a secret environment
-variable. Never embed credentials in a package. API integration is not a
-Grok Bot marketplace listing.
+São superfícies de integração distintas. Para o Grok na web, use o fluxo de
+conector MCP personalizado com a mesma URL do serviço upstream hospedado. Para a API xAI, use uma
+ferramenta MCP remota e uma chave bearer do serviço Billr hospedado com escopo restrito, carregada
+de uma variável de ambiente secreta. Nunca incorpore credenciais em um pacote.
+Essa integração com a API não é uma publicação no marketplace do Grok Bot.
 
-Sources: https://cursor.com/help/grok-bot/connect-plugins,
+Fontes: https://cursor.com/help/grok-bot/connect-plugins,
 https://docs.x.ai/grok/connectors,
 https://docs.x.ai/developers/tools/remote-mcp.

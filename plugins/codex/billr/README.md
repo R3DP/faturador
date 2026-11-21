@@ -1,44 +1,45 @@
-# Billr for Codex and ChatGPT
+# Plugin upstream Billr para Codex e ChatGPT
 
-The `billr/` package connects to hosted Billr at `https://mcp.billr.cc`.
-It includes portable Agent Plugins and Codex manifests, OAuth MCP
-configuration, listing assets and the generated billing skill. A Billr
-account is required; installation does not include a subscription.
+O pacote `billr/` conecta-se ao serviço upstream Billr hospedado em `https://mcp.billr.cc`. Esse serviço não é o Faturador auto-hospedado. O pacote inclui Agent Plugins portáveis e manifestos do Codex, configuração MCP com OAuth, recursos para listagem e a skill de faturamento gerada. É necessária uma conta do serviço upstream; a instalação não inclui uma assinatura.
 
-## Install in Codex
+## Instalar no Codex
 
-From a checkout:
+A partir de um checkout, instale o pacote. Depois, autorize a conexão MCP pelo fluxo OAuth apresentado pelo Codex:
 
 ```sh
 codex plugin marketplace add ./plugins/codex
 codex plugin add billr@billr
-codex mcp login billr
 ```
 
-For MCP-only setup:
+Para configurar somente o MCP do serviço upstream hospedado, use o alias local `faturador`:
 
 ```sh
-codex mcp add billr --url https://mcp.billr.cc
-codex mcp login billr
+codex mcp add faturador --url https://mcp.billr.cc
+codex mcp login faturador
 codex mcp list
 ```
 
-Use one setup path to avoid duplicate servers. Select the business and minimum
-permissions in the browser. Never paste credentials into chat. For self-hosting,
-replace the URL in your private configuration; see `codex-config.toml`.
+Use apenas um dos métodos de configuração para evitar servidores duplicados. Selecione a
+empresa e as permissões mínimas no navegador. Nunca cole credenciais no chat. Os comandos acima apontam para o Billr upstream hospedado, não para o Faturador. Para conectar o Faturador auto-hospedado, substitua o domínio de exemplo pela origem HTTPS da sua instalação e use o alias local `faturador`:
 
-## ChatGPT and public distribution
+```sh
+codex mcp add faturador --url https://faturador.sua-empresa.example/api/mcp
+codex mcp login faturador
+codex mcp list
+```
 
-Test the hosted server through the available custom MCP/developer connection
-flow in your account. Test read-only access, explicit drafts and cards before
-submission. UI availability differs by client; text results remain required.
+## ChatGPT e distribuição pública
 
-Public directory publication requires an OpenAI plugin ZIP upload, verified
-publishing identity, automated checks, reviewer access and review approval.
-The package has no app-reference file or lifecycle hooks: these are not
-eligible for current public submission. Upload a ZIP rooted at `billr/`,
-containing its manifests, MCP files, skills, assets and license notices.
-Do not include credentials, reviewer passwords or private audit notes.
+Teste o servidor upstream Billr hospedado (não o Faturador auto-hospedado) pelo fluxo de conexão MCP personalizado/de desenvolvedor disponível na sua conta. Teste o acesso somente para leitura, a criação explícita de
+rascunhos e os cartões antes do envio. A disponibilidade da interface varia conforme o
+cliente; os resultados em texto continuam necessários.
 
-Sources: https://developers.openai.com/plugins/build/plugins,
+A publicação no diretório público exige o envio de um ZIP de plugin da OpenAI, identidade de
+publicação verificada, verificações automatizadas, acesso do revisor e aprovação da revisão.
+O pacote não tem arquivo de referência do app nem ganchos (hooks) de ciclo de vida: por isso, não está
+qualificado para o envio público atual. Envie um ZIP cuja raiz seja `billr/`, contendo os
+manifestos, arquivos MCP, skills, recursos e avisos de licença. Não inclua credenciais,
+senhas de revisor nem notas privadas de auditoria.
+
+Fontes: https://developers.openai.com/plugins/build/plugins,
 https://developers.openai.com/plugins/deploy/submission.

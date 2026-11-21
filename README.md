@@ -1,247 +1,425 @@
 <p align="center">
-  <img src="docs/images/wordmark.png" alt="Billr" width="180">
+  <img src="docs/images/faturador-wordmark.svg" alt="Faturador" width="210">
 </p>
 
-<p align="center"><strong>Invoicing for your business and the agents that work for it.</strong></p>
+<p align="center"><strong>Faturamento para sua empresa e para os agentes que trabalham nela.</strong></p>
 
 <p align="center">
-Billr is the billing workspace you run for your own business: clients, invoices, estimates, engagements, time, expenses, payments and reports.
-It is also an MCP server, so a coding agent can do the same work with a scoped key you can revoke, and every document it touches stays in an application a person can open.
+Faturador é o espaço de faturamento que você executa para sua própria empresa: clientes, faturas, orçamentos, contratos de serviço, horas, despesas, pagamentos e relatórios.
+Também é um servidor MCP, para que um agente de programação possa fazer o mesmo trabalho com uma chave de escopo limitado que você pode revogar, e cada documento que ele acessa permaneça em um aplicativo que uma pessoa pode abrir.
 </p>
 
 <p align="center">
-  <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
+  <a href="LICENSE"><img alt="Licença: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
   <a href=".nvmrc"><img alt="Node 22+" src="https://img.shields.io/badge/node-22%2B-informational.svg"></a>
-  <a href="https://github.com/ethanplusai/billr/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/ethanplusai/billr/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/R3DP/faturador/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/R3DP/faturador/actions/workflows/ci.yml/badge.svg"></a>
 </p>
 
-**Prefer not to run it yourself? [billr.cc](https://billr.cc) is the hosted version of Billr.**
+**Este repositório é um fork do [Billr](https://github.com/ethanplusai/billr), adaptado para português do Brasil. O Faturador mantém a atribuição ao projeto de origem; a interface, a documentação e os comandos deste fork usam o nome Faturador.**
 
-![The Billr dashboard for a fictional studio, showing recorded payments, outstanding balance and recent invoices](docs/images/dashboard.png)
+> **Nota sobre as capturas:** As imagens abaixo são referências do upstream Billr, em inglês e incluindo a marca Billr; não mostram a interface localizada do Faturador.
 
-## What it is
+![Imagem de referência do upstream Billr em inglês; não é a interface localizada do Faturador](docs/images/dashboard.png)
 
-Billr is self-hosted invoicing built for working with agents. You run it on your own computer or server, you and your agents bill your clients from it, and the only outside people who ever see it are those clients, on the invoice and estimate pages Billr sends them.
+*Referência visual do upstream Billr em inglês (não é a interface localizada do Faturador).*
 
-- **One owner.** The first person to sign up owns the installation, and sign-up closes behind them.
-- **Your Stripe account.** Card payments go straight to the Stripe account whose keys you put in the environment. Nothing sits in the middle and nothing is added on top of Stripe's fee.
-- **Your database.** Everything lives in a Supabase project you control: on your laptop, on your own server, or managed.
-- **Your agents.** Claude Code, Codex, Cursor and any MCP client connect by URL to `/api/mcp` on your installation.
+## O que é
 
-## Quick start
+Faturador é um sistema de faturamento auto-hospedado, feito para trabalhar com agentes. Você o executa no seu próprio computador ou servidor, você e seus agentes faturam seus clientes por ele, e as únicas pessoas externas que o veem são esses clientes, nas páginas de fatura e orçamento que o Faturador envia a eles.
 
-You need Node.js 22 or newer, Docker (running) and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) 2.67.1 or newer.
+- **Um proprietário.** A primeira pessoa a se cadastrar é proprietária da instalação, e o cadastro é fechado em seguida.
+- **Sua conta Stripe.** Os pagamentos com cartão vão direto para a conta Stripe cujas chaves você configura no ambiente. Nada fica no meio e nada é acrescentado à tarifa da Stripe.
+- **Seu banco de dados.** Tudo fica em um projeto Supabase que você controla: no seu laptop, no seu próprio servidor ou gerenciado.
+- **Seus agentes.** Claude Code, Codex, Cursor e qualquer cliente MCP se conectam por URL a `/api/mcp` na sua instalação.
+
+## Início rápido
+
+Você precisa do Node.js 22 ou mais recente, Docker (em execução) e da [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) 2.67.1 ou mais recente.
 
 ```sh
-git clone https://github.com/ethanplusai/billr.git
-cd billr/app
+git clone --branch pt-br https://github.com/R3DP/faturador.git
+cd faturador/app
 npm run doctor
 npm ci
 npm run setup:local
 npm run dev -- --hostname 127.0.0.1
 ```
 
-Open http://localhost:3000 and sign up: that account owns this Billr. Create a business, add a client, create an invoice and download its PDF.
+Abra http://localhost:3000 e cadastre-se: essa conta será proprietária desta instalação do Faturador. Crie uma empresa, adicione um cliente, crie uma fatura e baixe o PDF.
 
-`npm run doctor` checks Node.js, Docker, the Supabase CLI and the local ports before anything is installed. `npm run setup:local` starts an isolated local Supabase project, applies the database schema and writes local credentials to an ignored `.env.local` with mode 0600; it refuses to overwrite an existing one. This local stack is for your machine only; do not expose its development credentials on a public server. Installing on a new computer for the first time? [docs/fresh-machine-test.md](docs/fresh-machine-test.md) walks through every step, with what success looks like at each one.
+`npm run doctor` verifica o Node.js, o Docker, a Supabase CLI e as portas locais antes de qualquer instalação. `npm run setup:local` inicia um projeto Supabase local isolado, aplica o esquema do banco de dados e grava credenciais locais em um `.env.local` ignorado pelo Git, com modo 0600; ele se recusa a sobrescrever um arquivo existente. Esta pilha local é apenas para sua máquina; não exponha as credenciais de desenvolvimento em um servidor público. Vai instalar em um computador novo pela primeira vez? [docs/fresh-machine-test.md](docs/fresh-machine-test.md) orienta cada etapa e mostra como é o resultado esperado.
 
-Then open **Agents → Connect** for the MCP URL of your installation, or **Agents → API Keys** to create a key with the permissions your agent needs. A local agent connects to `http://localhost:3000/api/mcp`; an agent running on another machine needs a deployment it can reach.
+Depois, abra **Agentes → Conectar** para ver a URL MCP da sua instalação, ou **Agentes → Chaves de API** para criar uma chave com as permissões necessárias ao agente. Um agente local se conecta a `http://localhost:3000/api/mcp`; um agente em outra máquina precisa de uma instalação acessível por ele.
 
-Card payments and invoice email are optional. Add your Stripe keys or a Resend key when you want them: see [docs/self-hosting.md](docs/self-hosting.md).
+Pagamentos com cartão e envio de faturas por e-mail são opcionais. Adicione suas chaves Stripe ou uma chave Resend quando quiser usar esses recursos: consulte [docs/self-hosting.md](docs/self-hosting.md).
 
-## What you can do
+## Instalação do Faturador (Billr no branch `main`) no Windows com Docker
 
-### Clients
+O Faturador deste repositório está no projeto [R3DP/faturador](https://github.com/R3DP/faturador), branch `pt-br`. O projeto de origem Billr é o upstream [ethanplusai/billr](https://github.com/ethanplusai/billr), referenciado no branch `main`; isso não é a branch a clonar para obter a versão localizada. A atribuição ao upstream continua indicada acima.
 
-Contact details, billing address, currency, payment terms, tax id and internal notes that never appear on a document. Per-client totals, invoiced and outstanding, are maintained by the database rather than recomputed in the browser, so a list and a detail page can never disagree.
+### Antes de começar
 
-![The clients list showing four fictional clients with outstanding and invoiced totals](docs/images/clients-list.png)
+- **Git for Windows** e **Node.js LTS 22 ou mais recente**. O instalador oficial do Node inclui o npm; não instale npm separadamente.
+- **WSL 2** e o recurso Windows **Virtual Machine Platform**. A virtualização de hardware precisa estar habilitada na BIOS/UEFI. O comando abaixo instala/ativa os componentes e pode pedir reinicialização.
+- **Docker Desktop** usando o backend WSL 2, aberto e em execução antes de chamar o diagnóstico. O Docker Desktop requer WSL 2.1.5 ou mais recente; para PCs x64, a documentação lista processador com SLAT e 8 GB de RAM, além de virtualização habilitada. Confira também se a versão do Windows e a arquitetura do seu PC são suportadas.
+- **Supabase CLI v2**, versão 2.67.1 ou mais recente. A instalação padrão do Scoop usa v3; para este repositório, instale `supabase-v2-stable`, conforme a [orientação oficial para manter a CLI v2](https://supabase.com/docs/guides/local-development/cli/migrating-to-v3), e não o pacote `supabase` do canal v3.
 
-### Invoices and estimates
+Instaladores e guias oficiais: [WSL (Microsoft)](https://learn.microsoft.com/windows/wsl/install), [Docker Desktop para Windows](https://docs.docker.com/desktop/setup/install/windows-install/), [Node.js](https://nodejs.org/en/download/), [Git for Windows](https://git-scm.com/install/windows), [PowerShell 7 (opcional, Microsoft)](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows), [Scoop](https://scoop.sh/) e [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started).
 
-- Line items with quantities, rates, percentage or fixed discounts, tax and shipping, all totalled on the server.
-- Numbering is per business with a configurable prefix, and a document is created in a single database transaction, so a half-written invoice never exists.
-- Statuses: draft, sent, viewed, partial, paid, overdue, cancelled. The list filters on them and the dashboard counts them.
-- **Duplicate** an invoice into a new draft, or **convert** an accepted estimate into an invoice or an engagement, keeping the link between the two.
-- Invoices and estimates each get a public page at a secret `public_id`, and an invoice also renders as a PDF that the client can download or that Billr attaches when it emails the invoice.
+### Instale e prepare as ferramentas
 
-![The invoice list with search and a status filter, one row per invoice with its client, status, due date and amount](docs/images/invoices-list.png)
+1. Instale Git for Windows e Node.js LTS pelo instalador oficial, aceitando as opções padrão. Feche e reabra o PowerShell depois para atualizar o `PATH`.
+2. Se esta for a primeira instalação do WSL, abra um PowerShell **como administrador** e execute:
 
-![An invoice detail page showing line items, totals, a partial payment and its activity trail](docs/images/invoice-detail.png)
+   ```powershell
+   wsl --install
+   ```
 
-An accepted estimate keeps its own page, with one button to turn it into an invoice and another to turn it into an engagement.
+   Esse comando é para a instalação inicial: ele pode habilitar componentes, instalar a distribuição Ubuntu padrão e solicitar a reinicialização do Windows. Reinicie quando solicitado. Se `wsl --install` mostrar apenas a ajuda (por exemplo, quando o WSL já existe), **não repita a instalação**; verifique a instalação existente nos próximos comandos.
 
-![An accepted estimate with its line items, discount and a link to the invoice it was converted to](docs/images/estimate-detail.png)
+   Em PowerShell como administrador, confira o estado, atualize o WSL e defina a versão padrão 2:
 
-The public page is what your client gets. It is served through dedicated read-only database functions keyed on the `public_id`, never through a broad table policy, and the payload is an explicit allow-list of columns: adding a column to `businesses` or `clients` cannot widen what a client can see. When your Stripe keys are set, the client pays by card right on this page.
+   ```powershell
+   wsl --status
+   wsl --list --verbose
+   wsl --update
+   wsl --set-default-version 2
+   ```
 
-![The client-facing invoice page with the amount due, a print button and the invoice itself](docs/images/invoice-public-page.png)
+   Só instale uma distribuição se `wsl --list --verbose` não listar nenhuma. Nesse caso, consulte as disponíveis e instale uma, por exemplo Ubuntu:
 
-### Time and expenses to unbilled to invoice
+   ```powershell
+   wsl --list --online
+   wsl --install -d Ubuntu
+   ```
 
-Log time and expenses against a client, in the client's currency, billable or not. The unbilled list is the working surface: pick entries, pull them onto a draft invoice in one step, and they are marked billed in the same step, so the same hour cannot be billed twice.
+   Se já houver uma distribuição, não instale outra Ubuntu. Se a coluna `VERSION` indicar `1`, converta a distribuição existente para WSL 2; para Ubuntu, por exemplo:
 
-![The time tracking page showing billed and unbilled entries with hours and amounts](docs/images/time-and-expenses.png)
+   ```powershell
+   wsl --set-version Ubuntu 2
+   ```
 
-### Engagements
+   Troque `Ubuntu` pelo nome exato mostrado em `wsl --list --verbose` (por exemplo, `Ubuntu-24.04`). A conversão pode levar algum tempo e falhar; faça backup dos arquivos importantes antes.
 
-An engagement is an agreed total and the schedule it will be billed off, so work is billed against something that was agreed rather than invented per invoice.
+   Siga a [instalação manual oficial do WSL da Microsoft](https://learn.microsoft.com/windows/wsl/install-manual) se o Windows não atender ao requisito do comando (Windows 10 versão 2004, build 19041, ou posterior; ou Windows 11) ou se faltar o recurso **Virtual Machine Platform**. A ativação de componentes pode exigir reinicialização; reinicie quando solicitado antes de continuar. Se a virtualização estiver desativada na BIOS/UEFI, habilite-a antes de prosseguir.
 
-- Billing modes: `percent_split`, `equal_installments`, `milestones` and `manual`.
-- Each schedule entry becomes billable by a rule: `on_start`, `on_complete`, `on_milestone`, `on_date` or `manual`.
-- The database enforces that entries add up to exactly the total, and rounding is decided in one place: the last entry absorbs the remainder.
-- An entry that has been invoiced is frozen. The agreed total, currency, billing mode and schedule are deliberately not editable after the fact.
-- Nothing is ever sent by an engagement. Becoming ready to bill is a status; turning it into an invoice and sending that invoice stay separate, deliberate steps.
+3. Instale o Docker Desktop no modo **por usuário** (recomendado; não exige elevação), selecione o backend **WSL 2** se o instalador perguntar e abra o Docker Desktop pelo menu Iniciar. Espere o mecanismo indicar que está em execução; só ter o aplicativo instalado não basta. O comando `docker info` no PowerShell deve concluir sem erro.
+4. Abra Windows PowerShell 5.1 (já incluído no Windows) ou PowerShell 7, **sem elevação**, para instalar o Scoop no escopo do seu usuário. O link para PowerShell 7 acima é opcional. Primeiro confira a política vigente:
 
-![An engagement with a 50/50 schedule, the deposit invoiced and the balance still pending](docs/images/engagements-detail.png)
+   ```powershell
+   Get-ExecutionPolicy -List
+   ```
 
-### Payments
+   Se a política da organização permitir, use somente `CurrentUser` e `RemoteSigned`. Confira a política efetiva antes de executar o instalador; se não for `RemoteSigned`, pare e peça orientação ao TI. Não use `Bypass`, `Unrestricted` nem tente contornar políticas corporativas.
 
-- Record what actually arrived: cash, check, bank transfer, card, PayPal or anything else. No Stripe account required.
-- Balances and statuses are reconciled by the database, not by the page you happen to be looking at.
-- A payment recorded wrong can be **corrected**, or **voided** with a reason. A voided row stays, struck through, and stops counting as money: the invoice reopens for that amount and every total leaves it out.
-- Card payments use **your own Stripe account**, set with three environment variables. Card details go from your client's browser to Stripe; the charged amount is always re-derived from the invoice on the server. Stripe confirms the result over a signed webhook, and events are processed once, so a redelivered webhook cannot pay an invoice twice.
-- Refunds and disputes raised in your Stripe dashboard flow back the same way.
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   if ((Get-ExecutionPolicy) -ne 'RemoteSigned') {
+     throw 'A política efetiva não é RemoteSigned; pare e consulte o TI.'
+   }
+   Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+   scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+   scoop install supabase-v2-stable
+   supabase --version
+   ```
 
-![The payments list with a card payment and a bank transfer, each with edit and void actions](docs/images/payments-list.png)
+   A versão exibida precisa ser `2.67.1` ou superior, ainda na linha v2. Feche e reabra o PowerShell para carregar o `PATH` do Scoop.
 
-### Task billing for agents
+### Clone, diagnostique e inicie
 
-An agent opens a task under pricing a person approved, heartbeats while it works, reports what its providers cost, and completes. Then a person reviews and decides.
+No PowerShell recém-aberto, confirme que Git, Node.js, npm, Supabase CLI e Docker estão disponíveis. O Docker Desktop precisa continuar aberto:
 
-- An owner or admin approves a policy per client: currency, hourly rate, usage multiplier and a per-task budget. Missing pricing is never treated as zero.
-- Time is measured from server timestamps, and each heartbeat records at most 120 seconds since the previous one, so a long gap cannot silently become a billable hour.
-- The arithmetic is stated in full: `time = active_seconds x hourly_rate / 3600`, `usage = reported_provider_cost x usage_multiplier`, `total = time + usage`.
-- Billr does not fetch provider invoices or infer prices from model names. Reported usage needs a provider request reference and an evidence source, and a reference can be billed only once per business and provider.
-- Completing freezes the record. Approving the cost and creating the draft invoice is a human action, and sending it is another one.
+```powershell
+git --version
+node --version
+npm --version
+supabase --version
+docker info
+```
 
-![Task billing showing a completed agent task, its time and usage breakdown, and the approval button](docs/images/task-billing.png)
+Clone a branch localizada (não use `main` neste comando) e entre na pasta do aplicativo:
 
-### The MCP server
+```powershell
+Set-Location $HOME
+git clone --branch pt-br https://github.com/R3DP/faturador.git
+Set-Location .\faturador\app
+```
 
-The MCP server is part of the app, at `/api/mcp` on your installation. It exposes **53 tools** in ten groups: clients, invoices, estimates, engagements, saved items, time, expenses, payments, task billing, and business and links. The tool reference in `plugins/shared/skill/references/tools.md` is generated from the same catalog the server registers, so a documented tool that does not exist cannot ship.
+Execute o diagnóstico **antes** de instalar dependências. Ele verifica Node.js, Docker em execução, Supabase CLI (mínimo 2.67.1), arquivo `.env.local` e portas. Os padrões são a porta do aplicativo `3000` e as portas locais do Supabase `56420–56429`. Corrija cada linha `FAIL` e rode o diagnóstico novamente; só continue quando não houver `FAIL`. Um `WARN` de menos de 4 GB alocados ao Docker só afeta a compilação da imagem de produção; o próprio diagnóstico informa que o desenvolvimento local funciona.
 
-**Connect by URL.** Your installation is an OAuth 2.1 authorization server and protected resource, published at `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource`. A client that supports remote MCP discovers it, registers itself, sends you to a normal sign-in, and receives a short-lived token instead of a key you paste around.
+```powershell
+npm run doctor
+```
 
-![The Connect tab with the steps for adding Billr to Claude as a custom connector](docs/images/agents-connect.png)
+Com o diagnóstico sem `FAIL`, instale as dependências travadas no lockfile:
+
+```powershell
+npm ci
+```
+
+Quando `npm ci` terminar sem erro, inicialize a stack local:
+
+```powershell
+npm run setup:local
+```
+
+Na primeira inicialização, `setup:local` baixa e inicia os contêineres locais do Supabase e pode levar alguns minutos. Ele cria `app/.env.local`, ignorado pelo Git, com as credenciais geradas localmente; se o arquivo já existir, o comando se recusa a sobrescrevê-lo. Não é necessário entrar em uma conta Supabase hospedada, fornecer chaves Supabase de nuvem ou configurar Stripe para executar o ambiente local.
+
+Inicie o servidor de desenvolvimento:
+
+```powershell
+npm run dev -- --hostname 127.0.0.1
+```
+
+Quando o terminal mostrar que o Next.js está pronto, abra [http://localhost:3000](http://localhost:3000). Para parar o servidor, use `Ctrl+C` no terminal.
+
+Se uma porta estiver ocupada, siga a mensagem `FAIL` do diagnóstico. Os scripts aceitam `BILLR_LOCAL_APP_PORT` e `BILLR_LOCAL_DB_PORT`; no PowerShell, defina a variável indicada antes de executar `npm run doctor` e mantenha-a na mesma sessão para `npm run setup:local`. Por exemplo, se a porta 3000 estiver ocupada:
+
+```powershell
+$env:BILLR_LOCAL_APP_PORT = "3010"
+npm run doctor
+```
+
+Se o diagnóstico não mostrar `FAIL`, continue na mesma sessão do PowerShell:
+
+```powershell
+npm run setup:local
+```
+
+E use a porta escolhida ao iniciar o app:
+
+```powershell
+npm run dev -- --port 3010 --hostname 127.0.0.1
+```
+
+Se o conflito for na faixa do Supabase, defina `$env:BILLR_LOCAL_DB_PORT` com uma porta-base alternativa. Por exemplo:
+
+```powershell
+$env:BILLR_LOCAL_DB_PORT = "56451"
+npm run doctor
+```
+
+Use outra base se essa faixa também estiver ocupada. Só depois de o diagnóstico confirmar que ela está livre, e sem fechar a sessão do PowerShell, rode `npm run setup:local`.
+
+## O que você pode fazer
+
+### Clientes
+
+Dados de contato, endereço de cobrança, moeda, condições de pagamento, identificação fiscal e notas internas que nunca aparecem em um documento. Os totais por cliente, faturado e pendente, são mantidos pelo banco de dados em vez de recalculados no navegador, para que uma lista e uma página de detalhes nunca apresentem valores diferentes.
+
+![Imagem de referência do upstream Billr em inglês; não é a interface localizada do Faturador](docs/images/clients-list.png)
+
+*Referência visual do upstream Billr em inglês (não é a interface localizada do Faturador).*
+
+### Faturas e orçamentos
+
+- Itens com quantidades, valores unitários, descontos percentuais ou fixos, impostos e frete, todos totalizados no servidor.
+- A numeração é por empresa, com um prefixo configurável, e o documento é criado em uma única transação do banco de dados, para que nunca exista uma fatura gravada pela metade.
+- Status: rascunho, enviada, visualizada, parcial, paga, atrasada e cancelada. A lista filtra por eles e o painel os contabiliza.
+- **Duplique** uma fatura em um novo rascunho ou **converta** um orçamento aceito em uma fatura ou contrato de serviço, mantendo o vínculo entre os dois.
+- Faturas e orçamentos recebem uma página pública com um `public_id` secreto, e uma fatura também é renderizada como PDF, que o cliente pode baixar ou que o Faturador anexa ao enviar a fatura por e-mail.
+
+![Imagem de referência do upstream Billr em inglês; não é a interface localizada do Faturador](docs/images/invoices-list.png)
+
+*Referência visual do upstream Billr em inglês (não é a interface localizada do Faturador).*
+
+![Imagem de referência do upstream Billr em inglês; não é a interface localizada do Faturador](docs/images/invoice-detail.png)
+
+*Referência visual do upstream Billr em inglês (não é a interface localizada do Faturador).*
+
+Um orçamento aceito mantém sua própria página, com um botão para convertê-lo em fatura e outro para convertê-lo em contrato de serviço.
+
+![Imagem de referência do upstream Billr em inglês; não é a interface localizada do Faturador](docs/images/estimate-detail.png)
+
+*Referência visual do upstream Billr em inglês (não é a interface localizada do Faturador).*
+
+A página pública é o que seu cliente recebe. Ela é servida por funções dedicadas e somente de leitura do banco de dados, identificadas pelo `public_id`, nunca por uma política ampla de tabelas, e os dados retornados usam uma lista explícita de colunas permitidas: adicionar uma coluna a `businesses` ou `clients` não amplia o que um cliente pode ver. Quando suas chaves Stripe estão configuradas, o cliente paga com cartão diretamente nessa página.
+
+![Imagem de referência do upstream Billr em inglês; não é a interface localizada do Faturador](docs/images/invoice-public-page.png)
+
+*Referência visual do upstream Billr em inglês (não é a interface localizada do Faturador).*
+
+### Do registro de horas e despesas à fatura
+
+Registre horas e despesas para um cliente, na moeda dele, faturáveis ou não. A lista de itens não faturados é a área de trabalho: selecione lançamentos, transfira-os para um rascunho de fatura em uma etapa, e eles serão marcados como faturados nessa mesma etapa, para que a mesma hora não possa ser faturada duas vezes.
+
+![Imagem de referência do upstream Billr em inglês; não é a interface localizada do Faturador](docs/images/time-and-expenses.png)
+
+*Referência visual do upstream Billr em inglês (não é a interface localizada do Faturador).*
+
+### Contratos de serviço
+
+Um contrato de serviço define um total acordado e o cronograma pelo qual ele será faturado, para que o trabalho seja cobrado com base no que foi combinado, em vez de algo inventado a cada fatura.
+
+- Modalidades de cobrança: `percent_split`, `equal_installments`, `milestones` e `manual`.
+- Cada item do cronograma pode ser faturado quando uma regra for atendida: `on_start`, `on_complete`, `on_milestone`, `on_date` ou `manual`.
+- O banco de dados garante que os itens somem exatamente o total, e o arredondamento é decidido em um único lugar: o último item absorve o restante.
+- Um item que já foi faturado fica congelado. O total acordado, a moeda, a modalidade de cobrança e o cronograma deliberadamente não podem ser editados depois.
+- Nada é enviado por meio de um contrato de serviço. Estar pronto para faturar é um status; transformar isso em fatura e enviá-la são etapas separadas e deliberadas.
+
+![Imagem de referência do upstream Billr em inglês; não é a interface localizada do Faturador](docs/images/engagements-detail.png)
+
+*Referência visual do upstream Billr em inglês (não é a interface localizada do Faturador).*
+
+### Pagamentos
+
+- Registre o que realmente foi recebido: dinheiro, cheque, transferência bancária, cartão, PayPal ou qualquer outro meio. Não é necessária uma conta Stripe.
+- Saldos e status são conciliados pelo banco de dados, não pela página que você estiver consultando.
+- Um pagamento registrado incorretamente pode ser **corrigido** ou **anulado** com um motivo. A linha anulada permanece, tachada, e deixa de contar como dinheiro: a fatura é reaberta naquele valor e todos os totais o excluem.
+- Pagamentos com cartão usam **sua própria conta Stripe**, configurada com três variáveis de ambiente. Os dados do cartão vão do navegador do seu cliente para a Stripe; o valor cobrado sempre é recalculado a partir da fatura no servidor. A Stripe confirma o resultado por um webhook assinado, e os eventos são processados uma única vez, para que a reentrega de um webhook não pague uma fatura duas vezes.
+- Reembolsos e contestações abertos no seu painel Stripe são sincronizados da mesma forma.
+
+![Imagem de referência do upstream Billr em inglês; não é a interface localizada do Faturador](docs/images/payments-list.png)
+
+*Referência visual do upstream Billr em inglês (não é a interface localizada do Faturador).*
+
+### Cobrança de tarefas de agentes
+
+Um agente abre uma tarefa sob uma política de preços aprovada por uma pessoa, envia sinais de atividade enquanto trabalha, informa os custos dos provedores que usou e conclui a tarefa. Depois, uma pessoa analisa e decide.
+
+- Um proprietário ou administrador aprova uma política por cliente: moeda, valor por hora, multiplicador de uso e orçamento por tarefa. A ausência de preços nunca é tratada como zero.
+- O tempo é medido com registros de data e hora do servidor, e cada sinal de atividade contabiliza no máximo 120 segundos desde o anterior, para que um intervalo longo não se transforme silenciosamente em uma hora faturável.
+- O cálculo é especificado por completo: `time = active_seconds x hourly_rate / 3600`, `usage = reported_provider_cost x usage_multiplier`, `total = time + usage`.
+- O Faturador não busca faturas de provedores nem deduz preços com base nos nomes de modelos. O uso informado precisa de uma referência de solicitação ao provedor e de uma fonte de evidência, e cada referência só pode ser faturada uma vez por empresa e provedor.
+- A conclusão congela o registro. Aprovar o custo e criar o rascunho da fatura são ações humanas, e enviá-la é outra ação.
+
+![Imagem de referência do upstream Billr em inglês; não é a interface localizada do Faturador](docs/images/task-billing.png)
+
+*Referência visual do upstream Billr em inglês (não é a interface localizada do Faturador).*
+
+### O servidor MCP
+
+O servidor MCP faz parte do aplicativo e fica em `/api/mcp` na sua instalação. Ele disponibiliza **53 ferramentas** em dez grupos: clientes, faturas, orçamentos, contratos de serviço, itens salvos, horas, despesas, pagamentos, cobrança de tarefas e empresa e links. A referência das ferramentas em `plugins/shared/skill/references/tools.md` é gerada a partir do mesmo catálogo que o servidor registra, para que não seja possível publicar uma ferramenta documentada que não exista.
+
+**Conexão por URL.** Sua instalação é um servidor de autorização OAuth 2.1 e um recurso protegido, publicados em `/.well-known/oauth-authorization-server` e `/.well-known/oauth-protected-resource`. Um cliente compatível com MCP remoto os descobre, registra-se, redireciona você para uma tela de acesso normal e recebe um token de curta duração, em vez de uma chave que você teria de copiar e colar.
+
+![Imagem de referência do upstream Billr em inglês; não é a interface localizada do Faturador](docs/images/agents-connect.png)
+
+*Referência visual do upstream Billr em inglês (não é a interface localizada do Faturador).*
 
 Claude Code:
 
 ```sh
-claude mcp add --transport http billr https://YOUR_APP/api/mcp
+claude mcp add --transport http faturador https://YOUR_APP/api/mcp
 ```
 
-Then run `/mcp` inside Claude Code, choose `billr`, authenticate in the browser, and confirm with `claude mcp list`.
+Depois, execute `/mcp` no Claude Code, escolha `faturador`, autentique-se no navegador e confirme com `claude mcp list`.
 
 Codex:
 
 ```sh
-codex mcp add billr --url https://YOUR_APP/api/mcp
-codex mcp login billr
+codex mcp add faturador --url https://YOUR_APP/api/mcp
+codex mcp login faturador
 codex mcp list
 ```
 
-Cursor, ChatGPT and any other client that speaks streamable HTTP MCP are covered in **Agents → Connect** and in [plugins/README.md](plugins/README.md).
+Cursor, ChatGPT e qualquer outro cliente compatível com MCP sobre HTTP em fluxo contínuo estão descritos em **Agentes → Conectar** e em [plugins/README.md](plugins/README.md).
 
-For hosted Billr, see the [Claude installation guide](https://billr.cc/docs/connect) and [Cursor installation guide](https://billr.cc/docs/connect). Their plugin packages are maintained separately from this self-hosted repository.
+Para instalar conectores de agentes neste fork, consulte a documentação em [plugins/README.md](plugins/README.md). Os diretórios, nomes de pacotes e identificadores herdados do projeto upstream Billr são mantidos quando necessários para compatibilidade técnica.
 
-**The consent screen.** Signing in shows one page that asks which business the agent may work in and which permissions it gets. Reading is the floor and cannot be unticked; send, payments and delete are off unless you turn them on. Access expires in 30 days unless the agent refreshes it, and every connection is revocable from **Agents → API Keys**.
+**A tela de consentimento.** Ao entrar, uma página pergunta em qual empresa o agente pode trabalhar e quais permissões ele recebe. A leitura é o nível básico e não pode ser desmarcada; envio, pagamentos e exclusão ficam desativados até você ativá-los. O acesso expira em 30 dias, a menos que o agente renove o token, e cada conexão pode ser revogada em **Agentes → Chaves de API**.
 
-![The Billr consent screen asking which business and which permissions to grant](docs/images/agents-consent.png)
+![Imagem de referência do upstream Billr em inglês; não é a interface localizada do Faturador](docs/images/agents-consent.png)
 
-**API keys and scopes.** For clients that cannot do OAuth, create a `billr_sk_` key. It is shown once, stored only as a SHA-256 hash, scopable to one business and expiring in 90 days. Keys are granted as profiles:
+*Referência visual do upstream Billr em inglês (não é a interface localizada do Faturador).*
 
-| Profile | Permissions | What it can do |
+**Chaves de API e escopos.** Para clientes que não oferecem suporte a OAuth, crie uma chave `billr_sk_`. Esse identificador técnico é mantido por compatibilidade com o projeto de origem Billr. A chave é exibida uma única vez, armazenada apenas como hash SHA-256, pode ser limitada a uma empresa e expira em 90 dias. As chaves recebem perfis:
+
+| Perfil | Permissões | O que pode fazer |
 | --- | --- | --- |
-| Read only | `read` | Look at clients, documents, work and revenue totals |
-| Read and draft | `read`, `write` | The above, plus create and edit drafts, clients, items, time and expenses |
-| Billing | `read`, `write`, `send`, `payments` | The above, plus email documents and record payments |
-| Full | `read`, `write`, `send`, `payments`, `delete` | The above, plus delete unbilled time and expenses |
+| Somente leitura | `read` | Consultar clientes, documentos, trabalho e totais de receita |
+| Leitura e rascunhos | `read`, `write` | O anterior, além de criar e editar rascunhos, clientes, itens, horas e despesas |
+| Faturamento | `read`, `write`, `send`, `payments` | O anterior, além de enviar documentos por e-mail e registrar pagamentos |
+| Completo | `read`, `write`, `send`, `payments`, `delete` | O anterior, além de excluir horas e despesas não faturadas |
 
-Every tool maps to exactly one permission and an uncategorised tool is denied, so a new tool cannot quietly inherit access. The scope is re-checked when a tool runs, so revoking takes effect on the next call. Task pricing and task invoice approval always require a person, whatever the key says.
+Cada ferramenta corresponde a exatamente uma permissão, e ferramentas sem categoria são negadas, para que uma nova ferramenta não herde acesso silenciosamente. O escopo é verificado novamente quando uma ferramenta é executada, então a revogação passa a valer na chamada seguinte. A definição de preços de tarefas e a aprovação de faturas de tarefas sempre exigem uma pessoa, independentemente do que a chave permite.
 
-![The API keys tab listing keys with their scopes, expiry and last use](docs/images/agents-keys.png)
+![Imagem de referência do upstream Billr em inglês; não é a interface localizada do Faturador](docs/images/agents-keys.png)
 
-Write tools take a stable `request_id`, so a retry after a timeout returns the original result instead of creating a second invoice. Everything an agent creates is labelled: invoices and clients carry a "via agent" badge, and **Agents → Audit** shows what was made by an agent rather than by a person.
+*Referência visual do upstream Billr em inglês (não é a interface localizada do Faturador).*
 
-### Reports
+As ferramentas de escrita recebem um `request_id` estável, para que uma nova tentativa após um tempo limite retorne o resultado original, em vez de criar uma segunda fatura. Tudo o que um agente cria é identificado: faturas e clientes exibem o selo "via agente", e **Agentes → Auditoria** mostra o que foi criado por um agente em vez de uma pessoa.
 
-Collected, invoiced, outstanding and profit for any period, with a comparison against the previous one. Accounts receivable ageing buckets every open invoice by how late it is, names who to chase first, and exports to CSV. There is a profit and loss view on cash or accrual basis, and a time report. Agents read the same numbers through `revenue_summary`, computed in the database, so the workspace and an agent never disagree.
+### Relatórios
 
-![The reports page with collected and outstanding totals and an accounts receivable ageing chart](docs/images/reports.png)
+Valores recebidos, faturados, pendentes e lucro para qualquer período, com comparação com o período anterior. O relatório de vencimento de contas a receber agrupa cada fatura em aberto pelo atraso, indica quem deve ser cobrado primeiro e exporta para CSV. Há uma demonstração de lucros e perdas pelo regime de caixa ou competência, além de um relatório de horas. Agentes consultam os mesmos números por meio de `revenue_summary`, calculado no banco de dados, para que o espaço de trabalho e um agente nunca apresentem valores diferentes.
 
-### Several brands and teammates
+![Imagem de referência do upstream Billr em inglês; não é a interface localizada do Faturador](docs/images/reports.png)
 
-One Billr can hold several businesses, each with its own clients, numbering, branding, currency and agent keys, all paid into the same Stripe account. The workspace switcher at the top of the sidebar moves between them, and an API key can be pinned to exactly one, so a misbehaving prompt in one project cannot reach another brand's invoices.
+*Referência visual do upstream Billr em inglês (não é a interface localizada do Faturador).*
 
-Membership carries a role: `owner`, `admin` or `member`. Owner or admin is required to approve task pricing and approve a task invoice, and row-level security enforces the boundary in the database. To give a teammate a login, see "Sign-up and teammates" in [docs/self-hosting.md](docs/self-hosting.md).
+### Várias marcas e colegas de equipe
 
-## Running it on a server
+Uma instalação do Faturador pode conter várias empresas, cada uma com seus próprios clientes, numeração, identidade visual, moeda e chaves de agente, todas pagas na mesma conta Stripe. O seletor de espaço de trabalho no alto da barra lateral alterna entre elas, e uma chave de API pode ser vinculada a exatamente uma, para que um comando malicioso em um projeto não alcance as faturas de outra marca.
 
-[docs/self-hosting.md](docs/self-hosting.md) is the full guide: the database, environment variables, sign-up, the reverse proxy, card payments, email, upgrades and backups. In outline:
+A associação tem uma função: `owner`, `admin` ou `member`. É preciso ser proprietário ou administrador para aprovar preços de tarefas e aprovar uma fatura de tarefa, e a segurança em nível de linha impõe esse limite no banco de dados. Para dar acesso a um colega, consulte "Cadastro e colegas de equipe" em [docs/self-hosting.md](docs/self-hosting.md).
+
+## Executar em um servidor
+
+[docs/self-hosting.md](docs/self-hosting.md) é o guia completo: banco de dados, variáveis de ambiente, cadastro, proxy reverso, pagamentos com cartão, e-mail, atualizações e backups. Em resumo:
 
 ```sh
 cd app
-cp .env.example .env.local && chmod 600 .env.local   # then fill it in
+cp .env.example .env.local && chmod 600 .env.local   # depois preencha o arquivo
 npm ci
 npm run check:config
 docker compose --env-file .env.local build
 docker compose --env-file .env.local up -d
 ```
 
-The container runs as a non-root user and binds only `127.0.0.1:3000`, so you put your own HTTPS reverse proxy in front of it. Streaming HTTP through `/api/mcp` must pass unbuffered. Building the image needs at least 4 GB of memory available to Docker.
+O contêiner é executado como usuário não root e escuta somente em `127.0.0.1:3000`, então você coloca seu próprio proxy reverso HTTPS à frente. O HTTP em fluxo contínuo por `/api/mcp` precisa passar sem bufferização. Para criar a imagem, o Docker precisa ter pelo menos 4 GB de memória disponíveis.
 
-What you bring:
+O que você precisa fornecer:
 
-- **A Supabase project you own** (managed or self-hosted). Billr's Compose file runs the application, not a second copy of Supabase.
-- **Your Stripe account**, if you want card payments. Leave the Stripe variables empty and everything else still works; you record payments as they arrive.
-- **Your Resend account and a verified sender**, if you want Billr to email documents.
+- **Um projeto Supabase seu** (gerenciado ou auto-hospedado). O arquivo Compose do Faturador executa o aplicativo, não uma segunda cópia do Supabase.
+- **Sua conta Stripe**, se quiser pagamentos com cartão. Deixe vazias as variáveis Stripe e todo o resto continuará funcionando; registre os pagamentos à medida que chegarem.
+- **Sua conta Resend e um remetente verificado**, se quiser que o Faturador envie documentos por e-mail.
 
-No keys, accounts or provider fallbacks are included, and nothing phones home.
+Nenhuma chave, conta ou alternativa de provedor está incluída, e nada envia dados da instalação para fora.
 
-## Architecture at a glance
+## Arquitetura em resumo
 
-- **Next.js app** (App Router, React, Tailwind, server actions) serving the workspace, the public document pages, the PDF renderer and the API routes.
-- **Supabase Postgres** as the only store. Authorization lives in row-level security policies and `SECURITY DEFINER` functions with a pinned `search_path`; money arithmetic, document numbering, payment reconciliation and engagement schedules are enforced in SQL. Public document access goes only through allow-listed read-only functions keyed on a secret `public_id`.
-- **MCP server** at `app/src/app/api/mcp`, with tools in `app/src/lib/mcp/tools`. Every tool reaches the database through a scoped client that filters by business.
-- **OAuth 2.1 server** at `app/src/app/api/oauth` and `app/src/app/(auth)/oauth/authorize`: dynamic client registration, PKCE with S256, exact redirect matching, and access tokens that are ordinary API-key rows so one resolver stays the single gate in front of MCP.
-- **`packages/agent-kit`**: the tool catalog, JSON input schemas and the money and time helpers, asserted against the tools the server registers.
+- **Aplicativo Next.js** (App Router, React, Tailwind, ações de servidor) que serve o espaço de trabalho, as páginas públicas de documentos, o renderizador de PDF e as rotas de API.
+- **Supabase Postgres** como único armazenamento. A autorização fica em políticas de segurança em nível de linha e funções `SECURITY DEFINER` com `search_path` fixado; cálculos monetários, numeração de documentos, conciliação de pagamentos e cronogramas de contratos são impostos em SQL. O acesso público aos documentos passa somente por funções de leitura com lista de permissões, identificadas por um `public_id` secreto.
+- **Servidor MCP** em `app/src/app/api/mcp`, com ferramentas em `app/src/lib/mcp/tools`. Cada ferramenta acessa o banco de dados por um cliente com escopo limitado, que filtra por empresa.
+- **Servidor OAuth 2.1** em `app/src/app/api/oauth` e `app/src/app/(auth)/oauth/authorize`: registro dinâmico de clientes, PKCE com S256, correspondência exata de redirecionamento e tokens de acesso que são linhas comuns de chaves de API, para que um único resolvedor continue sendo a porta de entrada do MCP.
+- **`packages/agent-kit`**: catálogo de ferramentas, esquemas de entrada JSON e auxiliares de valores monetários e tempo, verificados em relação às ferramentas registradas pelo servidor.
 
 ```
 app/
-  src/app/(app)        the signed-in workspace
-  src/app/(auth)       sign in, sign up, OAuth consent
-  src/app/(public)     /i/<id> and /e/<id> client-facing documents
-  src/app/api          mcp, oauth, stripe, auth, health, invoice PDFs
-  src/lib/mcp          tool definitions, permissions, scoped database access
-  src/lib/oauth        authorization server, scopes, connections
-  src/lib/actions      server actions behind the workspace
-  supabase/migrations  the schema: one baseline, then numbered changes
-  supabase/tests       SQL tests (npm run test:sql)
-packages/agent-kit     tool catalog, schemas and shared calculations
-plugins                Codex and OpenClaw packages; other agent connection guides
-docs                   self-hosting guide, fresh-machine test, screenshots
+  src/app/(app)        espaço de trabalho com sessão iniciada
+  src/app/(auth)       entrada, cadastro, consentimento OAuth
+  src/app/(public)     /i/<id> e /e/<id>, documentos voltados ao cliente
+  src/app/api          mcp, oauth, stripe, auth, health, PDFs de faturas
+  src/lib/mcp          definições de ferramentas, permissões, acesso ao banco com escopo
+  src/lib/oauth        servidor de autorização, escopos, conexões
+  src/lib/actions      ações de servidor por trás do espaço de trabalho
+  supabase/migrations  esquema: uma linha de base, depois alterações numeradas
+  supabase/tests       testes SQL (npm run test:sql)
+packages/agent-kit     catálogo de ferramentas, esquemas e cálculos compartilhados
+plugins                pacotes Codex e OpenClaw; outros guias de conexão de agentes
+docs                   guia de auto-hospedagem, teste em máquina nova, capturas de tela
 ```
 
-## Security
+## Segurança
 
-Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md). Please do not open a public issue for one.
+Relate vulnerabilidades em privado, conforme descrito em [SECURITY.md](SECURITY.md). Não abra uma issue pública para isso.
 
-The guarantees the code is built around:
+As garantias que orientam o código:
 
-- A business's data is only readable by its members, and the check lives in the database.
-- Client-facing document links are unguessable ids resolved by read-only functions that return an explicit list of fields. Your internal notes and your next invoice number are not among them.
-- API keys are stored as hashes. Nobody, including whoever runs your installation, can read a key back after it is created.
-- Every agent tool maps to exactly one permission, and anything uncategorised is refused.
-- Pricing and the decision to bill are human actions that no key can perform.
-- Payment webhooks are signature-checked and processed once.
-- Only accounts this installation admitted can create a business; sign-up closes after the owner.
+- Os dados de uma empresa só podem ser lidos por seus membros, e essa verificação ocorre no banco de dados.
+- Os links de documentos voltados ao cliente usam identificadores impossíveis de adivinhar, resolvidos por funções de leitura que retornam uma lista explícita de campos. Suas notas internas e o próximo número de fatura não estão entre eles.
+- As chaves de API são armazenadas como hashes. Ninguém, nem mesmo quem executa sua instalação, pode recuperar uma chave depois que ela é criada.
+- Cada ferramenta de agente corresponde a exatamente uma permissão, e qualquer ferramenta sem categoria é recusada.
+- A definição de preços e a decisão de cobrar são ações humanas que nenhuma chave pode executar.
+- Os webhooks de pagamento têm a assinatura verificada e são processados uma única vez.
+- Somente contas admitidas por esta instalação podem criar uma empresa; o cadastro é fechado depois que o proprietário se registra.
 
-Your installation is yours to secure: the database, the backups, the secrets, the reverse proxy and the accounts.
+Cabe a você proteger sua instalação: o banco de dados, os backups, os segredos, o proxy reverso e as contas.
 
-## Contributing
+## Como contribuir
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md). Changes are listed in [CHANGELOG.md](CHANGELOG.md), and anything that is not a vulnerability report belongs in [SUPPORT.md](SUPPORT.md).
+Leia primeiro [CONTRIBUTING.md](CONTRIBUTING.md). Todas as pessoas participantes seguem o [Código de Conduta](CODE_OF_CONDUCT.md). As alterações estão listadas em [CHANGELOG.md](CHANGELOG.md), e tudo o que não for um relato de vulnerabilidade deve ser encaminhado por [SUPPORT.md](SUPPORT.md).
 
 ```sh
 cd app
@@ -252,8 +430,8 @@ npm run typecheck
 npm run build
 ```
 
-Tests use fictional data. Never point tests at a database that holds real invoices.
+Os testes usam dados fictícios. Nunca os execute em um banco de dados que contenha faturas reais.
 
-## License
+## Licença
 
-Apache-2.0, copyright Voyage Studios LLC, doing business as Billr. See [LICENSE](LICENSE) and [NOTICE](NOTICE). Third-party assets keep their own licenses. The Billr name identifies this project and does not imply that the Billr team operates or supports your installation.
+Apache-2.0, direitos autorais de Voyage Studios LLC, que opera comercialmente como Billr, nome do projeto de origem deste repositório. Consulte [LICENSE](LICENSE) e [NOTICE](NOTICE). Ativos de terceiros mantêm suas próprias licenças. O nome Billr identifica o projeto upstream e não significa que a equipe Billr opere ou ofereça suporte à sua instalação do Faturador.

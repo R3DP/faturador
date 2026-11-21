@@ -1,5 +1,12 @@
-# Agent marks
+# Marcas de agentes
 
-`claude.svg`, `codex.svg` and `mcp.svg` are sourced from https://github.com/lobehub/lobe-icons/tree/master/packages/static-svg/icons. Source license included in LICENSE. Marks identify compatible products; they do not imply endorsement or partnership. Logos remain the trademarks of their respective owners. Served locally without modification.
+`claude.svg`, `codex.svg` e `mcp.svg` vêm de
+https://github.com/lobehub/lobe-icons/tree/master/packages/static-svg/icons. A licença da
+fonte está incluída em LICENSE. As marcas identificam produtos compatíveis; não implicam
+endosso nem parceria. Os logotipos continuam sendo marcas registradas de seus respectivos
+proprietários. São servidos localmente, sem modificações.
 
-`cursor.svg` and `chatgpt.svg` are neutral in-house glyphs (a pointer and a speech bubble), not vendor logos. They label the Cursor and ChatGPT tabs without reproducing anyone's trademark. Replace them only with marks the vendor licenses for this use.
+`cursor.svg` e `chatgpt.svg` são símbolos neutros criados internamente (um ponteiro e um
+balão de conversa), não logotipos de fornecedores. Eles identificam as abas Cursor e ChatGPT
+sem reproduzir a marca registrada de terceiros. Substitua-os somente por marcas que o
+fornecedor licencie para esse uso.

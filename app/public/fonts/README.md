@@ -1,1 +1,3 @@
-Geist and Geist Mono are bundled at build time through Next.js. Upstream font license: https://github.com/vercel/geist-font/blob/main/LICENSE.txt. Their SIL Open Font License is retained here and remains separate from the application Apache-2.0 license.
+Geist e Geist Mono são incluídas no build por meio do Next.js. Licença da fonte de origem:
+https://github.com/vercel/geist-font/blob/main/LICENSE.txt. A licença SIL Open Font License
+delas é mantida aqui e continua separada da licença Apache-2.0 da aplicação.

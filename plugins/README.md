@@ -1,59 +1,61 @@
-# Billr plugins
+# Plugins do Faturador
 
-These plugins connect to **hosted Billr**, at `https://mcp.billr.cc`. Sign in
-with your own Billr account and choose the business and permissions. Installing
-a plugin does not create an account or include a subscription.
+Os pacotes de plugin deste repositório incluem integrações com o serviço **Billr hospedado**, em `https://mcp.billr.cc`. Esse serviço pertence ao projeto upstream `ethanplusai/billr` e não é o Faturador auto-hospedado. Entre com sua conta do serviço upstream e escolha a empresa e as permissões. Instalar um plugin não cria uma conta nem inclui uma assinatura.
 
-| Platform | Package / connection |
+| Plataforma | Pacote / conexão |
 | --- | --- |
-| Claude Code | [Hosted installation guide](https://billr.cc/docs/connect) |
-| Codex and ChatGPT | `codex/billr`, with portable and Codex manifests |
-| Cursor and Grok Bot | [Hosted installation guide](https://billr.cc/docs/connect) |
-| OpenClaw | `openclaw/billr` skill; configure remote MCP separately |
-| Claude web/Desktop | Custom connector using the hosted URL |
-| Grok web / xAI API | Remote MCP connection; distinct from Grok Bot |
+| Claude Code | [Guia de conexão com o serviço upstream hospedado](https://billr.cc/docs/connect) |
+| Codex e ChatGPT | `codex/billr`, com manifestos portáteis e do Codex |
+| Cursor e Grok Bot | [Guia de conexão com o serviço upstream hospedado](https://billr.cc/docs/connect) |
+| OpenClaw | skill `openclaw/billr`; configure o MCP remoto separadamente |
+| Claude na web/desktop | Conector personalizado usando a URL hospedada |
+| Grok na web / API da xAI | Conexão MCP remota; distinta do Grok Bot |
 
-See the platform README for installation. A package in this repository does
-not mean it has been approved or published in a platform directory.
+Consulte o README da plataforma para a instalação. Um pacote neste repositório
+não significa que ele foi aprovado ou publicado no diretório de uma plataforma.
 
-## Authentication and permissions
+## Autenticação e permissões
 
-Use OAuth whenever supported. Supply the hosted URL without a client secret
-or embedded credential. On Billr's consent screen choose a single test business
-and Read only for the first check. Grant draft/write access only when needed.
-Sending, recording payments and deletion require additional permissions and an
-explicit user request. The bundled skill follows a draft-first workflow.
+Use OAuth sempre que houver suporte. Informe a URL hospedada, sem segredo de
+cliente ou credencial incorporada. Na tela de consentimento do serviço Billr hospedado (upstream, não o Faturador), escolha
+uma única empresa de teste e apenas leitura na primeira verificação. Conceda
+acesso de gravação/rascunho somente quando necessário. Enviar, registrar
+pagamentos e excluir exigem permissões adicionais e um pedido explícito do
+usuário. A skill incluída segue um fluxo que prioriza rascunhos.
 
-API-key clients may use a narrowly scoped key from Billr's Agents page. Use
-the client's environment-variable support; never commit a key or paste it into
-chat. Each platform receives data returned by tools you authorize.
+Clientes que usam chaves de API podem usar uma chave de escopo restrito, criada
+na página de agentes do serviço Billr hospedado (upstream). Use o suporte do cliente a variáveis de ambiente;
+nunca faça commit de uma chave nem a cole no chat. Cada plataforma recebe os
+dados retornados pelas ferramentas que você autorizar.
 
-## Self-hosted installations
+## Instalações auto-hospedadas
 
-The application in this repository still runs independently. To connect to
-your own installation, configure `https://<your-domain>/api/mcp` directly in
-your agent, or edit a private copy of a plugin's MCP URL before installing it.
-For local desktop clients that URL may be `http://localhost:3000/api/mcp`.
-Cloud clients need an HTTPS endpoint reachable from their servers. Do not
-change the distributed hosted package for an individual installation.
+O aplicativo deste repositório também pode ser executado de forma independente.
+Para conectar à sua própria instalação do Faturador, configure diretamente no
+seu agente `https://<seu-dominio>/api/mcp` com o alias local `faturador`, ou edite uma cópia privada da URL do MCP
+de um plugin antes de instalá-lo. Em clientes desktop locais, essa URL pode ser
+`http://localhost:3000/api/mcp`, também com o alias local `faturador`. Clientes na nuvem precisam de um endpoint HTTPS
+acessível por seus servidores. Não altere o pacote upstream distribuído para
+uma instalação individual. O serviço Billr hospedado é separado do Faturador; Faturador é
+a marca deste aplicativo local/auto-hospedado.
 
-## Verify each host
+## Verificar cada plataforma
 
-1. Install from a clean profile and check the skill and MCP connection appear.
-2. Sign in with OAuth; approve Read only on a fictional test business.
-3. Ask to list its clients and unbilled work. Confirm correct business/currency.
-4. Ask for a draft with read-only access: it must refuse without creating data.
-5. Reconnect with write access and explicitly request one fictional draft.
-6. Verify the draft in Billr; no email or payment should occur.
-7. Revoke only the connection created for this test, then verify access fails.
-8. Reconnect and repeat the read. In UI-capable hosts, also check card rendering.
+1. Instale em um perfil limpo e confira se a skill e a conexão MCP aparecem.
+2. Entre com OAuth; aprove apenas leitura em uma empresa fictícia de teste.
+3. Peça para listar os clientes e o trabalho não faturado. Confirme a empresa e a moeda corretas.
+4. Peça um rascunho com acesso somente de leitura: deve recusar sem criar dados.
+5. Reconecte com acesso de gravação e peça explicitamente um rascunho fictício.
+6. Se o teste usar o serviço hospedado, verifique o rascunho no Billr upstream; esse serviço não é o Faturador auto-hospedado. Nenhum e-mail nem pagamento deve ocorrer.
+7. Revogue somente a conexão criada para este teste e confirme que o acesso falha.
+8. Reconecte e repita a leitura. Em hosts com interface, confira também a renderização dos cartões.
 
-Run automated package checks with:
+Execute as verificações automatizadas do pacote com:
 
 ```sh
 node app/scripts/generate-plugin-tool-reference.mjs --check
 node --test app/scripts/plugin-packages.test.mjs
 ```
 
-The shared skill and tool reference are generated into each platform layout.
-Edit `shared/skill/`, then run `node app/scripts/generate-plugin-tool-reference.mjs`.
+A skill compartilhada e a referência de ferramentas são geradas em cada estrutura
+de plataforma. Edite `shared/skill/` e execute `node app/scripts/generate-plugin-tool-reference.mjs`.

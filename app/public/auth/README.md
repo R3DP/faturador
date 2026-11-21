@@ -1,11 +1,10 @@
-# Sign-in marks
+# Marcas de autenticação
 
-`google.svg` is a neutral in-house glyph: a single stroked "G" drawn as an arc
-and a bar. It is not Google's multicolour logo and reproduces no trademark. It
-labels the "Continue with Google" button in
-`src/components/auth/oauth-sign-in.tsx`. Replace it only with a mark Google
-licenses for this use.
+`google.svg` é um símbolo neutro criado internamente: um único "G" traçado como um arco e
+uma barra. Não é o logotipo multicolorido do Google e não reproduz nenhuma marca registrada.
+Ele identifica o botão "Continuar com Google" em `src/components/auth/oauth-sign-in.tsx`.
+Substitua-o somente por uma marca que o Google licencie para esse uso.
 
-The GitHub button has no image file. It draws GitHub's mark inline, taken from
-Octicons (`mark-github`, MIT License, license text in `OCTICONS-LICENSE`),
-as GitHub's logo guidelines allow for signing in with GitHub.
+O botão do GitHub não tem arquivo de imagem. Ele desenha a marca do GitHub em linha, obtida
+do Octicons (`mark-github`, licença MIT, texto da licença em `OCTICONS-LICENSE`), conforme
+permitem as diretrizes de logotipo do GitHub para iniciar sessão com o GitHub.

@@ -32,7 +32,7 @@ export function Logo({ className, iconOnly = false, size = 'md' }: LogoProps) {
       </div>
       {!iconOnly && (
         <span className={cn('font-semibold tracking-tight', sizes[size].text)}>
-          Billr
+          Faturador
         </span>
       )}
     </div>
