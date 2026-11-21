@@ -1,61 +1,61 @@
-name: Feature request
-description: Suggest a capability or a change in behaviour.
-title: '[Feature]: '
+name: Solicitação de recurso
+description: Sugira um recurso ou uma mudança de comportamento.
+title: '[Recurso]: '
 labels: ['enhancement']
 body:
   - type: markdown
     attributes:
       value: |
-        Please describe the problem before the solution. The most useful requests explain the billing situation you are in, not just the control you want added.
+        Descreva o problema antes da solução. As solicitações mais úteis explicam a situação de cobrança em que você está, não apenas o controle que gostaria de adicionar.
 
-        Large changes are best agreed in an issue before any code is written.
+        É melhor combinar mudanças grandes em uma issue antes de escrever qualquer código.
   - type: textarea
     id: problem
     attributes:
-      label: The problem
-      description: What are you trying to do, and what makes it hard or impossible today?
+      label: O problema
+      description: O que você está tentando fazer e o que torna isso difícil ou impossível hoje?
     validations:
       required: true
   - type: textarea
     id: proposal
     attributes:
-      label: What you would like to happen
-      description: Describe the behaviour you want. Be concrete.
+      label: O que você gostaria que acontecesse
+      description: Descreva o comportamento desejado. Seja específico.
     validations:
       required: true
   - type: textarea
     id: alternatives
     attributes:
-      label: What you tried or considered
-      description: Workarounds you are using now, and why they are not enough.
+      label: O que você tentou ou considerou
+      description: Alternativas que está usando agora e por que não são suficientes.
   - type: dropdown
     id: area
     attributes:
-      label: Which part of Billr?
+      label: Qual parte do Faturador?
       options:
-        - Invoices and estimates
-        - Clients
-        - Time and expenses
-        - Engagements
-        - Payments and Stripe
-        - Task billing for agents
-        - MCP server or agent toolkit
-        - API keys and permissions
-        - Reports
-        - Self-hosting, Docker or migrations
-        - Something else
+        - Faturas e orçamentos
+        - Clientes
+        - Horas e despesas
+        - Contratos
+        - Pagamentos e Stripe
+        - Cobrança de tarefas para agentes
+        - Servidor MCP ou kit de ferramentas para agentes
+        - Chaves de API e permissões
+        - Relatórios
+        - Auto-hospedagem, Docker ou migrações
+        - Outro
     validations:
       required: true
   - type: checkboxes
     id: scope
     attributes:
-      label: Scope
+      label: Escopo
       options:
-        - label: This fits Billr as an internal tool, or I have said why not.
+        - label: Isso se encaixa no Faturador como ferramenta interna, ou expliquei por que não.
           required: true
   - type: checkboxes
     id: help
     attributes:
-      label: Would you like to work on this?
+      label: Você gostaria de trabalhar nisso?
       options:
-        - label: I am willing to open a pull request for it.
+        - label: Estou disposto a abrir um pull request para isso.

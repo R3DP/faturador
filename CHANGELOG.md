@@ -1,29 +1,29 @@
-# Changelog
+# Registro de alterações
 
-All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Todas as alterações relevantes deste projeto são documentadas aqui. O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), e este projeto segue o [Versionamento Semântico](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-First release as a standalone repository.
+Primeira versão como repositório independente.
 
-### Added
+### Adicionado
 
-- The invoicing workspace: clients, items, invoices, estimates, time entries, expenses, payments and reports, with per-business numbering, currencies, discounts and tax.
-- Estimates a client can approve or decline through a public link, and convert into an invoice or an engagement.
-- Engagements: an agreed total with a billing schedule, entries billed from an invoice or waived, and a ready-to-bill view.
-- Payments recorded by any method, reconciled in the database, with corrections and voids kept in an audit trail.
-- Optional card payments on your own Stripe account, configured with three environment variables, with signed, idempotently processed webhook events for payments, failures, refunds and disputes.
-- Optional invoice and estimate email through your own Resend account, with an optional daily cap.
-- Task billing for agents: open, heartbeat, record usage against and complete a task, leaving a record for a person to price and approve.
-- The MCP server at `/api/mcp` with 53 tools, connect-by-URL OAuth 2.1, and `billr_sk_` API keys with permission profiles, activity and audit views.
-- `packages/agent-kit` and agent connection packs in `plugins` for Claude Code, Codex, Cursor and OpenClaw, plus Grok connection notes.
-- Sign-up closes after the first account, who owns the installation; `BILLR_OPEN_SIGNUP=true` reopens it.
-- One baseline database migration with SQL tests (`npm run test:sql`).
-- `npm run doctor`, `npm run setup:local`, a Dockerfile and Compose file with a documented recipe for the local database, and [docs/fresh-machine-test.md](docs/fresh-machine-test.md).
-- CI: unit tests, lint, type-check, unused-code check, build, dependency audit, SQL tests, generated-type drift and a container build.
+- Espaço de trabalho de faturamento: clientes, itens, faturas, orçamentos, lançamentos de horas, despesas, pagamentos e relatórios, com numeração, moedas, descontos e impostos por empresa.
+- Orçamentos que um cliente pode aprovar ou recusar por um link público e converter em fatura ou contrato de serviço.
+- Contratos de serviço: total acordado com cronograma de cobrança, itens faturados a partir de uma fatura ou dispensados, e uma visualização de itens prontos para faturar.
+- Pagamentos registrados por qualquer método, conciliados no banco de dados, com correções e anulações mantidas em um histórico de auditoria.
+- Pagamentos opcionais com cartão na sua própria conta Stripe, configurados com três variáveis de ambiente, com eventos de webhook assinados e processados de forma idempotente para pagamentos, falhas, reembolsos e contestações.
+- Envio opcional de faturas e orçamentos por e-mail usando sua própria conta Resend, com limite diário opcional.
+- Cobrança de tarefas de agentes: abrir uma tarefa, enviar sinais de atividade, registrar o uso e concluir, deixando um registro para uma pessoa definir o preço e aprovar.
+- Servidor MCP em `/api/mcp` com 53 ferramentas, OAuth 2.1 para conexão por URL e chaves de API `billr_sk_` com perfis de permissão, atividade e visualizações de auditoria.
+- `packages/agent-kit` e pacotes de conexão de agentes em `plugins` para Claude Code, Codex, Cursor e OpenClaw, além de notas de conexão para Grok.
+- O cadastro é fechado após a primeira conta, que se torna proprietária da instalação; `BILLR_OPEN_SIGNUP=true` reabre o cadastro.
+- Uma migração de linha de base do banco de dados com testes SQL (`npm run test:sql`).
+- `npm run doctor`, `npm run setup:local`, um Dockerfile e um arquivo Compose com uma receita documentada para o banco de dados local, e [docs/fresh-machine-test.md](docs/fresh-machine-test.md).
+- CI: testes unitários, lint, verificação de tipos, verificação de código não utilizado, compilação, auditoria de dependências, testes SQL, detecção de divergência nos tipos gerados e compilação de contêiner.
 
-### Security
+### Segurança
 
-- Public invoice and estimate access goes only through read-only database functions keyed on a secret `public_id`, returning an allow-list of columns.
-- Every tool and route resolves data through a business scope; a missing record and an out-of-scope record return the same generic error.
-- Every function and table states its privileges explicitly, revoked from `anon` and `authenticated` and granted back only where needed.
+- O acesso público a faturas e orçamentos ocorre somente por funções de leitura do banco de dados, identificadas por um `public_id` secreto e que retornam uma lista permitida de colunas.
+- Cada ferramenta e rota resolve dados dentro do escopo de uma empresa; um registro inexistente e um registro fora do escopo retornam o mesmo erro genérico.
+- Cada função e tabela declara explicitamente seus privilégios, revogados para `anon` e `authenticated` e concedidos novamente apenas quando necessário.

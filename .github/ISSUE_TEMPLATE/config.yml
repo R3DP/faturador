@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Report a security vulnerability
-    url: https://github.com/ethanplusai/billr/security/advisories/new
-    about: Do not open a public issue. Report privately through GitHub; see the security policy.
+  - name: Relatar uma vulnerabilidade de segurança
+    url: https://github.com/R3DP/faturador/security/advisories/new
+    about: Não abra uma issue pública. Faça o relato em privado pelo GitHub; consulte a política de segurança.

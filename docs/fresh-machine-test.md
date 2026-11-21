@@ -1,162 +1,162 @@
-# Fresh machine test
+# Teste em uma máquina nova
 
-A complete installation test on a computer that has never run Billr. Work through it top to bottom. Each step says what a pass looks like; if what you see differs, stop and note the step number, what you ran and what you saw.
+Um teste completo de instalação em um computador que nunca executou o Faturador. Siga do início ao fim. Cada etapa informa como identificar o sucesso; se o que você vir for diferente, pare e anote o número da etapa, o que executou e o que viu.
 
-Allow about an hour. Steps 1 to 13 are required; 14 to 16 are optional; 17 cleans up.
+Reserve cerca de uma hora. As etapas 1 a 13 são obrigatórias; 14 a 16 são opcionais; a 17 faz a limpeza.
 
-## 0. Prerequisites
+## 0. Pré-requisitos
 
-| Tool | Version | Check |
+| Ferramenta | Versão | Verificação |
 | --- | --- | --- |
-| Git | any recent | `git --version` |
-| Node.js | 22 or newer | `node --version` prints `v22` or higher |
-| Docker Desktop (or Docker Engine) | running; at least 4 GB of memory for the production image | `docker info` succeeds |
-| Supabase CLI | 2.67.1 or newer | `supabase --version` |
+| Git | qualquer versão recente | `git --version` |
+| Node.js | 22 ou mais recente | `node --version` mostra `v22` ou superior |
+| Docker Desktop (ou Docker Engine) | em execução; pelo menos 4 GB de memória para a imagem de produção | `docker info` é concluído com sucesso |
+| Supabase CLI | 2.67.1 ou mais recente | `supabase --version` |
 
-Install links: [Node.js](https://nodejs.org/), [Docker Desktop](https://docs.docker.com/desktop/), [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started).
+Links de instalação: [Node.js](https://nodejs.org/), [Docker Desktop](https://docs.docker.com/desktop/), [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started).
 
-## 1. Clone
+## 1. Clone o repositório
 
 ```sh
-git clone https://github.com/ethanplusai/billr.git
-cd billr/app
+git clone --branch pt-br https://github.com/R3DP/faturador.git
+cd faturador/app
 ```
 
-Pass: the clone finishes and `ls` shows `package.json`, `Dockerfile` and `scripts`.
+Sucesso: o clone termina e `ls` mostra `package.json`, `Dockerfile` e `scripts`.
 
-## 2. Check the machine
+## 2. Verifique a máquina
 
 ```sh
 npm run doctor
 ```
 
-Pass: no `FAIL` lines, and the last line reads `Ready. Next: npm ci, then npm run setup:local.` A `WARN` about Docker memory only matters for step 16.
+Sucesso: não há linhas `FAIL` e a última linha é `Pronto. Em seguida: npm ci e depois npm run setup:local.` Um `WARN` sobre memória do Docker só importa para a etapa 16.
 
-If a port is busy, the `FAIL` line names the variable to set. For example, when another program already uses port 3000, run `BILLR_LOCAL_APP_PORT=3010 npm run doctor`, and put the same prefix on `npm run setup:local` in step 4. Everywhere below, replace `3000` with the port you chose.
+Se uma porta estiver ocupada, a linha `FAIL` informa a variável a definir. Por exemplo, se outro programa já estiver usando a porta 3000, execute `BILLR_LOCAL_APP_PORT=3010 npm run doctor` e use o mesmo prefixo em `npm run setup:local` na etapa 4. Em todo o restante, substitua `3000` pela porta escolhida.
 
-## 3. Install dependencies
+## 3. Instale as dependências
 
 ```sh
 npm ci
 ```
 
-Pass: exits without an error and prints `added ... packages`.
+Sucesso: o comando termina sem erro e imprime `added ... packages`.
 
-## 4. Start the local database
+## 4. Inicie o banco de dados local
 
 ```sh
 npm run setup:local
 ls -l .env.local
 ```
 
-Pass: the command prints `Created private .env.local.` followed by the command that starts Billr (the first run downloads images and can take several minutes), and `ls` shows `-rw-------` for `.env.local`.
+Sucesso: a saída inclui `Arquivo .env.local privado criado. Inicie o Faturador: npm run dev -- --port <porta> --hostname 127.0.0.1` (a porta corresponde à configuração), uma linha iniciada por `Projeto do banco de dados:` com o comando `supabase stop --workdir .self-host/<projeto>` e o aviso iniciado por `Apenas para desenvolvimento local:`. Na primeira execução, a inicialização pode levar vários minutos. `ls` mostra `-rw-------` para `.env.local`.
 
-## 5. Start Billr
+## 5. Inicie o Faturador
 
 ```sh
 npm run dev -- --hostname 127.0.0.1
 ```
 
-If you chose another port in step 2, use the command step 4 printed instead: it adds `--port`.
+Se escolheu outra porta na etapa 2, use o comando impresso na etapa 4: ele acrescenta `--port`.
 
-Open http://localhost:3000. Pass: the terminal prints `Ready`, and the browser lands on the sign-in page.
+Abra http://localhost:3000. Sucesso: o terminal imprime `Ready` e o navegador abre a página de login.
 
-## 6. Sign up as the owner
+## 6. Cadastre-se como proprietário
 
-Choose **Sign up**. Use a made-up name and address such as `owner@fieldstone.example` and a password of at least 8 characters.
+Escolha **Criar conta**. Use um nome e endereço fictícios, como `owner@fieldstone.example`, e uma senha com pelo menos 8 caracteres.
 
-Pass: you reach the onboarding page that asks for your business name. The local database sends no confirmation email.
+Sucesso: você chega à página de integração inicial que solicita o nome da empresa. O banco de dados local não envia e-mail de confirmação.
 
-## 7. Sign-up is now closed
+## 7. O cadastro agora está fechado
 
-In a private browser window, open http://localhost:3000/signup.
+Em uma janela privativa do navegador, abra http://localhost:3000/signup.
 
-Pass: the page says "Sign-up is closed" and shows no form. Close the private window.
+Sucesso: a página mostra "O cadastro está fechado" e não exibe o formulário. Feche a janela privativa.
 
-## 8. Create a business
+## 8. Crie uma empresa
 
-Name it `Fieldstone Digital`, leave or fill in the business email, and continue.
+Dê a ela o nome `Fieldstone Digital`, deixe ou preencha o e-mail comercial e continue.
 
-Pass: you land on the dashboard with zero totals. A short tour opens the first time; skip it or step through it. **Settings** shows exactly four tabs: Business, Branding, Invoices, Account.
+Sucesso: você chega ao painel com todos os totais zerados. Um breve tour é aberto na primeira vez; ignore-o ou avance por ele. **Configurações** mostra exatamente quatro abas: Empresa, Identidade visual, Faturas e Conta.
 
-## 9. Add a client
+## 9. Adicione um cliente
 
-**Clients**, **Add Client**: name `Harbor & Lane`, email `billing@harborlane.example`. Choose **Create Client**.
+Em **Clientes**, escolha **Adicionar cliente**, informe o nome `Harbor & Lane` e o e-mail `billing@harborlane.example`. Depois, escolha **Criar cliente**.
 
-Pass: the client appears in the list with a total invoiced of $0.00.
+Sucesso: o cliente aparece na lista com total faturado de $0.00.
 
-## 10. Create an invoice
+## 10. Crie uma fatura
 
-**Invoices**, **New Invoice**: client Harbor & Lane, one line `Website retainer`, quantity 1, rate 1500. Optionally fill in **Payment Instructions**. Choose **Save & Send**. The invoice is saved and a send dialog opens; close it, because email is not set up yet (step 15). Then open the **...** menu and choose **Mark as Sent**: a draft has no client page, and marking it sent is how you issue an invoice you deliver yourself.
+Em **Faturas**, escolha **Nova fatura** e selecione Harbor & Lane. Adicione o item `Manutenção do site`, com quantidade 1 e valor unitário 1500. Se quiser, preencha **Instruções de pagamento**. Escolha **Salvar e enviar**. A fatura é salva e uma janela de envio é aberta; feche-a, pois o e-mail ainda não está configurado (etapa 15). Em seguida, abra o menu **...** e escolha **Marcar como enviada**: um rascunho não tem página do cliente, e marcá-lo como enviado é a forma de emitir uma fatura que você entregará por conta própria.
 
-Pass: the invoice shows status sent, the business's first invoice number (`INV-0001`) and a total of $1,500.00.
+Sucesso: a fatura mostra o status enviada, o primeiro número de fatura da empresa (`INV-0001`) e o total de $1,500.00.
 
-## 11. Download the PDF
+## 11. Baixe o PDF
 
-On the invoice, open the **...** menu and choose **Download PDF**.
+Na fatura, abra o menu **...** e escolha **Baixar PDF**.
 
-Pass: a PDF downloads and shows Fieldstone Digital, Harbor & Lane, the line item and 1,500.00.
+Sucesso: o PDF é baixado e mostra Fieldstone Digital, Harbor & Lane, o item e 1,500.00.
 
-## 12. Open the client's view
+## 12. Abra a visualização do cliente
 
-From the invoice's **...** menu choose **Copy Link**, and open the link in a private browser window.
+No menu **...** da fatura, escolha **Copiar link** e abra o link em uma janela privativa do navegador.
 
-Pass: the page loads without signing in and shows the amount due, a payment section with the invoice's payment instructions (or "Contact the sender to arrange payment" when it has none, because card payments are not set up yet) and a **Download PDF** button.
+Sucesso: a página carrega sem login e mostra o valor devido, uma seção de pagamento com as instruções da fatura (ou "Entre em contato com quem enviou para combinar o pagamento" quando não houver instruções, pois pagamentos com cartão ainda não estão configurados) e um botão **Baixar PDF**.
 
-## 13. Record a payment and connect an agent
+## 13. Registre um pagamento e conecte um agente
 
-Back on the invoice, open the **...** menu, choose **Record Payment**, and record 500 by bank transfer. You land on the Payments list; open the invoice again.
+De volta à fatura, abra o menu **...**, escolha **Registrar pagamento** e registre 500 por transferência bancária. Você chegará à lista Pagamentos; abra a fatura novamente.
 
-Pass: the status is partial and the balance due $1,000.00.
+Sucesso: o status é parcial e o saldo devido é $1,000.00.
 
-Open **Agents**, **Connect**. Pass: the MCP URL shown is `http://localhost:3000/api/mcp`. With Claude Code installed:
+Abra **Agentes** e escolha **Conectar**. Sucesso: a URL MCP exibida é `http://localhost:3000/api/mcp`. Com o Claude Code instalado:
 
 ```sh
-claude mcp add --transport http billr-local http://localhost:3000/api/mcp
+claude mcp add --transport http faturador-local http://localhost:3000/api/mcp
 ```
 
-Run `/mcp` in Claude Code, choose `billr-local`, sign in and approve. Pass: the consent page asks which business and which permissions, and `claude mcp list` shows `billr-local` as connected.
+Execute `/mcp` no Claude Code, escolha `faturador-local`, entre e aprove. Sucesso: a página de consentimento pergunta qual empresa e quais permissões, e `claude mcp list` mostra `faturador-local` como conectado.
 
-## 14. Optional: card payments through your Stripe account (test mode)
+## 14. Opcional: pagamentos com cartão pela sua conta Stripe (modo de teste)
 
-Needs a Stripe account in test mode and the [Stripe CLI](https://docs.stripe.com/stripe-cli). Stop the dev server. In `.env.local` set `STRIPE_SECRET_KEY` (`sk_test_...`) and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (`pk_test_...`). In a second terminal run:
+É necessária uma conta Stripe em modo de teste e a [Stripe CLI](https://docs.stripe.com/stripe-cli). Pare o servidor de desenvolvimento. Em `.env.local`, defina `STRIPE_SECRET_KEY` (`sk_test_...`) e `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (`pk_test_...`). Em um segundo terminal, execute:
 
 ```sh
 stripe listen --forward-to localhost:3000/api/stripe/webhook
 ```
 
-Copy the `whsec_...` secret it prints into `STRIPE_WEBHOOK_SECRET` and start the dev server again. **Agents**, **Payments** now says card payments are on, in test mode. Open the invoice's public link and pay the balance with card `4242 4242 4242 4242`, any future expiry, any CVC.
+Copie o segredo `whsec_...` impresso para `STRIPE_WEBHOOK_SECRET` e inicie novamente o servidor de desenvolvimento. Agora, em **Agentes**, abra **Pagamentos**. A página informa que os pagamentos com cartão estão ativados, em modo de teste. Abra o link público da fatura e pague o saldo com o cartão `4242 4242 4242 4242`, qualquer data de validade futura e qualquer CVC.
 
-Pass: the payment succeeds, the `stripe listen` terminal shows `payment_intent.succeeded` answered with 200, and the invoice becomes paid.
+Sucesso: o pagamento é aprovado, o terminal `stripe listen` mostra que `payment_intent.succeeded` recebeu resposta 200, e a fatura passa para paga.
 
-## 15. Optional: invoice email through Resend
+## 15. Opcional: envio de faturas por e-mail via Resend
 
-Needs your own Resend account and a verified sending domain. Stop the dev server, add to `.env.local`:
+É necessária uma conta Resend própria e um domínio de envio verificado. Pare o servidor de desenvolvimento e adicione a `.env.local`:
 
 ```
 RESEND_API_KEY=re_your_key
-RESEND_INVOICE_FROM=Fieldstone Digital <invoices@your-verified-domain.example>
+RESEND_INVOICE_FROM=Fieldstone Digital <invoices@seu-dominio-verificado.example>
 ```
 
-Start the dev server again, change the client's email to an address you own, and use **Send Invoice** on an invoice.
+Inicie novamente o servidor de desenvolvimento, altere o e-mail do cliente para um endereço seu e escolha **Enviar fatura** em uma fatura.
 
-Pass: the email arrives at your address with the invoice PDF attached.
+Sucesso: o e-mail chega ao seu endereço com o PDF da fatura anexado.
 
-## 16. Optional: the production container
+## 16. Opcional: o contêiner de produção
 
-Follow "Trying the container against the local development database" in [self-hosting.md](self-hosting.md). Stop the dev server first. If you chose another app port in step 2, also set `BILLR_PORT` to it, so the container listens on the address `.env.local` names.
+Siga "Testar o contêiner com o banco de dados local de desenvolvimento" em [self-hosting.md](self-hosting.md). Primeiro, pare o servidor de desenvolvimento. Se escolheu outra porta para o aplicativo na etapa 2, defina também `BILLR_PORT` com esse valor, para que o contêiner escute no endereço indicado em `.env.local`.
 
-Pass: `docker compose --env-file .env.local ps` reports the app `healthy`, and you can sign in at http://localhost:3000 and see Harbor & Lane.
+Sucesso: `docker compose --env-file .env.local ps` informa que o aplicativo está `healthy`, e você consegue entrar em http://localhost:3000 e ver Harbor & Lane.
 
-## 17. Clean up
+## 17. Limpeza
 
 ```sh
 docker compose --env-file .env.local down
 supabase stop --workdir .self-host/billr-local-56421
 ```
 
-Pass: both commands finish. Your local data stays until you delete the Docker volumes yourself.
+Sucesso: ambos os comandos terminam. Seus dados locais permanecem até que você exclua os volumes do Docker por conta própria.
 
-## Reporting
+## Relatório
 
-For each step write PASS or FAIL. For a FAIL, include the step number, the command or click, the exact message, and your operating system, `node --version` and `supabase --version`. Never paste the contents of `.env.local`.
+Para cada etapa, escreva PASS ou FAIL. Em caso de FAIL, inclua o número da etapa, o comando ou clique, a mensagem exata, seu sistema operacional, `node --version` e `supabase --version`. Nunca cole o conteúdo de `.env.local`.

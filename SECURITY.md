@@ -1,57 +1,57 @@
-# Security Policy
+# Política de segurança
 
-## Supported versions
+## Versões com suporte
 
-| Version | Supported |
+| Versão | Com suporte |
 | --- | --- |
-| Latest commit on `main` | Yes. Fixes land here. |
-| Older commits and forks | No. Update to the latest `main`. |
+| Último commit em `pt-br` | Sim. As correções são feitas aqui. |
+| Commits anteriores e forks | Não. Atualize para o último commit da branch `pt-br`. |
 
-Updating means pulling the latest source and applying the migrations you do not have yet. See [docs/self-hosting.md](docs/self-hosting.md).
+Atualizar significa obter o código-fonte mais recente e aplicar as migrações que ainda não estão instaladas. Consulte [docs/self-hosting.md](docs/self-hosting.md).
 
-## Reporting a vulnerability
+## Como relatar uma vulnerabilidade
 
-Report privately through GitHub: open this repository's **Security** tab and choose **Report a vulnerability**. Do not open a public issue, a pull request or a discussion for a security problem.
+Faça o relato em particular pelo GitHub: abra a aba **Segurança** deste repositório e escolha **Relatar uma vulnerabilidade**. Não abra uma issue pública, um pull request nem uma discussão sobre um problema de segurança.
 
-Include:
+Inclua:
 
-- the commit you are running,
-- a minimal reproduction using **fictional data only**,
-- the impact you believe it has.
+- o commit que você está executando,
+- uma reprodução mínima usando **somente dados fictícios**,
+- o impacto que você acredita que o problema possa causar.
 
-Do not post credentials, invoices, customer details or exploit instructions in public.
+Não publique credenciais, faturas, dados de clientes ou instruções de exploração em público.
 
-## What to expect
+## O que esperar
 
-- **Acknowledgement within 3 business days.**
-- **An initial assessment within 10 business days**, saying whether the report is accepted, how severe it is, and what happens next.
-- **Updates at least every 14 days** while the report is open.
-- Credit in [CHANGELOG.md](CHANGELOG.md) when the fix ships, unless you ask to stay anonymous.
+- **Confirmação de recebimento em até 3 dias úteis.**
+- **Uma avaliação inicial em até 10 dias úteis**, informando se o relato foi aceito, a gravidade e os próximos passos.
+- **Atualizações pelo menos a cada 14 dias** enquanto o relato estiver em aberto.
+- Crédito em [CHANGELOG.md](CHANGELOG.md) quando a correção for publicada, a menos que você peça para permanecer anônimo.
 
-Billr is maintained by a very small team. These are commitments about answering you, not about how fast a fix can be engineered.
+O Faturador é mantido por uma equipe muito pequena. Esses são compromissos de resposta, não de prazo para desenvolver uma correção.
 
-## Scope
+## Abrangência
 
-**In scope**
+**Dentro do escopo**
 
-- The application source in this repository, including the MCP server, the OAuth endpoints, the API key model and the database migrations.
-- Tenant isolation problems: reading, writing or inferring another business's data.
-- Authentication and authorization bypasses, including an API key acting beyond its permissions or its business scope, and getting past closed sign-up.
-- Leaks through the public invoice and estimate pages, which anyone holding the link can reach.
-- The agent toolkit in `packages/agent-kit` and the plugin packs in `plugins`.
+- O código-fonte do aplicativo neste repositório, incluindo o servidor MCP, os endpoints OAuth, o modelo de chaves de API e as migrações do banco de dados.
+- Problemas de isolamento entre empresas: ler, gravar ou inferir dados de outra empresa.
+- Contornos de autenticação e autorização, incluindo uma chave de API que atue além de suas permissões ou de seu escopo empresarial, e a possibilidade de contornar o cadastro fechado.
+- Vazamentos pelas páginas públicas de faturas e orçamentos, acessíveis a qualquer pessoa que tenha o link.
+- O kit de ferramentas para agentes em `packages/agent-kit` e os pacotes de plugins em `plugins`.
 
-**Out of scope**
+**Fora do escopo**
 
-- An installation someone else operates. Report it to that operator.
-- Misconfiguration of your own deployment: exposed database ports, a service-role key in a browser bundle, a development Supabase stack on the public internet, missing TLS.
-- The browser anon or publishable key being visible. It is public by design; row-level security and server-side checks enforce access.
-- Denial of service through volume, social engineering, physical access, and problems in third-party services (Supabase, Stripe, Resend, a hosting provider) not caused by Billr's code.
-- Scanner output with no demonstrated impact.
+- Uma instalação operada por outra pessoa. Relate o problema a essa pessoa operadora.
+- Configuração incorreta da sua própria instalação: portas do banco de dados expostas, chave service-role em um pacote do navegador, pilha Supabase de desenvolvimento na internet pública ou ausência de TLS.
+- A chave anon ou publishable do navegador estar visível. Ela é pública por definição; a segurança em nível de linha e as verificações no servidor impõem o controle de acesso.
+- Negação de serviço por volume, engenharia social, acesso físico e problemas em serviços de terceiros (Supabase, Stripe, Resend ou provedor de hospedagem) que não tenham sido causados pelo código do Faturador.
+- Resultados de scanners sem impacto demonstrado.
 
-## Your installation
+## Sua instalação
 
-You hold your installation's keys, apply its upgrades and own its data. Keep Supabase service-role keys, Stripe secrets, email credentials and backups private. Run the latest `main` with every migration applied, serve it over HTTPS, restrict database and admin ports, and test your backups. Nothing in Billr reports to anyone else.
+Você controla as chaves da sua instalação, aplica as atualizações e é responsável pelos dados. Mantenha em sigilo as chaves service-role do Supabase, os segredos Stripe, as credenciais de e-mail e os backups. Execute o último commit da branch `pt-br` com todas as migrações aplicadas, disponibilize o serviço por HTTPS, restrinja as portas do banco de dados e de administração e teste seus backups. O Faturador não envia dados da sua instalação a terceiros.
 
-## No bounty
+## Sem recompensa
 
-There is no bug bounty and no payment for reports. What we offer is a real answer, a fix, and public credit if you want it.
+Não há programa de recompensa por bugs nem pagamento por relatos. Oferecemos uma resposta concreta, uma correção e crédito público, se você quiser.

@@ -1,81 +1,81 @@
-name: Bug report
-description: Something in this source behaves incorrectly and you can reproduce it.
-title: '[Bug]: '
+name: Relato de bug
+description: Algo neste código-fonte funciona incorretamente e você consegue reproduzir o problema.
+title: '[Erro]: '
 labels: ['bug']
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report this.
+        Agradecemos por dedicar seu tempo para relatar isso.
 
-        **Do not use this form for a security problem.** Report vulnerabilities privately through this repository's Security tab; see the security policy.
+        **Não use este formulário para problemas de segurança.** Relate vulnerabilidades em privado pela aba Security deste repositório; consulte a política de segurança.
 
-        Never paste a service-role key, a Stripe secret, an API key, a database URL with a password, or a real invoice or client record. Reproduce with fictional data.
+        Nunca cole uma chave de service role, um segredo do Stripe, uma chave de API, uma URL de banco de dados com senha ou uma fatura ou registro real de cliente. Reproduza o problema com dados fictícios.
   - type: checkboxes
     id: preflight
     attributes:
-      label: Before you file
+      label: Antes de enviar
       options:
-        - label: This is not a security vulnerability.
+        - label: Isto não é uma vulnerabilidade de segurança.
           required: true
-        - label: I searched existing issues and did not find this one.
+        - label: Pesquisei as issues existentes e não encontrei esta.
           required: true
-        - label: My reproduction uses fictional data and contains no secrets.
+        - label: Minha reprodução usa dados fictícios e não contém segredos.
           required: true
   - type: textarea
     id: what-happened
     attributes:
-      label: What happened
-      description: What did you expect, and what happened instead?
-      placeholder: Converting an estimate to an invoice kept the estimate open.
+      label: O que aconteceu
+      description: O que você esperava e o que aconteceu no lugar?
+      placeholder: Ao converter um orçamento em fatura, o orçamento continuou aberto.
     validations:
       required: true
   - type: textarea
     id: reproduce
     attributes:
-      label: Steps to reproduce
-      description: The exact commands or clicks, from a known starting state.
+      label: Etapas para reproduzir
+      description: Os comandos ou cliques exatos, a partir de um estado inicial conhecido.
       placeholder: |
         1. npm run setup:local
-        2. Create a business and a client
-        3. Create an estimate, approve it, convert it
-        4. Reload the estimates list
+        2. Crie uma empresa e um cliente
+        3. Crie um orçamento, aprove-o e converta-o
+        4. Recarregue a lista de orçamentos
     validations:
       required: true
   - type: textarea
     id: logs
     attributes:
-      label: Output, logs or error text
-      description: Paste the relevant output. Remove secrets first. This is rendered as a code block.
+      label: Saída, logs ou texto do erro
+      description: Cole a saída relevante. Remova os segredos antes. O conteúdo será exibido como bloco de código.
       render: shell
   - type: dropdown
     id: install
     attributes:
-      label: How are you running Billr?
+      label: Como você está executando o Faturador?
       options:
-        - Local development (npm run setup:local)
-        - Docker or Compose
-        - Another way
+        - Desenvolvimento local (npm run setup:local)
+        - Docker ou Compose
+        - Outra forma
     validations:
       required: true
   - type: input
     id: version
     attributes:
-      label: Version
-      description: The commit you are on (git rev-parse --short HEAD).
+      label: Versão
+      description: O commit em que você está (git rev-parse --short HEAD).
       placeholder: 'commit abc1234'
     validations:
       required: true
   - type: input
     id: environment
     attributes:
-      label: Environment
-      description: Node.js version, operating system, browser if relevant.
+      label: Ambiente
+      description: Versão do Node.js, sistema operacional e navegador, se relevante.
       placeholder: 'Node 22.23.1, macOS 15, Firefox 130'
     validations:
       required: true
   - type: textarea
     id: area
     attributes:
-      label: Anything else
-      description: Whether it affects the workspace, the MCP tools, a migration, the agent toolkit, or several of them.
+      label: Mais alguma coisa
+      description: Informe se isso afeta o workspace, as ferramentas MCP, uma migração, o kit de ferramentas de agentes ou vários deles.

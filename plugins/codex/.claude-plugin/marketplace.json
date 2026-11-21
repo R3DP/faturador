@@ -1,7 +1,7 @@
 {
   "name": "billr",
   "interface": {
-    "displayName": "Billr"
+    "displayName": "Faturador"
   },
   "plugins": [
     {

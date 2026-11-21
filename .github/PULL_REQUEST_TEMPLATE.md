@@ -1,14 +1,14 @@
-## What this changes
+## O que esta alteração muda
 
-<!-- The problem, and the resulting behaviour. One concern per pull request. -->
+<!-- O problema e o comportamento resultante. Um assunto por pull request. -->
 
-## Why
+## Por quê
 
-<!-- What made the current behaviour wrong or insufficient. Link the issue if there is one. -->
+<!-- O que tornou o comportamento atual incorreto ou insuficiente. Inclua o link da issue, se houver. -->
 
-## How it was validated
+## Como foi validada
 
-<!-- Paste the commands you ran and their results. -->
+<!-- Cole os comandos executados e os resultados. -->
 
 ```
 cd app
@@ -19,29 +19,29 @@ npm run typecheck
 npm run build
 ```
 
-## Checklist
+## Lista de verificação
 
-- [ ] One concern, and the diff is as small as that concern allows.
-- [ ] Tests added or updated, including a test that would have caught the bug.
-- [ ] Unit tests, installation checks, lint, type-check and a production build all pass.
-- [ ] No em-dashes in anything a user can read, and no fabricated metrics or claims.
-- [ ] Fixtures and sample content use the fictional cast on `.example` domains. No real person, business, client, domain or email address, including my own.
-- [ ] No secrets, environment files, database dumps, real invoices, logs or build output are committed.
+- [ ] Um único assunto, e o diff é tão pequeno quanto esse assunto permite.
+- [ ] Testes adicionados ou atualizados, incluindo um teste que teria detectado o bug.
+- [ ] Os testes unitários, as verificações de instalação, o lint, a verificação de tipos e uma compilação de produção passaram.
+- [ ] Não há travessões longos em conteúdo que uma pessoa usuária possa ler, nem métricas ou afirmações inventadas.
+- [ ] Dados de teste e conteúdo de exemplo usam o elenco fictício em domínios `.example`. Nenhuma pessoa, empresa, cliente, domínio ou endereço de e-mail real, inclusive os meus.
+- [ ] Nenhum segredo, arquivo de ambiente, despejo do banco de dados, fatura real, log ou artefato de compilação foi incluído no commit.
 
-### If this touches the database
+### Se esta alteração tocar o banco de dados
 
-- [ ] A new migration with the next number; no applied migration was modified or renumbered.
-- [ ] Verified with `supabase db reset` and `supabase migration up`, and `npm run test:sql` passes.
-- [ ] Every `SECURITY DEFINER` function ends with `SET search_path = public, pg_temp`.
-- [ ] Grants revoked from `anon` and `authenticated` and granted back explicitly, asserted in the same migration.
-- [ ] Public payloads still build from a column allowlist.
-- [ ] `app/src/types/database.ts` regenerated rather than hand-edited.
+- [ ] Uma nova migração com o próximo número; nenhuma migração aplicada foi modificada ou renumerada.
+- [ ] Verificada com `supabase db reset` e `supabase migration up`, e `npm run test:sql` passou.
+- [ ] Toda função `SECURITY DEFINER` termina com `SET search_path = public, pg_temp`.
+- [ ] Concessões revogadas de `anon` e `authenticated` e concedidas novamente de forma explícita, com verificação na mesma migração.
+- [ ] Os dados públicos continuam sendo montados a partir de uma lista permitida de colunas.
+- [ ] `app/src/types/database.ts` foi gerado novamente, não editado manualmente.
 
-### If this touches MCP tools
+### Se esta alteração tocar ferramentas MCP
 
-- [ ] Data is reached through the scoped database helpers, never an unscoped service-role query.
-- [ ] Missing and out-of-scope records return the same generic error.
-- [ ] The tool is categorised under exactly one permission.
-- [ ] The tool catalog test passes and the agent toolkit contracts are in step.
-- [ ] Retryable writes take a stable request id and are idempotent.
-- [ ] Any breaking change to a tool name, input schema or field meaning is called out above.
+- [ ] Os dados são acessados por meio dos auxiliares de banco com escopo limitado, nunca por uma consulta sem escopo com service-role.
+- [ ] Registros inexistentes e fora do escopo retornam o mesmo erro genérico.
+- [ ] A ferramenta está categorizada em exatamente uma permissão.
+- [ ] O teste do catálogo de ferramentas passou e os contratos do kit de ferramentas de agentes estão sincronizados.
+- [ ] Gravações com novas tentativas possíveis recebem um identificador de solicitação estável e são idempotentes.
+- [ ] Qualquer alteração incompatível no nome de uma ferramenta, no esquema de entrada ou no significado de um campo está indicada acima.

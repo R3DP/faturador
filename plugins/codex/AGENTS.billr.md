@@ -1,60 +1,61 @@
-# Billr (append to your AGENTS.md)
+# Faturador (derivado do upstream Billr; acrescente ao seu AGENTS.md)
 
-Codex reads `AGENTS.md` from your Codex home directory and from repositories,
-with files closer to the working directory taking precedence. If you would
-rather not install a plugin or a skill, paste the section below into the
-`AGENTS.md` you already keep, and Codex will follow it whenever it touches
-billing.
+O Codex lê o `AGENTS.md` do diretório pessoal do Codex e dos repositórios, dando precedência
+aos arquivos mais próximos do diretório de trabalho. Se preferir não instalar um plugin nem
+uma skill, cole a seção abaixo no `AGENTS.md` que você já mantém; o Codex a seguirá sempre
+que lidar com faturamento.
 
-This file is deliberately **not** named `AGENTS.md`: dropping a file with that
-name into a repository would override the project's own instructions. Copy the
-section, do not copy the file.
+Este arquivo deliberadamente **não** se chama `AGENTS.md`: adicionar ao repositório um
+arquivo com esse nome substituiria as instruções próprias do projeto. Copie a seção, não o
+arquivo.
 
-The full instructions are in `plugins/codex/billr/skills/billr/SKILL.md`, with
-the tool list in `references/tools.md` and the procedures in
-`references/workflows.md`. The section below is the short form.
+As instruções completas estão em `plugins/codex/billr/skills/billr/SKILL.md`, com a lista
+de ferramentas em `references/tools.md` e os procedimentos em `references/workflows.md`. A
+seção abaixo é a versão resumida.
 
 ---
 
-## Billing through Billr
+## Faturamento pelo Faturador
 
-Billr is reachable as the `billr` MCP server. Tools are listed in
-`references/tools.md` next to this file; never guess a tool name.
+O servidor MCP local `faturador` conecta à sua instalação do Faturador, derivada do projeto upstream Billr. As
+ferramentas estão listadas em `references/tools.md`, ao lado deste arquivo; nunca tente
+adivinhar o nome de uma ferramenta.
 
-**The one rule.** Read anything the connection is scoped to. Draft on request.
-Never send a document to a client and never move recorded money without being
-asked to, in the turn you are asked.
+**A única regra.** Leia tudo o que estiver dentro do escopo da conexão. Crie rascunhos
+quando solicitado. Nunca envie um documento a um cliente nem movimente dinheiro registrado
+sem que isso seja solicitado, na mesma interação.
 
-- Start with `list_businesses`, then `get_business` for currency and tax
-  settings. Never assume a currency.
-- `create_invoice` and `create_estimate` produce drafts. Leave them that way.
-  `send_invoice` and `send_estimate` reach a client; call them only when told
-  to send, naming the document, in that turn.
-- When billing logged work, pass `time_entry_ids`, `expense_ids` or
-  `engagement_entry_ids` and leave `line_items` out. The server prices the
-  work and links the source records, so nothing is billed twice.
-- State the client, amount and currency before any call that carries money,
-  and say where the number came from. Never round, re-price or invent a rate.
-- Write tools take a `request_id` UUID. Fresh id per intended operation; reuse
-  the same id with identical input when retrying a call that may have half
-  landed.
-- `record_payment` records money that already arrived outside Billr, and only
-  when the person has confirmed it landed. Corrections go through
-  `update_payment` and `void_payment`, never an offsetting negative payment.
-  Stripe-collected payments cannot be edited or voided: refund in Stripe, and
-  the refund arrives back as its own ledger entry.
-- Task billing: `list_billing_policies` (agents cannot approve pricing),
-  `create_task`, `start_task`, `heartbeat_task` every 30 to 60 seconds,
-  `pause_task` while waiting on a person, `record_task_usage` with a real
-  provider cost and its source, then `complete_task`. A human approves before
-  anything is invoiced.
-- Engagements: `list_ready_to_bill` is the "what should I invoice today" list.
-  Bill entries by passing `engagement_entry_ids` to `create_invoice`.
-  `complete_engagement` cannot be reopened.
-- Errors: 429 means the 120 requests per 60 seconds per key limit, so back off
-  for `Retry-After`. `plan_required` means the hosted plan lapsed and writes
-  are refused while reads keep working. "API key is expired, revoked or lacks
-  permission for this tool" means stop and ask for a reconnect, not a retry.
-- Never write a Billr key into a file, a commit or a reply. Use
-  `bearer_token_env_var = "BILLR_API_KEY"` so the key stays in the
-  environment.
+- Comece com `list_businesses` e, depois, use `get_business` para consultar as configurações
+  de moeda e impostos. Nunca presuma uma moeda.
+- `create_invoice` e `create_estimate` criam rascunhos. Mantenha-os assim. `send_invoice` e
+  `send_estimate` chegam ao cliente; só os chame quando houver instrução para enviar, com o
+  documento identificado, nesta interação.
+- Ao faturar trabalho registrado, informe `time_entry_ids`, `expense_ids` ou
+  `engagement_entry_ids` e omita `line_items`. O servidor calcula o preço do trabalho e
+  vincula os registros de origem, evitando cobrança duplicada.
+- Informe o cliente, o valor e a moeda antes de qualquer chamada que envolva dinheiro, e
+  diga de onde veio o valor. Nunca arredonde, recalcule o preço nem invente uma taxa.
+- As ferramentas de escrita recebem um UUID `request_id`. Use um ID novo para cada operação
+  pretendida; ao repetir uma chamada que talvez tenha sido parcialmente concluída, reutilize
+  o mesmo ID com entradas idênticas.
+- `record_payment` registra dinheiro que já chegou por fora do Faturador, e somente quando a
+  pessoa confirmar o recebimento. Corrija por meio de `update_payment` e `void_payment`,
+  nunca com um pagamento negativo para compensar. Pagamentos cobrados pelo Stripe não podem
+  ser editados nem anulados: faça o reembolso no Stripe, e o reembolso retornará como um
+  lançamento próprio no livro-razão.
+- Faturamento de tarefas: use `list_billing_policies` (agentes não podem aprovar preços),
+  `create_task`, `start_task`, `heartbeat_task` a cada 30 a 60 segundos, `pause_task`
+  enquanto aguarda alguém, `record_task_usage` com um custo real do provedor e sua fonte, e
+  então `complete_task`. Uma pessoa aprova antes de qualquer faturamento.
+- Contratos: `list_ready_to_bill` é a lista de "o que devo faturar hoje". Fature lançamentos
+  passando `engagement_entry_ids` para `create_invoice`. Não é possível reabrir um contrato
+  concluído com `complete_engagement`.
+- Erros: 429 significa o limite de 120 solicitações por 60 segundos por chave; portanto,
+  aguarde conforme `Retry-After`. `plan_required` é uma resposta do serviço upstream Billr
+  hospedado: o plano desse serviço expirou e as gravações são recusadas, enquanto as leituras
+  continuam funcionando. Esse erro não se aplica ao Faturador auto-hospedado; se aparecer,
+  pare e confira se a URL MCP aponta para o serviço pretendido. O erro "API key is expired,
+  revoked or lacks permission for this tool" significa parar e pedir uma nova conexão, não
+  repetir a chamada.
+- Nunca grave uma chave do Faturador em um arquivo, commit ou resposta. Use
+  `bearer_token_env_var = "BILLR_API_KEY"` para manter a chave no ambiente.

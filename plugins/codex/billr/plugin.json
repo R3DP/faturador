@@ -2,9 +2,9 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "billr",
   "version": "1.2.0",
-  "description": "Bill clients through Billr: log billable time and expenses, draft invoices and estimates, check balances and unbilled work, run agent task billing sessions, and work engagement schedules. Reads freely, drafts on request, and never sends anything to a client.",
+  "description": "Fature clientes com o Faturador: registre horas faturáveis e despesas, prepare rascunhos de faturas e orçamentos, confira saldos e trabalho não faturado, execute sessões de cobrança de tarefas do agente e acompanhe cronogramas de contratos. Consulta sem restrições, prepara rascunhos quando solicitado e nunca envia nada a um cliente.",
   "author": {
-    "name": "Billr",
+    "name": "Faturador",
     "email": "help@billr.cc",
     "url": "https://billr.cc"
   },
@@ -12,19 +12,19 @@
   "repository": "https://github.com/ethanplusai/billr",
   "license": "Apache-2.0",
   "keywords": [
-    "invoicing",
-    "billing",
-    "time-tracking",
-    "estimates",
-    "freelance"
+    "faturamento",
+    "cobrança",
+    "controle de horas",
+    "orçamentos",
+    "profissionais autônomos"
   ],
   "extensions": {
     "com.openai": {
       "interface": {
-        "displayName": "Billr",
-        "shortDescription": "Invoices, time and payments",
-        "longDescription": "Billr is invoicing for independent operators and small studios, built so an agent can do the paperwork. Ask what is unpaid or ready to bill, log time and expenses, draft invoices and estimates, and see them as cards right in the conversation. Billr reads freely and drafts on request. Nothing is sent to a client, charged or deleted unless you ask for it and the connection you approved allows it.",
-        "developerName": "Billr",
+        "displayName": "Faturador",
+        "shortDescription": "Faturas, horas e pagamentos",
+        "longDescription": "O Faturador é uma solução de faturamento para profissionais autônomos e pequenos estúdios, criada para que um agente cuide da papelada. Pergunte o que está pendente ou pronto para faturar, registre horas e despesas, prepare rascunhos de faturas e orçamentos e veja-os como cartões diretamente na conversa. O Faturador consulta sem restrições e prepara rascunhos quando solicitado. Nada é enviado a um cliente, cobrado ou excluído sem que você solicite e que a conexão aprovada permita.",
+        "developerName": "Faturador",
         "category": "Productivity",
         "capabilities": [
           "Read",
@@ -34,9 +34,9 @@
         "privacyPolicyURL": "https://billr.cc/legal/privacy",
         "termsOfServiceURL": "https://billr.cc/legal/terms",
         "defaultPrompt": [
-          "What is ready to bill today in Billr?",
-          "Show my unpaid and overdue invoices in Billr.",
-          "Log 3 hours for Harbor & Lane in Billr: homepage redesign."
+          "O que está pronto para faturar hoje no Faturador?",
+          "Mostre minhas faturas não pagas e vencidas no Faturador.",
+          "Registre 3 horas para Harbor & Lane no Faturador: reformulação da página inicial."
         ],
         "brandColor": "#2563EB",
         "composerIcon": "./assets/icon.png",

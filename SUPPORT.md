@@ -1,42 +1,42 @@
-# Support
+# Suporte
 
-## Where to ask
+## Onde pedir ajuda
 
-| You want to | Go to |
+| Você quer | Acesse |
 | --- | --- |
-| Ask a question about running Billr | **GitHub Issues** on this repository; start the title with "Question:" |
-| Report a reproducible bug | **GitHub Issues**, using the bug report form |
-| Suggest a feature | **GitHub Issues**, using the feature request form |
-| Report a vulnerability | Privately, through the **Security** tab. See [SECURITY.md](SECURITY.md) |
+| Fazer uma pergunta sobre como executar o Faturador | Issues do GitHub neste repositório; comece o título com "Dúvida:" |
+| Relatar um bug reproduzível | Issues do GitHub, usando o formulário de relato de bug |
+| Sugerir um recurso | Issues do GitHub, usando o formulário de solicitação de recurso |
+| Relatar uma vulnerabilidade | Em particular, pela aba **Segurança (Security)**. Consulte [SECURITY.md](SECURITY.md) |
 
-## Before you ask
+## Antes de perguntar
 
-Most setup questions are answered by [README.md](README.md), [docs/self-hosting.md](docs/self-hosting.md) and [docs/fresh-machine-test.md](docs/fresh-machine-test.md). If the answer is not there, say so: a question the documentation should have answered is a documentation bug.
+A maioria das dúvidas de configuração é respondida por [README.md](README.md), [docs/self-hosting.md](docs/self-hosting.md) e [docs/fresh-machine-test.md](docs/fresh-machine-test.md). Se a resposta não estiver lá, diga isso: uma pergunta que a documentação deveria responder indica um problema na documentação.
 
-When you ask, include:
+Ao pedir ajuda, inclua:
 
-- how you run Billr (local development, Docker, which host),
-- the commit you are on,
-- Node.js version and operating system,
-- the exact command you ran and its output, with secrets removed,
-- what you expected and what happened instead.
+- como você executa o Faturador (desenvolvimento local, Docker e qual host),
+- o commit em que você está,
+- a versão do Node.js e o sistema operacional,
+- o comando exato executado e sua saída, sem segredos,
+- o que você esperava e o que aconteceu.
 
-Never paste a service-role key, a Stripe secret, an API key, a database URL with a password, or a real invoice or client record. Reproduce with fictional data.
+Nunca cole uma chave service-role, um segredo Stripe, uma chave de API, uma URL de banco de dados com senha nem um registro real de fatura ou cliente. Reproduza o problema com dados fictícios.
 
-## What maintainers help with
+## Com o que as pessoas mantenedoras ajudam
 
-- Bugs in this source, including the MCP server, the migrations, the agent toolkit and the plugins.
-- Documentation that is wrong, missing or misleading.
-- Questions about the intended behaviour of a feature or a tool contract.
+- Bugs neste código-fonte, incluindo o servidor MCP, as migrações, o kit de ferramentas de agentes e os plugins.
+- Documentação incorreta, ausente ou enganosa.
+- Dúvidas sobre o comportamento esperado de um recurso ou contrato de ferramenta.
 
-## What is yours to run
+## O que cabe a você operar
 
-The maintainers do not operate your installation and cannot see it:
+As pessoas mantenedoras não operam sua instalação e não podem acessá-la:
 
-- **Infrastructure:** Supabase or Postgres, containers, reverse proxies, TLS, DNS, storage and cost.
-- **Third-party accounts:** your Stripe account, your Resend account and sending domain, your OAuth provider apps.
-- **Your data:** backups, restores, retention and recovering from a deletion. There is no importer for historical invoices.
-- **Your modifications:** a fork, a changed policy or an added service-role caller is supported by whoever made it.
-- **Compliance:** tax treatment, invoice legality in your jurisdiction, data residency.
+- **Infraestrutura:** Supabase ou Postgres, contêineres, proxies reversos, TLS, DNS, armazenamento e custos.
+- **Contas de terceiros:** sua conta Stripe, sua conta Resend e o domínio de envio, além dos aplicativos do seu provedor OAuth.
+- **Seus dados:** backups, restaurações, retenção e recuperação após uma exclusão. Não há importador de faturas históricas.
+- **Suas modificações:** um fork, uma política alterada ou uma chamada service-role adicionada têm suporte de quem as criou.
+- **Conformidade:** tratamento fiscal, legalidade das faturas na sua jurisdição e residência dos dados.
 
-Support is best effort from a very small team, with no service level agreement.
+O suporte é oferecido conforme a disponibilidade de uma equipe muito pequena, sem acordo de nível de serviço.
