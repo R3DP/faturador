@@ -2,9 +2,9 @@ import { z } from 'zod'
 
 const lineItemSchema = z.object({
   id: z.string(),
-  description: z.string().min(1, 'Description is required').max(2000),
-  quantity: z.number().min(0.000001, 'Quantity must be greater than 0').max(99999999).multipleOf(0.000001),
-  rate: z.number().min(0, 'Rate must be 0 or greater').max(99999999).multipleOf(0.000001),
+  description: z.string().min(1, 'A descrição é obrigatória').max(2000),
+  quantity: z.number().min(0.000001, 'A quantidade deve ser maior que 0').max(99999999).multipleOf(0.000001),
+  rate: z.number().min(0, 'O valor unitário deve ser igual ou maior que 0').max(99999999).multipleOf(0.000001),
   amount: z.number(),
   tax_rate: z.number().min(0).max(100).default(0),
   tax_amount: z.number().default(0),
@@ -13,20 +13,20 @@ const lineItemSchema = z.object({
 })
 
 export const invoiceSchema = z.object({
-  client_id: z.string().min(1, 'Client is required'),
+  client_id: z.string().min(1, 'O cliente é obrigatório'),
   invoice_number: z
     .string()
-    .min(1, 'Invoice number is required')
+    .min(1, 'O número da fatura é obrigatório')
     .regex(
       /^[A-Za-z0-9\-_/ ]{1,40}$/,
-      'Invoice number may only contain letters, numbers, spaces, and - _ / (max 40 chars)'
+      'O número da fatura pode conter apenas letras, números, espaços e - _ / (máximo de 40 caracteres)'
     ),
   issue_date: z.string(),
   due_date: z.string(),
   po_number: z.string().optional(),
   currency: z.string().default('USD'),
   
-  line_items: z.array(lineItemSchema).min(1, 'At least one line item is required'),
+  line_items: z.array(lineItemSchema).min(1, 'É necessário informar pelo menos um item na fatura'),
   
   subtotal: z.number(),
   discount_type: z.enum(['percentage', 'fixed']).default('percentage'),

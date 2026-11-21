@@ -51,58 +51,58 @@
 :root {
   --radius: 0.5rem;
   
-  /* Background & Foreground */
+  /* Plano de fundo e primeiro plano */
   --background: #ffffff;
   --foreground: #111827;
   
-  /* Card */
+  /* Cartão */
   --card: #ffffff;
   --card-foreground: #111827;
   
-  /* Popover */
+  /* Janela flutuante */
   --popover: #ffffff;
   --popover-foreground: #111827;
   
-  /* Primary - Professional Blue */
+  /* Primária - azul profissional */
   --primary: #2563eb;
   --primary-foreground: #ffffff;
   
-  /* Secondary */
+  /* Secundária */
   --secondary: #f3f4f6;
   --secondary-foreground: #1f2937;
   
-  /* Muted */
+  /* Discreto */
   --muted: #f9fafb;
   --muted-foreground: #6b7280;
   
-  /* Accent */
+  /* Destaque */
   --accent: #f3f4f6;
   --accent-foreground: #1f2937;
   
-  /* Destructive */
+  /* Destrutivo */
   --destructive: #ef4444;
   
-  /* Success */
+  /* Sucesso */
   --success: #10b981;
   
-  /* Warning */
+  /* Aviso */
   --warning: #f59e0b;
   
-  /* Border & Input */
+  /* Borda e campo de entrada */
   --border: #e5e7eb;
   --input: #e5e7eb;
   
-  /* Ring - Focus state */
+  /* Anel - estado de foco */
   --ring: #2563eb;
   
-  /* Chart colors */
+  /* Cores dos gráficos */
   --chart-1: #2563eb;
   --chart-2: #10b981;
   --chart-3: #f59e0b;
   --chart-4: #8b5cf6;
   --chart-5: #ec4899;
   
-  /* Sidebar - Light theme */
+  /* Barra lateral - tema claro */
   --sidebar: #f9fafb;
   --sidebar-foreground: #374151;
   --sidebar-primary: #2563eb;
@@ -159,18 +159,18 @@
   }
 }
 
-/* Custom utility classes */
+/* Classes utilitárias personalizadas */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
   
-  /* Tabular figures for numbers/money */
+  /* Algarismos tabulares para números e valores monetários */
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
   
-  /* Custom scrollbar */
+  /* Barra de rolagem personalizada */
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
@@ -195,7 +195,7 @@
   }
 }
 
-/* Invoice print styles */
+/* Estilos de impressão da fatura */
 @media print {
   body {
     background: white !important;

@@ -4,6 +4,7 @@ import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { CalendarIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -39,8 +40,8 @@ import { parseDay } from '@/lib/dates'
 
 const timeEntrySchema = z.object({
   client_id: z.string().optional(),
-  description: z.string().min(1, 'Description is required'),
-  hours: z.coerce.number().min(1 / 3600, 'Log at least one second').max(24),
+  description: z.string().min(1, 'A descrição é obrigatória'),
+  hours: z.coerce.number().min(1 / 3600, 'Registre pelo menos um segundo').max(24),
   rate: z.preprocess((value) => value === '' || value == null ? null : value, z.coerce.number().min(0).nullable()),
   date: z.date(),
   is_billable: z.boolean(),
@@ -89,7 +90,7 @@ export function TimeEntryForm({
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: displayCurrency,
     }).format(amount)
@@ -109,7 +110,7 @@ export function TimeEntryForm({
                 name="date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date</FormLabel>
+                    <FormLabel>Data</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -122,9 +123,9 @@ export function TimeEntryForm({
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {field.value ? (
-                              format(field.value, 'PPP')
+                              format(field.value, 'PPP', { locale: ptBR })
                             ) : (
-                              <span>Pick a date</span>
+                              <span>Escolha uma data</span>
                             )}
                           </Button>
                         </FormControl>
@@ -148,15 +149,15 @@ export function TimeEntryForm({
                 name="client_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Client (Optional)</FormLabel>
+                    <FormLabel>Cliente (opcional)</FormLabel>
                     <Select value={field.value || 'none'} onValueChange={(value) => field.onChange(value === 'none' ? '' : value)}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select client" />
+                          <SelectValue placeholder="Selecione um cliente" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="none">No client</SelectItem>
+                        <SelectItem value="none">Sem cliente</SelectItem>
                         {clients.map((client) => (
                           <SelectItem key={client.id} value={client.id}>
                             {client.name}
@@ -174,9 +175,9 @@ export function TimeEntryForm({
                 name="project_name"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel>Project (Optional)</FormLabel>
+                    <FormLabel>Projeto (opcional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Website Redesign" {...field} />
+                      <Input placeholder="ex.: Reformulação de site" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -188,10 +189,10 @@ export function TimeEntryForm({
                 name="description"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>Descrição</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="What did you work on?"
+                        placeholder="Em que você trabalhou?"
                         rows={3}
                         {...field}
                       />
@@ -206,7 +207,7 @@ export function TimeEntryForm({
                 name="hours"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Hours</FormLabel>
+                    <FormLabel>Horas</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -226,7 +227,7 @@ export function TimeEntryForm({
                 name="rate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Rate per hour ({displayCurrency})</FormLabel>
+                    <FormLabel>Valor por hora ({displayCurrency})</FormLabel>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                           {displayCurrency}
@@ -262,16 +263,16 @@ export function TimeEntryForm({
                       />
                     </FormControl>
                     <div className="flex-1">
-                      <FormLabel className="cursor-pointer">Billable</FormLabel>
+                      <FormLabel className="cursor-pointer">Faturável</FormLabel>
                       <FormDescription>
-                        This time can be added to an invoice
+                        Este tempo pode ser incluído em uma fatura
                       </FormDescription>
                     </div>
                     {isBillable && (
                       <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Amount</p>
+                        <p className="text-sm text-muted-foreground">Valor total</p>
                         <p className="text-lg font-bold tabular-nums">
-                          {amount === null ? 'Rate needed' : formatCurrency(amount)}
+                          {amount === null ? 'Informe o valor por hora' : formatCurrency(amount)}
                         </p>
                       </div>
                     )}
@@ -284,14 +285,14 @@ export function TimeEntryForm({
 
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            Cancelar
           </Button>
           <Button type="submit" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting
-              ? 'Saving...'
+              ? 'Salvando...'
               : entry
-              ? 'Update Entry'
-              : 'Log Time'}
+              ? 'Atualizar registro'
+              : 'Registrar tempo'}
           </Button>
         </div>
       </form>

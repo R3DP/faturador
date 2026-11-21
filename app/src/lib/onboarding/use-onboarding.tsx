@@ -94,8 +94,8 @@ export function useOnboarding(): UseOnboardingResult {
       setDismissed(state.data?.dismissed_at != null)
       setTourCompletedAt(state.data?.tour_completed_at ?? null)
     } catch (error) {
-      console.error('useOnboarding: failed to refresh checklist facts', error)
-      // Leave previous steps/dismissed state intact on a transient failure.
+      console.error('useOnboarding: falha ao atualizar os dados da lista de configuração', error)
+      // Mantém as etapas e o estado de dispensa anteriores em caso de falha temporária.
     } finally {
       setIsLoading(false)
     }

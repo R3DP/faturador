@@ -9,15 +9,16 @@ export default function AgentsPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Agents"
-        description="Connect agents to your Billr account and manage keys, payments, activity, and recipes"
+        title="Agentes"
+        description="Conecte agentes à sua conta Faturador e gerencie chaves, pagamentos, atividades e receitas"
       />
 
       <div className="mt-6">
         <Suspense
           fallback={
-            <div className="flex h-32 items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div role="status" aria-live="polite" className="flex h-32 items-center justify-center">
+              <span className="sr-only">Carregando agentes...</span>
+              <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           }
         >

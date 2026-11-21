@@ -1,11 +1,11 @@
 /**
- * Shapes the reports layer works with, plus the coercion boundary between the
- * database and the calculations.
+ * Tipos usados pela camada de relatórios e limite de conversão entre o banco de
+ * dados e os cálculos.
  *
- * Everything the RPC returns arrives as JSON, and DECIMAL columns arrive as
- * strings once they leave PostgREST's numeric handling, so nothing below is
- * trusted to already be a number: parseReportPayload is the single place where
- * raw values become numbers, and every field goes through toNumber().
+ * Tudo que a RPC retorna chega como JSON, e as colunas DECIMAL chegam como
+ * strings após o processamento numérico do PostgREST. Portanto, nada abaixo é
+ * considerado número sem conversão: parseReportPayload é o único ponto em que
+ * valores brutos se tornam números, e todos os campos passam por toNumber().
  */
 
 import { toNumber } from '@/lib/reports/money'
@@ -94,9 +94,9 @@ export interface ReportData {
   topClients: ClientTotal[]
   time: TimeTotals
   openInvoices: OpenInvoice[]
-  /** Total open invoices in the database, which may exceed openInvoices.length. */
+  /** Total de faturas em aberto no banco de dados, que pode superar openInvoices.length. */
   openInvoiceCount: number
-  /** Cap the RPC applied to openInvoices. */
+  /** Limite aplicado pela RPC a openInvoices. */
   openInvoiceLimit: number
   currencies: CurrencyCount[]
 }
@@ -147,9 +147,9 @@ function rangeFrom(value: unknown): ReportRange | null {
 }
 
 /**
- * Turns the get_report_summary JSON document into typed, numeric report data.
- * Tolerates missing sections so a partial or older payload renders as zeros
- * rather than throwing on a dashboard.
+ * Converte o documento JSON de get_report_summary em dados de relatório tipados e
+ * numéricos. Seções ausentes são toleradas para que um payload parcial ou antigo
+ * seja exibido com zeros, sem lançar exceção no painel.
  */
 export function parseReportPayload(payload: unknown, fallbackRange: ReportRange): ReportData {
   const raw = asRecord(payload)
@@ -186,7 +186,7 @@ export function parseReportPayload(payload: unknown, fallbackRange: ReportRange)
     })),
     topClients: asArray(raw.top_clients).map((row) => ({
       clientId: asString(row.client_id),
-      clientName: asString(row.client_name, 'Unnamed client'),
+      clientName: asString(row.client_name, 'Cliente sem nome'),
       invoiced: toNumber(row.invoiced),
       paid: toNumber(row.paid),
       outstanding: toNumber(row.outstanding),
@@ -212,7 +212,7 @@ export function parseReportPayload(payload: unknown, fallbackRange: ReportRange)
       balanceDue: toNumber(row.balance_due),
       currency: asString(row.currency, asString(raw.currency, 'USD')),
       clientId: typeof row.client_id === 'string' ? row.client_id : null,
-      clientName: asString(row.client_name, 'Unknown client'),
+      clientName: asString(row.client_name, 'Cliente desconhecido'),
       clientEmail: typeof row.client_email === 'string' ? row.client_email : null,
     })),
     openInvoiceCount: toNumber(raw.open_invoice_count),
@@ -224,7 +224,7 @@ export function parseReportPayload(payload: unknown, fallbackRange: ReportRange)
   }
 }
 
-/** True when the business has no reportable activity at all in this payload. */
+/** Indica se a empresa não tem nenhuma atividade reportável neste payload. */
 export function isReportEmpty(data: ReportData): boolean {
   return (
     data.current.invoiceCount === 0 &&

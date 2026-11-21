@@ -3,14 +3,15 @@ import { createFakeSupabase, type FakeSupabase } from '@/lib/mcp/fake-supabase'
 import { BUSINESS_ID, ROW_ID } from './action-fixture'
 
 /**
- * Application audit, Medium-3. Both client writes used to spread the caller's
- * argument into the insert and the update, after `business_id`, so a server
- * action POST could choose `business_id`, `id`, `created_at`, `created_via` and
- * `created_by_key_id`, and store unbounded text in `notes`.
+ * Auditoria da aplicação, Medium-3. As duas gravações de clientes antes
+ * espalhavam o argumento de quem chama no insert e no update, depois de
+ * `business_id`; assim, uma chamada POST da server action podia escolher
+ * `business_id`, `id`, `created_at`, `created_via` e `created_by_key_id`, além
+ * de armazenar texto sem limite em `notes`.
  *
- * These tests are written against what is SENT to the database, not against
- * what the database would then refuse, because RLS refusing a forged
- * `business_id` is a second line and not the one under test here.
+ * Estes testes verificam o que é ENVIADO ao banco, não o que o banco recusaria
+ * depois. O RLS rejeitar um `business_id` forjado é uma segunda barreira, mas
+ * não é o controle que está sendo testado aqui.
  */
 
 const { createClientMock } = vi.hoisted(() => ({ createClientMock: vi.fn() }))
@@ -53,7 +54,7 @@ function writes() {
 }
 
 describe('createClientAction', () => {
-  it('writes only the columns it names, with business_id from its own argument', async () => {
+  it('grava apenas as colunas indicadas e usa o business_id do próprio argumento', async () => {
     await createClientAction(BUSINESS_ID, valid)
 
     expect(writes()).toHaveLength(1)
@@ -83,14 +84,14 @@ describe('createClientAction', () => {
     ['created_via', { created_via: 'agent' }],
     ['created_by_key_id', { created_by_key_id: ROW_ID }],
     ['is_active', { is_active: false }],
-  ])('refuses a smuggled %s and writes nothing', async (_label, extra) => {
+  ])('recusa o campo %s e não grava nada', async (_label, extra) => {
     await expect(
       createClientAction(BUSINESS_ID, { ...valid, ...extra } as never),
     ).rejects.toThrow()
     expect(writes()).toHaveLength(0)
   })
 
-  it('refuses unbounded notes', async () => {
+  it('recusa notas sem limite de tamanho', async () => {
     await expect(
       createClientAction(BUSINESS_ID, { ...valid, notes: 'x'.repeat(5001) }),
     ).rejects.toThrow()
@@ -98,52 +99,52 @@ describe('createClientAction', () => {
   })
 
   it.each([
-    ['a missing name', { name: '' }],
-    ['a bad email', { email: 'not an address' }],
-    ['a javascript: website', { website: 'javascript:alert(1)' }],
-    ['a bad currency', { currency: 'DOLLARS' }],
-    ['negative payment terms', { payment_terms: -1 }],
-  ])('refuses %s', async (_label, patch) => {
+    ['nome ausente', { name: '' }],
+    ['e-mail inválido', { email: 'not an address' }],
+    ['site com javascript:', { website: 'javascript:alert(1)' }],
+    ['moeda inválida', { currency: 'DOLLARS' }],
+    ['prazo de pagamento negativo', { payment_terms: -1 }],
+  ])('recusa %s', async (_label, patch) => {
     await expect(createClientAction(BUSINESS_ID, { ...valid, ...patch })).rejects.toThrow()
     expect(writes()).toHaveLength(0)
   })
 
-  it('refuses a business id that is not a uuid', async () => {
+  it('recusa um business_id que não seja UUID', async () => {
     await expect(createClientAction('not-a-uuid', valid)).rejects.toThrow()
     expect(db.calls).toHaveLength(0)
   })
 })
 
 describe('updateClientAction', () => {
-  it('never writes business_id, so an edit cannot move a client', async () => {
+  it('nunca grava business_id, impedindo que uma edição transfira o cliente', async () => {
     await updateClientAction(ROW_ID, valid)
 
     expect(writes()).toHaveLength(1)
     expect(Object.keys(writes()[0].payload as object)).not.toContain('business_id')
   })
 
-  it('refuses a smuggled business_id and writes nothing', async () => {
+  it('recusa um business_id injetado e não grava nada', async () => {
     await expect(
       updateClientAction(ROW_ID, { ...valid, business_id: OTHER_BUSINESS } as never),
     ).rejects.toThrow()
     expect(writes()).toHaveLength(0)
   })
 
-  it('refuses a client id that is not a uuid', async () => {
+  it('recusa um ID de cliente que não seja UUID', async () => {
     await expect(updateClientAction('../../etc', valid)).rejects.toThrow()
     expect(db.calls).toHaveLength(0)
   })
 })
 
 describe('deleteClientAction', () => {
-  it('archives by writing is_active alone', async () => {
+  it('arquiva alterando somente is_active', async () => {
     await deleteClientAction(ROW_ID)
 
     expect(writes()).toHaveLength(1)
     expect(writes()[0].payload).toEqual({ is_active: false })
   })
 
-  it('refuses a client id that is not a uuid', async () => {
+  it('recusa um ID de cliente que não seja UUID', async () => {
     await expect(deleteClientAction('nope')).rejects.toThrow()
     expect(db.calls).toHaveLength(0)
   })

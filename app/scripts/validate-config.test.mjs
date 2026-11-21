@@ -7,51 +7,51 @@ const base = {
   NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_example',
   SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_example',
 }
-test('an independent installation needs no Stripe or email credentials', () =>
+test('uma instalação independente não exige credenciais do Stripe nem de e-mail', () =>
   assert.equal(validateConfig(base).app, 'http://localhost:3000'))
 for (const [name, overrides] of Object.entries({
-  'missing database': { NEXT_PUBLIC_SUPABASE_URL: '' },
-  'shared keys': { NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_secret_example' },
-  'public secret': { NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_secret_another' },
-  'public service JWT': {
+  'banco de dados ausente': { NEXT_PUBLIC_SUPABASE_URL: '' },
+  'chaves iguais': { NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_secret_example' },
+  'segredo na chave pública': { NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_secret_another' },
+  'JWT público com função de serviço': {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: `x.${Buffer.from(JSON.stringify({ role: 'service_role' })).toString('base64url')}.x`,
   },
-  'remote plaintext': { NEXT_PUBLIC_APP_URL: 'http://example.org' },
-  'URL credentials': { NEXT_PUBLIC_APP_URL: 'https://user:pass@example.org' },
+  'HTTP fora da máquina local': { NEXT_PUBLIC_APP_URL: 'http://example.org' },
+  'credenciais na URL': { NEXT_PUBLIC_APP_URL: 'https://user:pass@example.org' },
 }))
-  test(`rejects ${name}`, () =>
+  test(`rejeita ${name}`, () =>
     assert.throws(() => validateConfig({ ...base, ...overrides })))
 const stripeTest = {
   STRIPE_SECRET_KEY: 'sk_test_example',
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_test_example',
   STRIPE_WEBHOOK_SECRET: 'whsec_example',
 }
-test('card payments with a matching test pair are accepted', () =>
+test('pagamentos com cartão aceitam um par de teste correspondente', () =>
   assert.equal(validateConfig({ ...base, ...stripeTest }).app, 'http://localhost:3000'))
 for (const [name, overrides, message] of [
-  ['a partial Stripe setup', { STRIPE_SECRET_KEY: 'sk_test_example' }, /all three/],
-  ['mixed Stripe modes', { ...stripeTest, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_live_example' }, /different modes/],
-  ['a webhook secret that is not one', { ...stripeTest, STRIPE_WEBHOOK_SECRET: 'sk_test_example' }, /whsec_/],
-  ['a publishable key in the secret slot', { ...stripeTest, STRIPE_SECRET_KEY: 'pk_test_example' }, /STRIPE_SECRET_KEY must start/],
+  ['configuração parcial do Stripe', { STRIPE_SECRET_KEY: 'sk_test_example' }, /os três valores/],
+  ['modos diferentes do Stripe', { ...stripeTest, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_live_example' }, /modos diferentes/],
+  ['segredo de webhook inválido', { ...stripeTest, STRIPE_WEBHOOK_SECRET: 'sk_test_example' }, /whsec_/],
+  ['chave publicável no campo de segredo', { ...stripeTest, STRIPE_SECRET_KEY: 'pk_test_example' }, /STRIPE_SECRET_KEY deve começar/],
 ])
-  test(`rejects ${name}`, () => assert.throws(() => validateConfig({ ...base, ...overrides }), message))
+  test(`rejeita ${name}`, () => assert.throws(() => validateConfig({ ...base, ...overrides }), message))
 for (const value of ['true', 'false', ''])
-  test(`accepts BILLR_OPEN_SIGNUP=${value || '(empty)'}`, () =>
+  test(`aceita BILLR_OPEN_SIGNUP=${value || '(vazio)'}`, () =>
     assert.equal(validateConfig({ ...base, BILLR_OPEN_SIGNUP: value }).app, 'http://localhost:3000'))
-test('rejects a BILLR_OPEN_SIGNUP value that would silently mean closed', () =>
+test('rejeita um valor de BILLR_OPEN_SIGNUP que fecharia a inscrição sem aviso', () =>
   assert.throws(() => validateConfig({ ...base, BILLR_OPEN_SIGNUP: 'yes' }), /BILLR_OPEN_SIGNUP/))
 
-test('a container cannot reach a loopback Supabase without an internal URL', () =>
+test('um contêiner não alcança um Supabase em loopback sem uma URL interna', () =>
   assert.throws(
     () => validateConfig({ ...base, NEXT_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:56421', BILLR_CONTAINER: 'true' }),
     /SUPABASE_INTERNAL_URL.*http:\/\/host\.docker\.internal:56421/,
   ))
-test('a container treats 0.0.0.0 as loopback too', () =>
+test('um contêiner também trata 0.0.0.0 como loopback', () =>
   assert.throws(
     () => validateConfig({ ...base, NEXT_PUBLIC_SUPABASE_URL: 'http://0.0.0.0:56421', BILLR_CONTAINER: 'true' }),
-    /Inside the container, 0\.0\.0\.0 is the container itself.*http:\/\/host\.docker\.internal:56421/,
+    /Dentro do contêiner, 0\.0\.0\.0 é o próprio contêiner.*http:\/\/host\.docker\.internal:56421/,
   ))
-test('a container with an internal URL for the local database is accepted', () =>
+test('um contêiner com URL interna para o banco de dados local é aceito', () =>
   assert.equal(
     validateConfig({
       ...base,
@@ -61,7 +61,7 @@ test('a container with an internal URL for the local database is accepted', () =
     }).app,
     'http://localhost:3000',
   ))
-test('a container talking to a public Supabase needs no internal URL', () =>
+test('um contêiner conectado a um Supabase público não precisa de URL interna', () =>
   assert.equal(
     validateConfig({
       ...base,
@@ -71,8 +71,8 @@ test('a container talking to a public Supabase needs no internal URL', () =>
     }).app,
     'https://invoices.example.org',
   ))
-test('outside a container a loopback Supabase needs no internal URL', () =>
+test('fora de um contêiner, um Supabase em loopback não precisa de URL interna', () =>
   assert.equal(validateConfig({ ...base, NEXT_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:56421' }).app, 'http://localhost:3000'))
 for (const value of ['host.docker.internal:56421', 'http://host.docker.internal:56421/rest', 'ftp://db.example.org'])
-  test(`rejects SUPABASE_INTERNAL_URL ${value}`, () =>
-    assert.throws(() => validateConfig({ ...base, SUPABASE_INTERNAL_URL: value }), /SUPABASE_INTERNAL_URL must be an HTTP\(S\) origin/))
+  test(`rejeita SUPABASE_INTERNAL_URL ${value}`, () =>
+    assert.throws(() => validateConfig({ ...base, SUPABASE_INTERNAL_URL: value }), /SUPABASE_INTERNAL_URL deve ser uma origem HTTP\(S\)/))

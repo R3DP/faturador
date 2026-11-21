@@ -2,9 +2,9 @@ import { loadStripe } from '@stripe/stripe-js/pure'
 import type { Stripe } from '@stripe/stripe-js'
 
 /**
- * Stripe.js must be loaded once per publishable key and the promise reused:
- * calling loadStripe on every render remounts the Elements iframe and wipes
- * whatever the payer typed.
+ * Stripe.js deve ser carregado uma única vez por chave publicável, e a promise
+ * deve ser reutilizada: chamar loadStripe em cada renderização remontaria o
+ * iframe do Elements e apagaria o que a pessoa pagadora digitou.
  */
 const cache = new Map<string, Promise<Stripe | null>>()
 

@@ -13,22 +13,22 @@ import {
   verifyPkce,
 } from './params'
 
-describe('redirect URI rules', () => {
+describe('regras de URI de redirecionamento', () => {
   it.each([
     'https://claude.ai/api/mcp/auth_callback',
     'https://example.org/cb?x=1',
     'http://localhost:33418/callback',
     'http://127.0.0.1:8976/oauth',
     'http://localhost/cb',
-    // RFC 8252 s7.3: the IPv6 loopback literal, which an IPv6-only machine is
-    // the only address a native client can bind.
+    // RFC 8252 s7.3: o literal de loopback IPv6, único endereço ao qual uma máquina
+    // somente IPv6 pode vincular um cliente nativo.
     'http://[::1]:33418/callback',
     'http://[::1]/cb',
-  ])('accepts %s', (uri) => {
+  ])('aceita %s', (uri) => {
     expect(isAllowedRedirectUri(uri)).toBe(true)
   })
 
-  it('accepts an IPv6 loopback redirect through registration too', () => {
+  it('também aceita um redirecionamento de loopback IPv6 durante o registro', () => {
     const result = validateRedirectUris([
       'http://[::1]:33418/callback',
       'http://127.0.0.1:33418/callback',
@@ -38,12 +38,12 @@ describe('redirect URI rules', () => {
   })
 
   it.each([
-    // Only the loopback address itself. ::2 and the IPv4-mapped form are
-    // routable or ambiguous, and neither is what RFC 8252 asks for.
+    // Somente o próprio endereço de loopback. ::2 e a forma mapeada de IPv4
+    // são roteáveis ou ambíguos, e nenhum deles é recomendado pela RFC 8252.
     'http://[::2]/cb',
     'http://[::ffff:127.0.0.1]/cb',
     'http://[2001:db8::1]/cb',
-  ])('rejects the non-loopback IPv6 literal %s', (uri) => {
+  ])('rejeita o literal IPv6 que não é de loopback %s', (uri) => {
     expect(isAllowedRedirectUri(uri)).toBe(false)
   })
 
@@ -56,11 +56,11 @@ describe('redirect URI rules', () => {
     'https://user:pass@example.org/cb',
     'not a url',
     '',
-  ])('rejects %s', (uri) => {
+  ])('rejeita %s', (uri) => {
     expect(isAllowedRedirectUri(uri)).toBe(false)
   })
 
-  it('requires a non-empty, bounded array at registration', () => {
+  it('exige uma lista limitada e não vazia durante o registro', () => {
     expect(validateRedirectUris(['https://a.example/cb']).ok).toBe(true)
     expect(validateRedirectUris([]).ok).toBe(false)
     expect(validateRedirectUris('https://a.example/cb').ok).toBe(false)
@@ -68,18 +68,18 @@ describe('redirect URI rules', () => {
     expect(validateRedirectUris(Array(11).fill('https://a.example/cb')).ok).toBe(false)
   })
 
-  it('rejects the whole registration when any entry is disallowed', () => {
+  it('rejeita todo o registro quando alguma entrada não é permitida', () => {
     const result = validateRedirectUris(['https://a.example/cb', 'http://evil.example/cb'])
     expect(result.ok).toBe(false)
     expect(result.uris).toEqual([])
   })
 
-  it('de-duplicates', () => {
+  it('remove duplicatas', () => {
     const result = validateRedirectUris(['https://a.example/cb', 'https://a.example/cb'])
     expect(result.uris).toEqual(['https://a.example/cb'])
   })
 
-  it('matches registered URIs exactly, never by prefix', () => {
+  it('compara URIs registradas exatamente, nunca por prefixo', () => {
     const registered = ['https://a.example/cb']
     expect(matchesRegisteredRedirect('https://a.example/cb', registered)).toBe(true)
     expect(matchesRegisteredRedirect('https://a.example/cb/../evil', registered)).toBe(false)
@@ -88,17 +88,17 @@ describe('redirect URI rules', () => {
   })
 })
 
-describe('client name', () => {
-  it('falls back, strips control characters and caps length', () => {
-    expect(normaliseClientName(undefined)).toBe('MCP client')
-    expect(normaliseClientName('   ')).toBe('MCP client')
+describe('nome do cliente', () => {
+  it('usa um valor padrão, remove caracteres de controle e limita o comprimento', () => {
+    expect(normaliseClientName(undefined)).toBe('Cliente MCP')
+    expect(normaliseClientName('   ')).toBe('Cliente MCP')
     expect(normaliseClientName('Claude\nCode')).toBe('Claude Code')
     expect(normaliseClientName('x'.repeat(500))).toHaveLength(200)
   })
 })
 
 describe('PKCE', () => {
-  it('accepts a verifier that hashes to the stored challenge', () => {
+  it('aceita um verificador cujo hash corresponde ao desafio armazenado', () => {
     const verifier = generateSecret(48)
     expect(isValidCodeVerifier(verifier)).toBe(true)
     const challenge = challengeFromVerifier(verifier)
@@ -106,43 +106,43 @@ describe('PKCE', () => {
     expect(verifyPkce(verifier, challenge)).toBe(true)
   })
 
-  it('rejects the wrong verifier, a malformed one, and a missing one', () => {
+  it('rejeita um verificador incorreto, malformado ou ausente', () => {
     const challenge = challengeFromVerifier(generateSecret(48))
     expect(verifyPkce(generateSecret(48), challenge)).toBe(false)
     expect(verifyPkce('short', challenge)).toBe(false)
     expect(verifyPkce(undefined, challenge)).toBe(false)
   })
 
-  it('rejects a challenge that is not a base64url SHA-256 digest', () => {
+  it('rejeita um desafio que não seja um resumo SHA-256 em base64url', () => {
     expect(isValidCodeChallenge('plain-challenge')).toBe(false)
     expect(isValidCodeChallenge('a'.repeat(42))).toBe(false)
     expect(isValidCodeChallenge('a/b+c'.padEnd(43, 'a'))).toBe(false)
   })
 })
 
-describe('resource indicator', () => {
+describe('indicador de recurso', () => {
   const resource = 'https://mcp.example.org'
-  it('is optional', () => {
+  it('é opcional', () => {
     expect(resourceMatches(undefined, resource)).toBe(true)
     expect(resourceMatches(null, resource)).toBe(true)
   })
-  it('accepts this installation with or without a trailing slash', () => {
+  it('aceita esta instalação com ou sem barra final', () => {
     expect(resourceMatches('https://mcp.example.org', resource)).toBe(true)
     expect(resourceMatches('https://mcp.example.org/', resource)).toBe(true)
   })
-  it('rejects another audience', () => {
+  it('rejeita outro público', () => {
     expect(resourceMatches('https://evil.example', resource)).toBe(false)
     expect(resourceMatches('https://mcp.example.org/other', resource)).toBe(false)
     expect(resourceMatches('nonsense', resource)).toBe(false)
   })
-  it('matches a path-bearing resource', () => {
+  it('compara um recurso que inclui caminho', () => {
     expect(resourceMatches('https://x.example/api/mcp/', 'https://x.example/api/mcp')).toBe(true)
     expect(resourceMatches('https://x.example/api', 'https://x.example/api/mcp')).toBe(false)
   })
 })
 
-describe('redirect building', () => {
-  it('preserves the client query and drops empty values', () => {
+describe('montagem do redirecionamento', () => {
+  it('preserva a consulta do cliente e descarta valores vazios', () => {
     const url = buildRedirect('https://a.example/cb?keep=1', {
       code: 'abc',
       state: '',

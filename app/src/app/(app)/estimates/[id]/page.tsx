@@ -92,16 +92,16 @@ export default function EstimateDetailPage() {
 
   const handleSendEstimate = () => setSendDialogOpen(true)
 
-  // For an owner who shares the link themselves: a draft has no public page.
+  // Para quem compartilha o próprio link: um rascunho não tem página pública.
   const handleMarkAsSent = async () => {
     if (!estimate) return
     try {
       const { markEstimateSentAction } = await import('@/lib/actions/estimates')
       const result = await markEstimateSentAction(estimateId)
       setEstimate({ ...estimate, status: result.status })
-      if (result.changed) toast.success('Estimate marked as sent')
+      if (result.changed) toast.success('Orçamento marcado como enviado')
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not mark the estimate as sent')
+      toast.error(error instanceof Error ? error.message : 'Não foi possível marcar o orçamento como enviado')
     }
   }
 
@@ -114,10 +114,10 @@ export default function EstimateDetailPage() {
     try {
       const { convertEstimateAction } = await import('@/lib/actions/estimates')
       const invoice = await convertEstimateAction(estimateId)
-      toast.success('Estimate converted to invoice')
+      toast.success('Orçamento convertido em fatura')
       router.push(`/invoices/${invoice.id}`)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to convert estimate')
+      toast.error(error instanceof Error ? error.message : 'Não foi possível converter o orçamento')
       setIsConverting(false)
     }
   }
@@ -125,7 +125,7 @@ export default function EstimateDetailPage() {
   const copyPublicLink = () => {
     const url = `${window.location.origin}/e/${estimate?.public_id}`
     navigator.clipboard.writeText(url)
-    toast.success('Link copied to clipboard')
+    toast.success('Link copiado para a área de transferência')
   }
 
   if (isLoading) {
@@ -141,9 +141,9 @@ export default function EstimateDetailPage() {
       <div className="p-6 lg:p-8">
         <EmptyState
           icon={FileText}
-          title="Estimate not found"
-          description="The estimate you're looking for doesn't exist."
-          action={{ label: 'Back to Estimates', href: '/estimates' }}
+          title="Orçamento não encontrado"
+          description="O orçamento que você procura não existe."
+          action={{ label: 'Voltar para orçamentos', href: '/estimates' }}
         />
       </div>
     )
@@ -164,19 +164,16 @@ export default function EstimateDetailPage() {
           {estimate.status === 'draft' && (
             <Button onClick={handleSendEstimate}>
               <Send className="mr-2 h-4 w-4" />
-              Send Estimate
+              Enviar orçamento
             </Button>
           )}
           {estimate.status === 'accepted' && !estimate.converted_invoice_id && (
             <Button onClick={handleConvertToInvoice} disabled={isConverting}>
               <ArrowRight className="mr-2 h-4 w-4" />
-              Convert to Invoice
+              Converter em fatura
             </Button>
           )}
-          {/* The same quote, billed in parts instead of all at once. An
-              estimate can become one or the other, never both, and the
-              database refuses the second attempt whichever order they come
-              in. */}
+          {/* O mesmo orçamento, cobrado em parcelas em vez de uma só vez. Ele pode virar um contrato ou uma fatura, nunca os dois; o banco de dados rejeita a segunda conversão, independentemente da ordem. */}
           {estimate.status === 'accepted' && !estimate.converted_invoice_id && (
             <Button
               variant="outline"
@@ -184,7 +181,7 @@ export default function EstimateDetailPage() {
               disabled={isConverting}
             >
               <Handshake className="mr-2 h-4 w-4" />
-              Convert to Engagement
+              Converter em contrato
             </Button>
           )}
           <DropdownMenu>
@@ -197,29 +194,29 @@ export default function EstimateDetailPage() {
               <DropdownMenuItem asChild>
                 <Link href={`/estimates/${estimateId}/edit`}>
                   <Edit className="mr-2 h-4 w-4" />
-                  Edit
+                  Editar
                 </Link>
               </DropdownMenuItem>
               {estimate.status === 'draft' && (
                 <DropdownMenuItem onClick={handleMarkAsSent}>
                   <MailCheck className="mr-2 h-4 w-4" />
-                  Mark as Sent
+                  Marcar como enviada
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={copyPublicLink}>
                 <Copy className="mr-2 h-4 w-4" />
-                Copy Link
+                Copiar link
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href={`/e/${estimate.public_id}`} target="_blank">
                   <ExternalLink className="mr-2 h-4 w-4" />
-                  View Public Page
+                  Ver página pública
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => window.print()}>
                 <Printer className="mr-2 h-4 w-4" />
-                Print / Save as PDF
+                Imprimir / Salvar como PDF
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -227,12 +224,12 @@ export default function EstimateDetailPage() {
       </PageHeader>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        {/* Main Content */}
+        {/* Conteúdo principal */}
         <div className="space-y-6 lg:col-span-2">
-          {/* Estimate Preview */}
+          {/* Prévia do orçamento */}
           <Card>
             <CardContent className="p-8">
-              {/* Header */}
+              {/* Cabeçalho */}
               <div className="flex justify-between gap-4">
                 <div className="min-w-0">
                   <h2 className="text-xl font-bold">{business?.name}</h2>
@@ -249,7 +246,7 @@ export default function EstimateDetailPage() {
                   )}
                 </div>
                 <div className="text-right">
-                  <h1 className="text-3xl font-bold text-primary">ESTIMATE</h1>
+                  <h1 className="text-3xl font-bold text-primary">ORÇAMENTO</h1>
                   <p className="mt-2 text-lg font-medium">
                     {estimate.estimate_number}
                   </p>
@@ -257,10 +254,10 @@ export default function EstimateDetailPage() {
               </div>
 
               <div className="mt-8 grid gap-8 sm:grid-cols-2">
-                {/* Prepared For */}
+                {/* Preparado para */}
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    Prepared For
+                    Preparado para
                   </p>
                   <p className="mt-1 font-medium">{estimate.client.name}</p>
                   {estimate.client.email && (
@@ -270,16 +267,16 @@ export default function EstimateDetailPage() {
                   )}
                 </div>
 
-                {/* Estimate Details */}
+                {/* Detalhes do orçamento */}
                 <div className="space-y-2 sm:text-right">
                   <div>
-                    <p className="text-sm text-muted-foreground">Date</p>
+                    <p className="text-sm text-muted-foreground">Data</p>
                     <p className="font-medium">
                       {format(parseDay(estimate.issue_date), 'MMMM d, yyyy')}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Valid Until</p>
+                    <p className="text-sm text-muted-foreground">Válido até</p>
                     <p className="font-medium">
                       {format(parseDay(estimate.expiry_date as string), 'MMMM d, yyyy')}
                     </p>
@@ -287,22 +284,22 @@ export default function EstimateDetailPage() {
                 </div>
               </div>
 
-              {/* Line Items */}
+              {/* Itens */}
               <div className="mt-8">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
                       <th className="py-2 text-left text-sm font-medium text-muted-foreground">
-                        Description
+                        Descrição
                       </th>
                       <th className="py-2 pl-3 text-right text-sm font-medium text-muted-foreground">
-                        Qty
+                        Qtd.
                       </th>
                       <th className="py-2 pl-3 text-right text-sm font-medium text-muted-foreground">
-                        Rate
+                        Valor
                       </th>
                       <th className="py-2 pl-3 text-right text-sm font-medium text-muted-foreground">
-                        Amount
+                        Valor
                       </th>
                     </tr>
                   </thead>
@@ -325,7 +322,7 @@ export default function EstimateDetailPage() {
                 </table>
               </div>
 
-              {/* Totals */}
+              {/* Totais */}
               <div className="mt-6 flex justify-end">
                 <div className="w-64 space-y-2">
                   <div className="flex justify-between">
@@ -336,7 +333,7 @@ export default function EstimateDetailPage() {
                   </div>
                   {estimate.discount_amount > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Discount</span>
+                      <span className="text-muted-foreground">Desconto</span>
                       <span className="tabular-nums text-green-600">
                         -{formatCurrency(estimate.discount_amount, estimate.currency)}
                       </span>
@@ -345,7 +342,7 @@ export default function EstimateDetailPage() {
                   {estimate.tax_amount > 0 && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">
-                        Tax ({estimate.tax_rate}%)
+                        Imposto ({estimate.tax_rate}%)
                       </span>
                       <span className="tabular-nums">
                         {formatCurrency(estimate.tax_amount, estimate.currency)}
@@ -362,11 +359,11 @@ export default function EstimateDetailPage() {
                 </div>
               </div>
 
-              {/* Notes */}
+              {/* Observações */}
               {estimate.notes && (
                 <div className="mt-8">
                   <p className="text-sm font-medium text-muted-foreground">
-                    Notes
+                    Observações
                   </p>
                   <p className="mt-1 whitespace-pre-wrap text-sm">
                     {estimate.notes}
@@ -374,11 +371,11 @@ export default function EstimateDetailPage() {
                 </div>
               )}
 
-              {/* Terms */}
+              {/* Termos */}
               {estimate.terms && (
                 <div className="mt-4">
                   <p className="text-sm font-medium text-muted-foreground">
-                    Terms & Conditions
+                    Termos e condições
                   </p>
                   <p className="mt-1 whitespace-pre-wrap text-sm">
                     {estimate.terms}
@@ -389,12 +386,12 @@ export default function EstimateDetailPage() {
           </Card>
         </div>
 
-        {/* Sidebar */}
+        {/* Barra lateral */}
         <div className="no-print space-y-6">
-          {/* Activity */}
+          {/* Atividade */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Activity</CardTitle>
+              <CardTitle className="text-base">Atividade</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3 text-sm">
@@ -402,7 +399,7 @@ export default function EstimateDetailPage() {
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="font-medium">Created</p>
+                  <p className="font-medium">Criada</p>
                   <p className="text-muted-foreground">
                     {format(new Date(estimate.created_at), 'MMM d, yyyy h:mm a')}
                   </p>
@@ -412,10 +409,10 @@ export default function EstimateDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Client Card */}
+          {/* Cartão do cliente */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Client</CardTitle>
+              <CardTitle className="text-base">Cliente</CardTitle>
             </CardHeader>
             <CardContent>
               <Link
@@ -432,18 +429,18 @@ export default function EstimateDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Converted Invoice */}
+          {/* Fatura convertida */}
           {estimate.converted_invoice_id && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Converted to Invoice</CardTitle>
+                <CardTitle className="text-base">Convertido em fatura</CardTitle>
               </CardHeader>
               <CardContent>
                 <Link
                   href={`/invoices/${estimate.converted_invoice_id}`}
                   className="font-medium text-primary hover:underline"
                 >
-                  View Invoice →
+                  Ver fatura →
                 </Link>
               </CardContent>
             </Card>
@@ -459,7 +456,7 @@ export default function EstimateDetailPage() {
       />
       <SendInvoiceDialog kind="estimate" open={sendDialogOpen} onOpenChange={setSendDialogOpen}
         invoiceId={estimateId} invoiceNumber={estimate.estimate_number}
-        defaultEmail={estimate.client.email} businessName={business?.name || 'Billr'}
+        defaultEmail={estimate.client.email} businessName={business?.name || 'Faturador'}
         amountDue={estimate.total} currency={estimate.currency} dueDate={estimate.expiry_date || estimate.issue_date}
         onSent={() => setEstimate({ ...estimate, status: 'sent' })} />
     </div>

@@ -12,7 +12,7 @@ export type Period = z.infer<typeof periodEnum>
 
 const EXCLUDED_FROM_TOTALS = new Set(['draft', 'cancelled'])
 
-/** Row shape the pure summary helpers below operate on. */
+/** Formato das linhas usadas pelas funções puras de resumo abaixo. */
 export interface SummaryRow {
   status: string
   total: number | null
@@ -27,9 +27,9 @@ export interface SummaryRow {
 const REVENUE_LIMIT = 5000
 
 /**
- * Inclusive [start, end] issue_date bounds for a reporting period, or null for
- * "all" (no date filter). `now` is injectable so the boundary behaviour is
- * testable without freezing the system clock.
+ * Limites inclusivos de [start, end] de issue_date para um período de relatório, ou null para
+ * "all" (sem filtro de data). `now` pode ser injetado para testar os limites
+ * sem congelar o relógio do sistema.
  */
 export function periodRange(period: Period, now: Date = new Date()): { start: string; end: string } | null {
   switch (period) {
@@ -46,22 +46,22 @@ export function periodRange(period: Period, now: Date = new Date()): { start: st
   }
 }
 
-/** Sums one money field across rows, rounded to cents. */
+/** Soma um campo monetário entre as linhas, arredondando para centavos. */
 export function sumBy(rows: SummaryRow[], field: 'total' | 'amount_paid' | 'balance_due'): number {
   return Math.round(rows.reduce((sum, inv) => sum + (inv[field] ?? 0), 0) * 100) / 100
 }
 
 /**
- * Top 5 clients by invoiced amount, highest first. Rows with no client_id are
- * skipped (they can't be attributed). Ties keep the order the clients were
- * first seen in `rows`, since Array.prototype.sort is stable, i.e. for equal
- * invoiced amounts the client whose first invoice appears earliest wins.
+ * Os 5 clientes com maior valor faturado, em ordem decrescente. Linhas sem client_id são
+ * ignoradas (não podem ser atribuídas). Empates mantêm a ordem em que os clientes foram
+ * vistos primeiro em `rows`, pois Array.prototype.sort é estável; para valores faturados iguais,
+ * vence o cliente cuja primeira fatura aparece antes.
  */
 export function topClients(rows: SummaryRow[]): { name: string; invoiced: number }[] {
   const byClient = new Map<string, { name: string; invoiced: number }>()
   for (const inv of rows) {
     if (!inv.client_id) continue
-    const name = inv.clients?.name ?? 'Unknown client'
+    const name = inv.clients?.name ?? 'Cliente desconhecido'
     const entry = byClient.get(inv.client_id) ?? { name, invoiced: 0 }
     entry.invoiced = Math.round((entry.invoiced + (inv.total ?? 0)) * 100) / 100
     byClient.set(inv.client_id, entry)
@@ -81,9 +81,9 @@ export interface CurrencyTotals {
 }
 
 /**
- * Per-currency totals for the given rows, in first-seen currency order.
- * Totals are never summed across currencies; a combined number would be
- * meaningless.
+ * Totais por moeda para as linhas fornecidas, na ordem em que cada moeda aparece primeiro.
+ * Os totais nunca são somados entre moedas; o valor combinado não teria
+ * significado.
  */
 export function summarizeByCurrency(rows: SummaryRow[]): CurrencyTotals[] {
   const currencies = Array.from(new Set(rows.map((inv) => inv.currency)))
@@ -102,20 +102,20 @@ export function summarizeByCurrency(rows: SummaryRow[]): CurrencyTotals[] {
 }
 
 /**
- * Registers the informational/reporting tools (list_businesses, get_business,
- * revenue_summary) on the given MCP server, scoped to the businesses in
+ * Registra as ferramentas informativas/de relatórios (list_businesses, get_business,
+ * revenue_summary) no servidor MCP fornecido, limitadas às empresas em
  * ctx.db.scope.
  */
 export function registerInfoTools(server: McpServer, ctx: McpCtx) {
-  // ChatGPT and Codex call this to tell connected accounts apart, so someone
-  // with two Billr logins can see which one a conversation is using. The id is
-  // a hash of the user id: stable across reconnects, and not the internal id.
+  // ChatGPT e Codex usam esta ferramenta para distinguir as contas conectadas, permitindo que alguém
+  // com dois logins do Faturador veja qual deles a conversa está usando. O id é
+  // um hash do id do usuário: estável entre reconexões e diferente do id interno.
   server.registerTool(
     'get_profile',
     {
-      title: 'Get Profile',
+      title: 'Obter perfil',
       description:
-        'Return the Billr account this connection signs in as: a stable opaque id, the name and the email address. Use it to confirm which Billr login is connected; use list_businesses for the businesses it can act on.',
+        'Retorna a conta Faturador autenticada nesta conexão: um id opaco e estável, o nome e o endereço de e-mail. Use para confirmar qual login do Faturador está conectado; use list_businesses para consultar as empresas nas quais pode atuar.',
       inputSchema: z.object({}),
       outputSchema: z.object({
         id: z.string().min(1),
@@ -128,7 +128,7 @@ export function registerInfoTools(server: McpServer, ctx: McpCtx) {
       const { data, error } = await ctx.db.svc.auth.admin.getUserById(ctx.userId)
       if (error || !data?.user) {
         console.error('get_profile:', error)
-        return errorResult('Could not load the signed-in profile.')
+        return errorResult('Não foi possível carregar o perfil autenticado.')
       }
       const user = data.user
       const meta = (user.user_metadata ?? {}) as Record<string, unknown>
@@ -148,9 +148,9 @@ export function registerInfoTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'list_businesses',
     {
-      title: 'List Businesses',
+      title: 'Listar empresas',
       description:
-        "List every business this API key can act on, ordered by name. Call this first when you don't know which business_id to pass to the other tools. If exactly one is returned, business_id can be omitted everywhere.",
+        "Lista todas as empresas nas quais esta chave de API pode atuar, em ordem alfabética. Chame primeiro quando não souber qual business_id informar às outras ferramentas. Se houver apenas uma, business_id pode ser omitido em todas elas.",
       inputSchema: z.object({}),
     },
     async () => {
@@ -162,7 +162,7 @@ export function registerInfoTools(server: McpServer, ctx: McpCtx) {
 
       if (error) {
         console.error('list_businesses:', error)
-        return errorResult('Could not list businesses.')
+        return errorResult('Não foi possível listar as empresas.')
       }
 
       const businesses = (data ?? []).map((b) => ({
@@ -174,8 +174,8 @@ export function registerInfoTools(server: McpServer, ctx: McpCtx) {
       }))
 
       const result = {
-        summary: `${businesses.length} business${businesses.length === 1 ? '' : 'es'} in scope: ${
-          businesses.map((b) => b.name).join(', ') || 'none'
+        summary: `${businesses.length} ${businesses.length === 1 ? 'empresa' : 'empresas'} no escopo: ${
+          businesses.map((b) => b.name).join(', ') || 'nenhuma'
         }.`,
         businesses,
       }
@@ -187,16 +187,16 @@ export function registerInfoTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'get_business',
     {
-      title: 'Get Business',
+      title: 'Obter empresa',
       description:
-        "Fetch details for one of the caller's businesses: name, contact email, currency, invoice numbering. If the API key is scoped to a single business, business_id can be omitted.",
+        "Consulta os detalhes de uma das empresas do usuário: nome, e-mail de contato, moeda e numeração de faturas. Se a chave de API estiver limitada a uma única empresa, business_id pode ser omitido.",
       inputSchema: z.object({
         business_id: z
           .string()
           .uuid()
           .optional()
           .describe(
-            'Id of the business to fetch. Optional when the API key is scoped to exactly one business; required if scoped to multiple.'
+            'Id da empresa a consultar. Opcional quando a chave de API está limitada a uma única empresa; obrigatório quando está limitada a várias.'
           ),
       }),
     },
@@ -205,7 +205,7 @@ export function registerInfoTools(server: McpServer, ctx: McpCtx) {
       try {
         resolvedId = ctx.db.resolveBusinessId(business_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
       }
 
       const { data, error } = await ctx.db.svc
@@ -215,11 +215,11 @@ export function registerInfoTools(server: McpServer, ctx: McpCtx) {
         .maybeSingle()
 
       if (error || !data) {
-        return errorResult(`Business ${resolvedId} not found.`)
+        return errorResult(`Empresa ${resolvedId} não encontrada.`)
       }
 
       const result = {
-        summary: `${data.name}: invoices prefixed "${data.invoice_prefix}", next number ${data.next_invoice_number}.`,
+        summary: `${data.name}: faturas com o prefixo "${data.invoice_prefix}", próximo número ${data.next_invoice_number}.`,
         business: {
           id: data.id,
           name: data.name,
@@ -238,21 +238,21 @@ export function registerInfoTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'revenue_summary',
     {
-      title: 'Revenue Summary',
+      title: 'Resumo de receita',
       description:
-        'Summarize invoiced, paid, outstanding, and overdue amounts for one of the caller\'s businesses over a period (default this_year), plus status counts and the top 5 clients by invoiced amount. Draft and cancelled invoices are excluded from all dollar totals (but still counted in by_status); "overdue" means balance still due, due date past, and status is sent/viewed/partial; overdue_total is a subset of outstanding_total, not additional to it.',
+        'Resume os valores faturados, pagos, em aberto e vencidos de uma das empresas do usuário em um período (padrão: this_year), além das quantidades por status e dos 5 clientes com maior valor faturado. Faturas em rascunho e canceladas são excluídas de todos os totais monetários (mas continuam contabilizadas em by_status); "overdue" significa que ainda há saldo a pagar, o vencimento passou e o status é sent/viewed/partial; overdue_total faz parte de outstanding_total e não deve ser somado a ele.',
       inputSchema: z.object({
         business_id: z
           .string()
           .uuid()
           .optional()
           .describe(
-            'Id of the business to summarize. Optional when the API key is scoped to exactly one business; required if scoped to multiple.'
+            'Id da empresa a resumir. Opcional quando a chave de API está limitada a uma única empresa; obrigatório quando está limitada a várias.'
           ),
         period: periodEnum
           .optional()
           .describe(
-            'Reporting period, matched against each invoice\'s issue_date: "this_month", "last_month", "this_year" (default), or "all" (no date filter).'
+            'Período do relatório, aplicado ao issue_date de cada fatura: "this_month", "last_month", "this_year" (padrão) ou "all" (sem filtro de data).'
           ),
       }),
     },
@@ -261,7 +261,7 @@ export function registerInfoTools(server: McpServer, ctx: McpCtx) {
       try {
         resolvedId = ctx.db.resolveBusinessId(business_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
       }
 
       const resolvedPeriod = period ?? 'this_year'
@@ -281,7 +281,7 @@ export function registerInfoTools(server: McpServer, ctx: McpCtx) {
 
       if (error) {
         console.error('revenue_summary:', error)
-        return errorResult('Could not compute revenue summary.')
+        return errorResult('Não foi possível calcular o resumo de receita.')
       }
 
       const invoices = (data ?? []) as unknown as SummaryRow[]
@@ -296,7 +296,7 @@ export function registerInfoTools(server: McpServer, ctx: McpCtx) {
       const counted = invoices.filter((inv) => !EXCLUDED_FROM_TOTALS.has(inv.status))
       const currencies = Array.from(new Set(counted.map((inv) => inv.currency)))
 
-      const periodLabel = resolvedPeriod.replace(/_/g, ' ')
+      const periodLabel = ({ this_month: 'este mês', last_month: 'mês passado', this_year: 'este ano', all: 'todo o período' } as const)[resolvedPeriod]
 
       if (currencies.length <= 1) {
         const currency = currencies[0] ?? null
@@ -307,8 +307,8 @@ export function registerInfoTools(server: McpServer, ctx: McpCtx) {
         const overdueTotal = sumBy(overdueRows, 'balance_due')
 
         const summary = currency
-          ? `${periodLabel}: ${formatCurrency(invoicedTotal, currency)} invoiced, ${formatCurrency(paidTotal, currency)} paid, ${formatCurrency(outstandingTotal, currency)} outstanding (${formatCurrency(overdueTotal, currency)} overdue).`
-          : `${periodLabel}: no invoices found.`
+          ? `${periodLabel}: ${formatCurrency(invoicedTotal, currency)} faturados, ${formatCurrency(paidTotal, currency)} pagos, ${formatCurrency(outstandingTotal, currency)} em aberto (${formatCurrency(overdueTotal, currency)} vencidos).`
+          : `${periodLabel}: nenhuma fatura encontrada.`
 
         const result = {
           summary: `${summary}${truncNote}`,
@@ -326,14 +326,14 @@ export function registerInfoTools(server: McpServer, ctx: McpCtx) {
         return jsonResult(result)
       }
 
-      // Mixed currencies within one business (unusual, but not impossible if
-      // an invoice's currency was changed after creation): totals can't be
-      // summed across currencies, so break them out per-currency instead of
-      // returning a meaningless combined number.
+      // Moedas diferentes na mesma empresa (algo incomum, mas possível se
+      // a moeda de uma fatura foi alterada após sua criação): os totais não podem
+      // ser somados entre moedas; portanto, são separados por moeda em vez de
+      // retornar um total combinado sem significado.
       const byCurrency = summarizeByCurrency(counted)
 
-      const summary = `${periodLabel} (mixed currencies): ${byCurrency
-        .map((c) => `${formatCurrency(c.invoiced_total, c.currency)} invoiced`)
+      const summary = `${periodLabel} (moedas diferentes): ${byCurrency
+        .map((c) => `${formatCurrency(c.invoiced_total, c.currency)} faturados`)
         .join('; ')}.`
 
       const result = {

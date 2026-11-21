@@ -10,75 +10,75 @@ import {
   requestedPermissions,
 } from './scopes'
 
-describe('scope parsing', () => {
-  it('reads a space-delimited scope and drops anything unknown', () => {
+describe('interpretação de escopos', () => {
+  it('interpreta escopos separados por espaço e descarta valores desconhecidos', () => {
     expect(parseScope('read write send')).toEqual(['read', 'write', 'send'])
     expect(parseScope('read  payments')).toEqual(['read', 'payments'])
     expect(parseScope('admin root')).toEqual([])
     expect(parseScope(undefined)).toEqual([])
   })
 
-  it('returns scopes in a stable order regardless of request order', () => {
+  it('retorna os escopos em ordem estável, independentemente da ordem solicitada', () => {
     expect(parseScope('payments read')).toEqual(['read', 'payments'])
   })
 })
 
-describe('what the consent screen starts with', () => {
-  it('defaults to read and draft when no scope is requested', () => {
+describe('seleção inicial da tela de consentimento', () => {
+  it('usa leitura e rascunho por padrão quando nenhum escopo é solicitado', () => {
     expect(requestedPermissions(null)).toEqual([...DEFAULT_PERMISSIONS])
   })
 
-  it('pre-selects the requested scopes and always includes read', () => {
+  it('pré-seleciona os escopos solicitados e sempre inclui read', () => {
     expect(requestedPermissions('write send')).toEqual(['read', 'write', 'send'])
     expect(requestedPermissions('delete')).toEqual(['read', 'delete'])
   })
 
-  it('honours a request narrower than the default', () => {
+  it('respeita uma solicitação mais restrita que o padrão', () => {
     expect(requestedPermissions('read')).toEqual(['read'])
   })
 
-  it('falls back to the default when the scope names nothing we know', () => {
+  it('usa o padrão quando os escopos solicitados não incluem nenhum valor conhecido', () => {
     expect(requestedPermissions('openid profile')).toEqual([...DEFAULT_PERMISSIONS])
   })
 })
 
-describe('narrowing', () => {
-  it('keeps only known scopes', () => {
+describe('restrição de escopos', () => {
+  it('mantém somente escopos conhecidos', () => {
     expect(narrowPermissions(['read', 'write', 'root'])).toEqual(['read', 'write'])
   })
 
-  it('never grants above the ceiling, which is how a refresh cannot widen', () => {
+  it('nunca concede permissões acima do limite, impedindo que uma renovação amplie os acessos', () => {
     expect(narrowPermissions(['read', 'write', 'send'], ['read', 'write'])).toEqual([
       'read',
       'write',
     ])
   })
 
-  it('lets a person narrow what the client asked for', () => {
+  it('permite que a pessoa restrinja o que o cliente solicitou', () => {
     const asked = requestedPermissions('write send payments delete')
     expect(asked).toEqual(['read', 'write', 'send', 'delete', 'payments'])
-    // The consent screen unticked send, payments and delete.
+    // A tela de consentimento deixou send, payments e delete desmarcados.
     expect(narrowPermissions(['read', 'write'], asked)).toEqual(['read', 'write'])
   })
 
-  it('always leaves read in a grant', () => {
+  it('sempre mantém read em uma concessão', () => {
     expect(narrowPermissions([])).toEqual(['read'])
     expect(narrowPermissions(['write'])).toEqual(['read', 'write'])
   })
 
-  it('checks subsets for the refresh grant', () => {
+  it('verifica subconjuntos para a concessão de renovação', () => {
     expect(isSubsetOf(['read'], ['read', 'write'])).toBe(true)
     expect(isSubsetOf(['read', 'send'], ['read', 'write'])).toBe(false)
   })
 
-  it('formats a scope string back for the token response', () => {
+  it('formata novamente a string de escopos para a resposta do token', () => {
     expect(formatScope(['read', 'write'])).toBe('read write')
   })
 })
 
-describe('consent copy', () => {
-  it('offers exactly one line per permission, with read fixed', () => {
-    // Order is the screen's (riskiest last), not the scope list's.
+describe('texto de consentimento', () => {
+  it('exibe exatamente uma linha por permissão e mantém read fixo', () => {
+    // A ordem é a da tela (maior risco por último), não a da lista de escopos.
     expect([...CONSENT_CHOICES.map((c) => c.permission)].sort()).toEqual([...OAUTH_SCOPES].sort())
     expect(CONSENT_CHOICES.filter((c) => c.fixed).map((c) => c.permission)).toEqual(['read'])
     for (const choice of CONSENT_CHOICES) {

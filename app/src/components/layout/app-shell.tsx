@@ -20,8 +20,8 @@ export function AppShell({ children }: AppShellProps) {
   const { businesses, isLoading } = useBusiness()
   const onboarding = useOnboarding()
 
-  // In real mode, users without a business go through onboarding first.
-  // /onboarding lives outside the (app) group, so this can't loop.
+  // No modo normal, usuários sem empresa passam primeiro pela configuração inicial.
+  // /onboarding fica fora do grupo (app), evitando um redirecionamento em loop.
   const needsOnboarding =
     !isLoading && businesses.length === 0
 
@@ -41,18 +41,18 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="app-workspace flex h-dvh">
-      {/* Desktop Sidebar */}
+      {/* Barra lateral para computador */}
       <div className="hidden lg:block">
         <Sidebar />
       </div>
 
-      {/* Main Content */}
+      {/* Conteúdo principal */}
       <div className="workspace-frame flex flex-1 flex-col overflow-hidden">
-        {/* Mobile Nav */}
+        {/* Navegação para celular */}
         <MobileNav />
         <WorkspaceHeader />
 
-        {/* Page Content */}
+        {/* Conteúdo da página */}
         <main className="workspace-content relative flex-1 overflow-y-auto">
           <SetupProgress />
           {children}

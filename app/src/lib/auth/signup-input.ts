@@ -16,7 +16,7 @@ export type ParseSignUpInputResult =
   | { success: false; error: string }
 
 /**
- * Validate a sign-up request before any authentication call.
+ * Valida uma solicitação de cadastro antes de qualquer chamada de autenticação.
  */
 export function parseSignUpInput(input: unknown): ParseSignUpInputResult {
   const parsed = signUpInputSchema.safeParse(input)
@@ -25,7 +25,7 @@ export function parseSignUpInput(input: unknown): ParseSignUpInputResult {
       success: false,
       error:
         parsed.error.issues[0]?.message ??
-        'Please check the form and try again.',
+        'Confira o formulário e tente novamente.',
     }
   }
   return { success: true, data: parsed.data }

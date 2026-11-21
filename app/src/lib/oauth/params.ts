@@ -1,34 +1,34 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 
 /**
- * Pure request-parameter rules for the OAuth endpoints. No database, no env, so
- * every rejection below is directly testable and the route handlers stay thin.
+ * Regras puras dos parâmetros de requisição dos endpoints OAuth. Sem banco de dados nem ambiente, então
+ * cada rejeição abaixo pode ser testada diretamente e os handlers das rotas permanecem simples.
  */
 
-/** Longest client-supplied string we will store or echo back. */
+/** Maior string fornecida pelo cliente que armazenaremos ou devolveremos. */
 const MAX_TEXT = 500
 const MAX_CLIENT_NAME = 200
 const MAX_REDIRECT_URIS = 10
 
-/** Hosts an http:// redirect may name. `[::1]` is how WHATWG URL spells ::1. */
+/** Hosts que um redirecionamento http:// pode indicar. `[::1]` é a forma como WHATWG URL representa ::1. */
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
 
 /**
- * Redirect URI allow list.
+ * Lista de URIs de redirecionamento permitidas.
  *
- * https:// anywhere, plus http:// on the loopback names so a CLI or desktop
- * client can catch the redirect on an ephemeral port (RFC 8252). Everything
- * else is refused: a custom scheme cannot be verified to belong to the client,
- * and plain http to a remote host would put the authorization code on the wire
- * in clear text. Fragments are refused because the code is delivered in the
- * query and a fragment would be dropped or duplicated by the client's parser.
+ * https:// em qualquer endereço, além de http:// nos nomes de loopback para que uma CLI ou app de desktop
+ * possa receber o redirecionamento em uma porta efêmera (RFC 8252). Todo o restante
+ * é recusado: não é possível verificar se um esquema personalizado pertence ao cliente,
+ * e o uso de http sem TLS para um host remoto transmitiria o código de autorização
+ * sem criptografia. Fragmentos são recusados porque o código é enviado na
+ * query, e um fragmento seria descartado ou duplicado pelo parser do cliente.
  *
- * All three loopback spellings are accepted. RFC 8252 section 7.3 asks
- * authorization servers to support the IPv6 literal `[::1]` as well as
- * `127.0.0.1`, because an IPv6-only machine cannot bind the IPv4 address at
- * all; `localhost` resolves to either and is accepted alongside them. WHATWG
- * `URL` keeps the brackets in `hostname` for an IPv6 literal, so the
- * comparison is against `[::1]` and not `::1`.
+ * As três formas de loopback são aceitas. A seção 7.3 da RFC 8252 recomenda
+ * que servidores de autorização aceitem o literal IPv6 `[::1]`, além de
+ * `127.0.0.1`, pois uma máquina somente IPv6 não consegue vincular o endereço IPv4
+ * de modo algum; `localhost` pode resolver para qualquer um deles e também é aceito. WHATWG
+ * `URL` mantém os colchetes em `hostname` para um literal IPv6, portanto a
+ * comparação é com `[::1]`, não com `::1`.
  */
 export function isAllowedRedirectUri(value: unknown): value is string {
   if (typeof value !== 'string' || value.length === 0 || value.length > MAX_TEXT) return false
@@ -45,10 +45,10 @@ export function isAllowedRedirectUri(value: unknown): value is string {
 }
 
 /**
- * Registered redirect URIs are matched exactly, byte for byte. Any "starts
- * with" or host-only comparison lets a registered client redirect the code to a
- * path it never registered, which is the classic open-redirect route to code
- * theft.
+ * URIs de redirecionamento registradas são comparadas exatamente, byte a byte. Qualquer comparação "começa
+ * com" ou apenas pelo host permite que um cliente registrado redirecione o código para um
+ * caminho que nunca registrou, a clássica vulnerabilidade de redirecionamento aberto para
+ * roubo do código.
  */
 export function matchesRegisteredRedirect(
   candidate: string,
@@ -58,11 +58,11 @@ export function matchesRegisteredRedirect(
 }
 
 export function normaliseClientName(value: unknown): string {
-  if (typeof value !== 'string') return 'MCP client'
-  // Control characters would let a client name smuggle line breaks into the
-  // consent screen or a log line.
+  if (typeof value !== 'string') return 'Cliente MCP'
+  // Caracteres de controle permitiriam que o nome do cliente inserisse quebras de linha na
+  // tela de consentimento ou em uma linha de log.
   const cleaned = value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim()
-  if (!cleaned) return 'MCP client'
+  if (!cleaned) return 'Cliente MCP'
   return cleaned.slice(0, MAX_CLIENT_NAME)
 }
 
@@ -74,10 +74,10 @@ export interface RedirectUriCheck {
 
 export function validateRedirectUris(value: unknown): RedirectUriCheck {
   if (!Array.isArray(value) || value.length === 0) {
-    return { ok: false, uris: [], reason: 'redirect_uris must be a non-empty array' }
+    return { ok: false, uris: [], reason: 'redirect_uris deve ser uma lista não vazia' }
   }
   if (value.length > MAX_REDIRECT_URIS) {
-    return { ok: false, uris: [], reason: `redirect_uris may not exceed ${MAX_REDIRECT_URIS} entries` }
+    return { ok: false, uris: [], reason: `redirect_uris não pode exceder ${MAX_REDIRECT_URIS} entradas` }
   }
   const uris: string[] = []
   for (const entry of value) {
@@ -86,7 +86,7 @@ export function validateRedirectUris(value: unknown): RedirectUriCheck {
         ok: false,
         uris: [],
         reason:
-          'redirect_uris must be https:// URLs, or http:// on localhost, 127.0.0.1 or [::1]',
+          'redirect_uris deve conter URLs https:// ou URLs http:// em localhost, 127.0.0.1 ou [::1]',
       }
     }
     if (!uris.includes(entry)) uris.push(entry)
@@ -95,8 +95,8 @@ export function validateRedirectUris(value: unknown): RedirectUriCheck {
 }
 
 // ---------------------------------------------------------------------------
-// PKCE (RFC 7636). S256 only: "plain" offers no protection against an attacker
-// who can see the authorization request.
+// PKCE (RFC 7636). Apenas S256: "plain" não oferece proteção contra um invasor
+// que consiga ver a requisição de autorização.
 // ---------------------------------------------------------------------------
 
 const VERIFIER_RE = /^[A-Za-z0-9\-._~]{43,128}$/
@@ -114,7 +114,7 @@ export function challengeFromVerifier(verifier: string): string {
   return createHash('sha256').update(verifier).digest('base64url')
 }
 
-/** Constant-time comparison, so a wrong verifier cannot be found byte by byte. */
+/** Comparação em tempo constante, para que não seja possível descobrir um verificador incorreto byte a byte. */
 export function verifyPkce(verifier: unknown, challenge: string): boolean {
   if (!isValidCodeVerifier(verifier)) return false
   const computed = Buffer.from(challengeFromVerifier(verifier))
@@ -124,10 +124,10 @@ export function verifyPkce(verifier: unknown, challenge: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Secrets
+// Segredos
 // ---------------------------------------------------------------------------
 
-/** 32 bytes of randomness, URL safe. Used for codes and refresh tokens. */
+/** 32 bytes aleatórios, seguros para URL. Usados em códigos e tokens de atualização. */
 export function generateSecret(bytes = 32): string {
   return randomBytes(bytes).toString('base64url')
 }
@@ -141,13 +141,13 @@ export function generateClientId(): string {
 }
 
 // ---------------------------------------------------------------------------
-// RFC 8707 resource indicators
+// Indicadores de recurso da RFC 8707
 // ---------------------------------------------------------------------------
 
 /**
- * A resource indicator, when present, must name this installation's MCP server.
- * Accepting anything else would let a client obtain a token it believes is
- * scoped to a different audience.
+ * Quando presente, o indicador de recurso deve identificar o servidor MCP desta instalação.
+ * Aceitar qualquer outro valor permitiria que um cliente obtivesse um token que acredita estar
+ * limitado a um público diferente.
  */
 export function resourceMatches(candidate: string | null | undefined, resource: string): boolean {
   if (!candidate) return true
@@ -164,7 +164,7 @@ export function resourceMatches(candidate: string | null | undefined, resource: 
   }
 }
 
-/** Builds the redirect back to the client, preserving `state` verbatim. */
+/** Monta o redirecionamento de volta ao cliente, preservando `state` sem alterações. */
 export function buildRedirect(
   redirectUri: string,
   params: Record<string, string | null | undefined>

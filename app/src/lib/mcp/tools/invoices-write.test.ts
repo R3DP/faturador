@@ -110,8 +110,8 @@ beforeEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('create_invoice numbering', () => {
-  it('creates the invoice and claims work through one retryable transaction', async () => {
+describe('numeração de create_invoice', () => {
+  it('cria a fatura e reserva o trabalho em uma transação que pode ser repetida', async () => {
     const { tools, svc } = setup()
     await tools.get('create_invoice')!.handler({
       client_name: 'Globex',
@@ -124,13 +124,13 @@ describe('create_invoice numbering', () => {
     expect(calls[0].payload).toMatchObject({ p_business_id: 'b1', p_client_id: 'c1', p_request_id: '10000000-0000-4000-8000-000000000001' })
     expect(payloadOf(svc, 'invoices', 'insert')).toBeUndefined()
 
-    // The counter is advanced inside that same statement. Writing
-    // businesses.next_invoice_number = read + 1 by hand, which is what this
-    // replaces, gave two concurrent creates the same number.
+    // O contador é incrementado dentro dessa mesma instrução. Atualizar
+    // businesses.next_invoice_number = read + 1 manualmente, como este fluxo
+    // substitui, fazia duas criações simultâneas receberem o mesmo número.
     expect(svc.calls.some((c) => c.table === 'businesses' && c.op === 'update')).toBe(false)
   })
 
-  it('writes no invoice at all when no number can be allocated', async () => {
+  it('não grava nenhuma fatura quando não é possível atribuir um número', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const { tools, svc } = setup({
       'rpc.create_invoice_document': { data: null, error: { message: 'forbidden' } },
@@ -147,14 +147,13 @@ describe('create_invoice numbering', () => {
 })
 
 /**
- * Billing agreed work off an engagement schedule. The tool
- * layer passes ids and nothing else: the line description, the amount and the
- * claim that marks the entry invoiced are all built in SQL inside the same
- * transaction, so an entry cannot be re-priced here and cannot end up on two
- * invoices.
+ * Faturamento do trabalho acordado conforme o cronograma do contrato. A camada
+ * da ferramenta envia somente os IDs: a descrição do item, o valor e a reserva
+ * que o marca como faturado são definidos em SQL dentro da mesma transação,
+ * evitando que o item seja reprecificado aqui ou apareça em duas faturas.
  */
-describe('create_invoice from engagement entries', () => {
-  it('passes the entry ids to the RPC and prices nothing itself', async () => {
+describe('create_invoice a partir dos itens do contrato', () => {
+  it('envia os IDs dos itens à RPC sem calcular os valores', async () => {
     const { tools, svc } = setup()
     const result = body(
       await tools.get('create_invoice')!.handler({
@@ -166,13 +165,13 @@ describe('create_invoice from engagement entries', () => {
 
     const call = rpcCalls(svc, 'create_invoice_document')[0]
     expect(call.payload).toMatchObject({ p_engagement_entry_ids: ['ent1', 'ent2'] })
-    // No written out lines at all: the schedule supplies them.
+    // Nenhum item foi informado diretamente: o cronograma os fornece.
     expect((call.payload as { p_lines: unknown[] }).p_lines).toEqual([])
     expect(result.billed_engagement_entry_ids).toEqual(['ent1', 'ent2'])
-    expect(result.summary).toContain('cannot be billed again')
+    expect(result.summary).toContain('não poderão ser faturados novamente')
   })
 
-  it('sends an empty list when no entries were asked for', async () => {
+  it('envia uma lista vazia quando nenhum item foi solicitado', async () => {
     const { tools, svc } = setup()
     const result = body(
       await tools.get('create_invoice')!.handler({
@@ -184,10 +183,10 @@ describe('create_invoice from engagement entries', () => {
     expect(rpcCalls(svc, 'create_invoice_document')[0].payload).toMatchObject({
       p_engagement_entry_ids: [],
     })
-    expect(result.summary).not.toContain('cannot be billed again')
+    expect(result.summary).not.toContain('não poderão ser faturados novamente')
   })
 
-  it('relays a double billing refusal as something a caller can act on', async () => {
+  it('transmite a recusa de faturamento duplicado com uma orientação útil', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const { tools, svc } = setup({
       'rpc.create_invoice_document': {
@@ -202,11 +201,11 @@ describe('create_invoice from engagement entries', () => {
     })
 
     expect(result.isError).toBe(true)
-    expect(result.content[0].text).toContain('already on an invoice')
+    expect(result.content[0].text).toContain('já está em uma fatura')
     expect(svc.calls.some((c) => c.table === 'invoices' && c.op === 'insert')).toBe(false)
   })
 
-  it('explains an entry that is not billable yet', async () => {
+  it('explica que o item ainda não pode ser faturado', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const { tools } = setup({
       'rpc.create_invoice_document': {
@@ -219,10 +218,10 @@ describe('create_invoice from engagement entries', () => {
       request_id: '10000000-0000-4000-8000-000000000001',
       engagement_entry_ids: ['ent1'],
     })
-    expect(result.content[0].text).toContain('not ready to bill yet')
+    expect(result.content[0].text).toContain('ainda não está pronto para faturar')
   })
 
-  it('explains a currency mismatch rather than converting', async () => {
+  it('explica a divergência de moeda sem converter valores', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const { tools } = setup({
       'rpc.create_invoice_document': {
@@ -236,19 +235,19 @@ describe('create_invoice from engagement entries', () => {
       currency: 'EUR',
       engagement_entry_ids: ['ent1'],
     })
-    expect(result.content[0].text).toContain('never converts money')
+    expect(result.content[0].text).toContain('nunca converte valores')
   })
 })
 
 /**
- * update_draft_invoice now routes through replace_invoice_line_items
- * instead of deleting the stored rows, inserting the new
- * ones, and attempting to re-insert the deleted rows if that failed. When the
- * restore itself failed, the invoice was left showing a total with nothing
- * under it and the tool asked the caller to repair the document by hand.
+ * update_draft_invoice agora usa replace_invoice_line_items em vez de excluir
+ * as linhas armazenadas, inserir as novas e tentar reinserir as anteriores em
+ * caso de falha. Se a restauração também falhasse, a fatura ficava com um total,
+ * mas sem itens, e a ferramenta pedia ao solicitante que corrigisse o documento
+ * manualmente.
  */
 describe('update_draft_invoice', () => {
-  it('replaces the line items and the totals in a single transaction', async () => {
+  it('substitui os itens e os totais em uma única transação', async () => {
     const { tools, svc } = setup()
     const result = await tools.get('update_draft_invoice')!.handler({
       invoice_id: 'inv1',
@@ -262,8 +261,8 @@ describe('update_draft_invoice', () => {
     expect(args.p_line_items).toEqual([{ description: 'Rework', quantity: 2, rate: 125, amount: 250 }])
     expect((args.p_invoice_patch as { total: number }).total).toBe(250)
 
-    // balance_due is never sent: the RPC derives it as total - amount_paid, so
-    // editing an invoice cannot erase payments already recorded against it.
+    // balance_due nunca é enviado: a RPC o calcula como total - amount_paid,
+    // para que a edição da fatura não apague pagamentos já registrados.
     expect(args.p_invoice_patch).not.toHaveProperty('balance_due')
 
     expect(svc.calls.some((c) => c.table === 'invoice_line_items' && c.op === 'delete')).toBe(false)
@@ -271,18 +270,18 @@ describe('update_draft_invoice', () => {
     expect(body(result).invoice.total).toBe(250)
   })
 
-  it('leaves the stored lines untouched when only the header fields change', async () => {
+  it('mantém os itens armazenados quando somente os campos do cabeçalho mudam', async () => {
     const { tools, svc } = setup()
     await tools.get('update_draft_invoice')!.handler({ invoice_id: 'inv1', notes: 'Revised' })
 
     expect(rpcCalls(svc, 'replace_invoice_line_items')).toHaveLength(0)
     const patch = payloadOf(svc, 'invoices', 'update')!
     expect(patch.notes).toBe('Revised')
-    // Recomputed from the stored line, unchanged.
+    // Recalculado com base no item armazenado, sem alterações.
     expect(patch.total).toBe(100)
   })
 
-  it('refuses an invoice that is no longer a draft', async () => {
+  it('recusa uma fatura que não está mais em rascunho', async () => {
     const { tools, svc } = setup({
       'invoices.select': { data: { ...DRAFT_INVOICE, status: 'sent' }, error: null },
     })
@@ -295,7 +294,7 @@ describe('update_draft_invoice', () => {
     expect(rpcCalls(svc, 'replace_invoice_line_items')).toHaveLength(0)
   })
 
-  it('refuses an invoice belonging to another business, via ScopedDb', async () => {
+  it('recusa, via ScopedDb, uma fatura que pertence a outra empresa', async () => {
     const { tools, svc } = setup({
       'invoices.select': { data: { ...DRAFT_INVOICE, business_id: 'bX' }, error: null },
     })
@@ -305,11 +304,11 @@ describe('update_draft_invoice', () => {
     })
 
     expect(result.isError).toBe(true)
-    expect(result.content[0].text).toBe('Invoice not found')
+    expect(result.content[0].text).toBe('Fatura não encontrada')
     expect(rpcCalls(svc, 'replace_invoice_line_items')).toHaveLength(0)
   })
 
-  it('never reports an invoice left with no line items, because that is unreachable', async () => {
+  it('nunca informa que a fatura ficou sem itens, pois esse estado não pode ocorrer', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const { tools } = setup({
       'rpc.replace_invoice_line_items': { data: null, error: { message: 'deadlock detected' } },
@@ -320,7 +319,7 @@ describe('update_draft_invoice', () => {
     })
 
     expect(result.isError).toBe(true)
-    expect(result.content[0].text).toContain('left unchanged')
-    expect(result.content[0].text).not.toContain('no line items')
+    expect(result.content[0].text).toContain('não foi alterada')
+    expect(result.content[0].text).not.toContain('sem itens de linha')
   })
 })

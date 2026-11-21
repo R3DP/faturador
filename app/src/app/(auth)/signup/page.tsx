@@ -15,9 +15,9 @@ import { signUpAction, signupStatusAction } from '@/lib/auth/actions'
 import { SIGNUP_CLOSED_MESSAGE } from '@/lib/auth/signup-closed'
 
 const signupSchema = z.object({
-  fullName: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  fullName: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
+  email: z.string().email('Informe um endereço de e-mail válido'),
+  password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres'),
 })
 
 type SignupForm = z.infer<typeof signupSchema>
@@ -44,8 +44,8 @@ export default function SignupPage() {
 
   async function onSubmit(data: SignupForm) {
     setError(null)
-    // Server action, not a direct browser call to Supabase, so the attempt
-    // passes our rate limit and abuse lockout first (src/lib/auth/guard.ts).
+    // A ação de servidor, em vez de uma chamada direta do navegador ao Supabase, faz com que a tentativa
+    // passe primeiro pelo nosso limite de requisições e bloqueio contra abuso (src/lib/auth/guard.ts).
     const result = await signUpAction({
       email: data.email,
       password: data.password,
@@ -54,29 +54,29 @@ export default function SignupPage() {
 
     if (!result.success) {
       setError(
-        result.error ?? 'Could not create your account. Please try again.',
+        result.error ?? 'Não foi possível criar sua conta. Tente novamente.',
       )
       return
     }
 
-    // Email autoconfirm is on, so signUp returns an active session
+    // A confirmação automática de e-mail está ativada, então signUp retorna uma sessão ativa
     if (result.hasSession) {
       router.push('/onboarding')
       router.refresh()
       return
     }
 
-    // Fallback: confirmation email required
+    // Alternativa: é necessário confirmar pelo e-mail
     setEmailSent(true)
   }
 
   if (open === false) {
     return (
       <div className="w-full max-w-sm text-center">
-        <h1 className="text-xl font-semibold">Sign-up is closed</h1>
+        <h1 className="text-xl font-semibold">O cadastro está fechado</h1>
         <p className="mt-2 text-sm text-muted-foreground">{SIGNUP_CLOSED_MESSAGE}</p>
         <Link href="/login" className="mt-6 inline-block text-sm font-medium underline">
-          Sign in instead
+          Já tem uma conta? Entre
         </Link>
       </div>
     )
@@ -89,15 +89,15 @@ export default function SignupPage() {
           <Check className="h-8 w-8 text-green-600" />
         </div>
         <h1 className="mt-6 text-2xl font-bold tracking-tight text-foreground">
-          Check your email
+          Confira seu e-mail
         </h1>
         <p className="mt-3 text-muted-foreground">
-          We&apos;ve sent you a confirmation link. Please check your email to
-          verify your account.
+          Enviamos um link de confirmação. Confira seu e-mail para
+          confirmar sua conta.
         </p>
         <Button className="mt-8" variant="outline" asChild>
           <Link href="/login">
-            Back to sign in
+            Voltar para entrar
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
@@ -109,7 +109,7 @@ export default function SignupPage() {
     <div className="w-full max-w-sm">
       <div className="text-center">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          Create your account
+          Criar sua conta
         </h1>
       </div>
 
@@ -123,11 +123,11 @@ export default function SignupPage() {
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="fullName">Full name</Label>
+          <Label htmlFor="fullName">Nome completo</Label>
           <Input
             id="fullName"
             type="text"
-            placeholder="John Doe"
+            placeholder="João da Silva"
             autoComplete="name"
             {...register('fullName')}
           />
@@ -139,7 +139,7 @@ export default function SignupPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">E-mail</Label>
           <Input
             id="email"
             type="email"
@@ -153,11 +153,11 @@ export default function SignupPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">Senha</Label>
           <Input
             id="password"
             type="password"
-            placeholder="Min. 8 characters"
+            placeholder="Mín. 8 caracteres"
             autoComplete="new-password"
             {...register('password')}
           />
@@ -174,14 +174,14 @@ export default function SignupPage() {
           disabled={isSubmitting}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Create account
+          Criar conta
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        Already have an account?{' '}
+        Já tem uma conta?{' '}
         <Link href="/login" className="text-primary hover:underline">
-          Sign in
+          Entrar
         </Link>
       </p>
     </div>

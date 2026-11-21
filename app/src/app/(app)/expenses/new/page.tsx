@@ -75,8 +75,8 @@ export default function NewExpensePage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Add Expense"
-        description="Record a business expense"
+        title="Adicionar despesa"
+        description="Registre uma despesa da empresa"
       />
 
       <div className="mt-6 max-w-2xl">

@@ -2,21 +2,21 @@ import { protectedResourceMetadataUrl } from '@/lib/oauth/metadata'
 import { toolPermission } from './permissions'
 
 /**
- * What the ChatGPT and Codex plugin hosts read from Billr's MCP server, kept in
- * one place so the tool files stay free of host-specific metadata.
+ * O que os hosts de plugins ChatGPT e Codex leem do servidor MCP do Faturador, mantido em
+ * um só lugar para que os arquivos das ferramentas não precisem conter metadados específicos de cada host.
  *
- * Sources, read 2026-10-01:
+ * Fontes consultadas em 2026-10-01:
  *   https://developers.openai.com/plugins/build/auth.md       securitySchemes,
  *     _meta["mcp/www_authenticate"], get_profile
- *   https://developers.openai.com/plugins/build/chatgpt-ui.md  ui:// resources,
- *     _meta.ui.resourceUri and its "openai/outputTemplate" alias,
+ *   https://developers.openai.com/plugins/build/chatgpt-ui.md  recursos ui://,
+ *     _meta.ui.resourceUri e seu alias "openai/outputTemplate",
  *     structuredContent
  *
- * All of it is additive. A client that ignores `_meta` (Claude, Cursor, the
- * Codex CLI) sees exactly the tools it saw before.
+ * Tudo isso é aditivo. Um cliente que ignora `_meta` (Claude, Cursor e o
+ * Codex CLI) continua vendo exatamente as mesmas ferramentas de antes.
  */
 
-/** Tools that render a Billr card, and the ui:// resource each one uses. */
+/** Ferramentas que exibem um cartão do Faturador e o recurso ui:// usado por cada uma. */
 export const WIDGET_TOOLS = {
   get_invoice: 'ui://billr/invoice-v1.html',
   get_estimate: 'ui://billr/estimate-v1.html',
@@ -27,10 +27,10 @@ export const WIDGET_TOOLS = {
 export type WidgetTool = keyof typeof WIDGET_TOOLS
 
 const STATUS_TEXT: Record<WidgetTool, { invoking: string; invoked: string }> = {
-  get_invoice: { invoking: 'Opening invoice', invoked: 'Invoice ready' },
-  get_estimate: { invoking: 'Opening estimate', invoked: 'Estimate ready' },
-  revenue_summary: { invoking: 'Adding up revenue', invoked: 'Revenue summary ready' },
-  list_ready_to_bill: { invoking: 'Finding work to bill', invoked: 'Ready-to-bill list ready' },
+  get_invoice: { invoking: 'Abrindo fatura', invoked: 'Fatura pronta' },
+  get_estimate: { invoking: 'Abrindo estimativa', invoked: 'Estimativa pronta' },
+  revenue_summary: { invoking: 'Calculando faturamento', invoked: 'Resumo do faturamento pronto' },
+  list_ready_to_bill: { invoking: 'Buscando trabalho para faturar', invoked: 'Lista de itens prontos para faturar' },
 }
 
 function isWidgetTool(name: string): name is WidgetTool {
@@ -38,15 +38,15 @@ function isWidgetTool(name: string): name is WidgetTool {
 }
 
 /**
- * OAuth scopes a tool needs. Billr's scopes are its permission names (read,
- * write, send, delete, payments), so the mapping is the permission table.
+ * Escopos OAuth necessários para cada ferramenta. Os escopos do Faturador são os nomes de suas permissões (read,
+ * write, send, delete, payments); por isso, o mapeamento é a tabela de permissões.
  */
 export function securitySchemesFor(name: string) {
   const permission = toolPermission(name)
   return permission ? [{ type: 'oauth2', scopes: [permission] }] : []
 }
 
-/** `_meta` added to a tool's descriptor in tools/list. */
+/** `_meta` adicionado à descrição de uma ferramenta em tools/list. */
 export function toolMetaFor(name: string): Record<string, unknown> {
   const meta: Record<string, unknown> = { securitySchemes: securitySchemesFor(name) }
   if (isWidgetTool(name)) {
@@ -59,7 +59,7 @@ export function toolMetaFor(name: string): Record<string, unknown> {
   return meta
 }
 
-/** Merges host metadata into a registerTool config without dropping its own. */
+/** Mescla os metadados do host à configuração de registerTool sem remover os metadados existentes. */
 export function withToolMeta<T>(name: string, config: T): T {
   if (!config || typeof config !== 'object') return config
   const existing = (config as { _meta?: Record<string, unknown> })._meta ?? {}
@@ -73,9 +73,9 @@ interface ToolResultLike {
 }
 
 /**
- * Billr's tools return their data as one JSON text block (jsonResult). A UI
- * host renders `structuredContent`, so for the tools that have a card the same
- * object is mirrored there. The text block stays, for every client without UI.
+ * As ferramentas do Faturador retornam dados em um único bloco de texto JSON (jsonResult). Um host de interface
+ * ele renderiza `structuredContent`; por isso, para as ferramentas com cartão, o mesmo
+ * objeto também é disponibilizado nesse campo. O bloco de texto permanece para clientes sem interface.
  */
 export function withStructuredContent<T>(name: string, result: T): T {
   if (!isWidgetTool(name)) return result
@@ -89,14 +89,14 @@ export function withStructuredContent<T>(name: string, result: T): T {
       return { ...result, structuredContent: parsed }
     }
   } catch {
-    // Not JSON: leave the result alone.
+    // Não é JSON: mantém o resultado inalterado.
   }
   return result
 }
 
 /**
- * A tool error that makes ChatGPT show its "Sign in to Billr" button instead of
- * a dead end. The challenge must carry both `error` and `error_description`.
+ * Um erro da ferramenta que faz o ChatGPT exibir o botão "Entrar no Faturador" em vez de
+ * deixar a pessoa sem saída. O desafio precisa incluir `error` e `error_description`.
  */
 export function authErrorResult(text: string, error: 'invalid_token' | 'insufficient_scope') {
   const resourceMetadata = protectedResourceMetadataUrl()

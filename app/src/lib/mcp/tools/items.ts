@@ -9,45 +9,45 @@ import type { Database } from '@/types/database'
 const UNITS = ['hour', 'day', 'week', 'month', 'project', 'item', 'unit'] as const
 
 /**
- * items rows carry the same provenance columns (created_via,
- * created_by_key_id) as every other agent-writable table.
+ * As linhas de items têm as mesmas colunas de procedência (created_via,
+ * created_by_key_id) que as demais tabelas graváveis por agentes.
  */
 type ItemInsert = Database['public']['Tables']['items']['Insert']
 
 /**
- * Registers the saved-item catalog tools (create_item, update_item,
- * list_items), scoped to the businesses in ctx.db.scope.
+ * Registra as ferramentas do catálogo de itens salvos (create_item, update_item,
+ * list_items), limitadas às empresas em ctx.db.scope.
  *
- * The catalog is what makes "bill 3 hours of Consulting" work: create_invoice
- * and create_estimate accept item_id / item_name per line and pull the stored
- * rate and description from here (see src/lib/mcp/line-items.ts).
+ * O catálogo torna possível, por exemplo, "faturar 3 horas de Consultoria" funcionar: create_invoice
+ * e create_estimate aceitam item_id / item_name em cada linha e obtêm o
+ * preço e a descrição salvos daqui (consulte src/lib/mcp/line-items.ts).
  */
 export function registerItemTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'list_items',
     {
-      title: 'List Saved Items',
+      title: 'Listar itens salvos',
       description:
-        'List the saved product/service catalog for a business, with each item\'s stored rate. Use this before create_invoice or create_estimate when the user names a service ("Consulting", "Design retainer") so you bill the saved rate instead of guessing. Not for looking up what was billed on a specific invoice; use get_invoice for that.',
+        'Lista o catálogo de produtos e serviços salvos de uma empresa, com o preço salvo de cada item. Use antes de create_invoice ou create_estimate quando a pessoa mencionar um serviço ("Consultoria", "Retainer de design") para usar o preço salvo em vez de estimar. Não serve para consultar o que foi faturado em uma fatura específica; use get_invoice.',
       inputSchema: z.object({
-        offset: z.number().int().min(0).max(1000000).optional().describe('Page offset. Start at 0, then use next_offset until it is null. Keep other filters unchanged.'),
+        offset: z.number().int().min(0).max(1000000).optional().describe('Deslocamento da página. Comece em 0 e use next_offset até que seja null. Mantenha os demais filtros inalterados.'),
         business_id: z
           .string()
           .uuid()
           .optional()
           .describe(
-            'Id of the business whose catalog to list. Optional when the API key is scoped to exactly one business; required if scoped to multiple.'
+            'ID da empresa cujo catálogo será listado. Opcional quando a chave de API tem escopo de uma única empresa; obrigatório quando abrange várias.'
           ),
         search: z
           .string()
           .max(200)
           .optional()
-          .describe('Case-insensitive substring match on the item name. Omit to list everything.'),
+          .describe('Busca por trecho do nome do item, sem diferenciar maiúsculas de minúsculas. Omita para listar todos.'),
         include_inactive: z
           .boolean()
           .optional()
-          .describe('Include items that have been deactivated. Defaults to false (active items only).'),
-        limit: z.number().int().min(1).max(200).optional().describe('Max items to return (default 50, max 200).'),
+          .describe('Inclui itens desativados. O padrão é false (somente itens ativos).'),
+        limit: z.number().int().min(1).max(200).optional().describe('Máximo de itens a retornar (padrão 50, máximo 200).'),
       }),
     },
     async ({ offset, business_id, search, include_inactive, limit }) => {
@@ -55,7 +55,7 @@ export function registerItemTools(server: McpServer, ctx: McpCtx) {
       try {
         resolvedBusinessId = ctx.db.resolveBusinessId(business_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
       }
 
       const resolvedLimit = limit ?? 50
@@ -79,7 +79,7 @@ export function registerItemTools(server: McpServer, ctx: McpCtx) {
 
       if (error) {
         console.error('list_items:', error)
-        return errorResult('Could not list saved items.')
+        return errorResult('Não foi possível listar os itens salvos.')
       }
 
       const items = data ?? []
@@ -88,7 +88,7 @@ export function registerItemTools(server: McpServer, ctx: McpCtx) {
       return jsonResult({
         offset: offset ?? 0,
         next_offset: (data ?? []).length === resolvedLimit ? (offset ?? 0) + resolvedLimit : null,
-        summary: `${items.length} saved item${items.length === 1 ? '' : 's'}${truncated ? truncationNote(resolvedLimit) : ''}`,
+        summary: `${items.length} item salvo${items.length === 1 ? '' : 's'}${truncated ? truncationNote(resolvedLimit) : ''}`,
         items,
         app_url: `${appUrl()}/items`,
       })
@@ -98,39 +98,39 @@ export function registerItemTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'create_item',
     {
-      title: 'Create Saved Item',
+      title: 'Criar item salvo',
       description:
-        'Add a product or service to the saved catalog so future invoices and estimates can bill it by name at a consistent rate. Use this when the user says "my rate for X is Y" or wants a reusable line. Do NOT use it to add a one-off line to an existing invoice; pass line_items to create_invoice or update_draft_invoice instead.',
+        'Adiciona um produto ou serviço ao catálogo para que futuras faturas e estimativas possam cobrá-lo pelo nome e por um preço consistente. Use quando a pessoa disser "minha tarifa para X é Y" ou quiser uma linha reutilizável. NÃO use para adicionar uma linha avulsa a uma fatura existente; passe line_items para create_invoice ou update_draft_invoice.',
       inputSchema: z.object({
         business_id: z
           .string()
           .uuid()
           .optional()
           .describe(
-            'Id of the business to add the item under. Optional when the API key is scoped to exactly one business; required if scoped to multiple.'
+            'ID da empresa à qual adicionar o item. Opcional quando a chave de API tem escopo de uma única empresa; obrigatório quando abrange várias.'
           ),
         name: z
           .string()
           .min(1)
           .max(200)
-          .describe('Short catalog name, e.g. "Consulting". This is what item_name matches on later, so keep it distinct.'),
-        rate: z.number().min(0).describe('Default rate per unit, in the business currency.'),
+          .describe('Nome curto no catálogo, por exemplo "Consultoria". Este é o nome usado depois em item_name; escolha um nome distinto.'),
+        rate: z.number().min(0).describe('Preço padrão por unidade, na moeda da empresa.'),
         description: z
           .string()
           .max(500)
           .optional()
-          .describe('Longer description used as the invoice line text. Defaults to the name when omitted.'),
+          .describe('Descrição mais longa usada como texto da linha da fatura. Se omitida, o nome será usado.'),
         unit: z
           .enum(UNITS)
           .optional()
-          .describe('Unit the rate is quoted in, e.g. "hour". Display only; it does not affect the math.'),
-        type: z.enum(['service', 'product']).optional().describe('Item type. Defaults to "service".'),
+          .describe('Unidade usada para expressar o preço, por exemplo "hora". Apenas para exibição; não afeta os cálculos.'),
+        type: z.enum(['service', 'product']).optional().describe('Tipo de item. O padrão é "service".'),
         tax_rate: z
           .number()
           .min(0)
           .max(100)
           .optional()
-          .describe('Default tax rate percent stored with the item. Defaults to 0.'),
+          .describe('Percentual de imposto padrão salvo com o item. O padrão é 0.'),
       }),
     },
     async ({ business_id, name, rate, description, unit, type, tax_rate }) => {
@@ -138,7 +138,7 @@ export function registerItemTools(server: McpServer, ctx: McpCtx) {
       try {
         resolvedBusinessId = ctx.db.resolveBusinessId(business_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
       }
 
       const { data: existing, error: existingError } = await ctx.db.svc
@@ -150,12 +150,12 @@ export function registerItemTools(server: McpServer, ctx: McpCtx) {
 
       if (existingError) {
         console.error('create_item (duplicate check):', existingError)
-        return errorResult('Could not check for an existing item with that name.')
+        return errorResult('Não foi possível verificar se já existe um item com esse nome.')
       }
 
       if (existing && existing.length > 0) {
         return errorResult(
-          `An item named "${existing[0].name}" already exists in this business (${existing[0].id}, rate ${existing[0].rate}). Use update_item to change its rate instead of creating a duplicate.`
+          `Já existe um item chamado "${existing[0].name}" nesta empresa (${existing[0].id}, preço ${existing[0].rate}). Use update_item para alterar o preço em vez de criar uma duplicata.`
         )
       }
 
@@ -176,11 +176,11 @@ export function registerItemTools(server: McpServer, ctx: McpCtx) {
 
       if (error || !item) {
         console.error('create_item (insert):', error)
-        return errorResult('Could not create saved item.')
+        return errorResult('Não foi possível criar o item salvo.')
       }
 
       return jsonResult({
-        summary: `Saved "${item.name}" at ${item.rate}${item.unit ? ` per ${item.unit}` : ''}`,
+        summary: `Item "${item.name}" salvo por ${item.rate}${item.unit ? ` por ${item.unit}` : ''}`,
         item: {
           id: item.id,
           business_id: item.business_id,
@@ -200,33 +200,33 @@ export function registerItemTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'update_item',
     {
-      title: 'Update Saved Item',
+      title: 'Atualizar item salvo',
       description:
-        'Change a saved item\'s rate, name, description, unit, or active flag. Identify it by item_id or by exact item_name. Changes apply to FUTURE invoices and estimates only; already-issued documents keep the rate they were billed at, so do not use this to correct an invoice (use update_draft_invoice).',
+        'Altera preço, nome, descrição, unidade ou indicador de ativo de um item salvo. Identifique-o por item_id ou pelo item_name exato. As alterações valem somente para FUTURAS faturas e estimativas; documentos já emitidos mantêm o preço cobrado. Não use para corrigir uma fatura (use update_draft_invoice).',
       inputSchema: z.object({
         business_id: z
           .string()
           .uuid()
           .optional()
           .describe(
-            'Id of the business the item belongs to. Optional when the API key is scoped to exactly one business; required if scoped to multiple.'
+            'ID da empresa à qual o item pertence. Opcional quando a chave de API tem escopo de uma única empresa; obrigatório quando abrange várias.'
           ),
-        item_id: z.string().uuid().optional().describe('Id of the item to update. Provide this or item_name.'),
+        item_id: z.string().uuid().optional().describe('ID do item a atualizar. Informe este campo ou item_name.'),
         item_name: z
           .string()
           .max(200)
           .optional()
-          .describe('Exact (case-insensitive) current item name. Provide this or item_id.'),
-        name: z.string().min(1).max(200).optional().describe('New catalog name.'),
-        rate: z.number().min(0).optional().describe('New default rate per unit.'),
-        description: z.string().max(500).optional().describe('New description used as invoice line text.'),
-        unit: z.enum(UNITS).optional().describe('New unit the rate is quoted in.'),
-        type: z.enum(['service', 'product']).optional().describe('New item type.'),
-        tax_rate: z.number().min(0).max(100).optional().describe('New default tax rate percent.'),
+          .describe('Nome atual exato do item (sem diferenciar maiúsculas de minúsculas). Informe este campo ou item_id.'),
+        name: z.string().min(1).max(200).optional().describe('Novo nome no catálogo.'),
+        rate: z.number().min(0).optional().describe('Novo preço padrão por unidade.'),
+        description: z.string().max(500).optional().describe('Nova descrição usada como texto da linha da fatura.'),
+        unit: z.enum(UNITS).optional().describe('Nova unidade usada para expressar o preço.'),
+        type: z.enum(['service', 'product']).optional().describe('Novo tipo de item.'),
+        tax_rate: z.number().min(0).max(100).optional().describe('Novo percentual de imposto padrão.'),
         is_active: z
           .boolean()
           .optional()
-          .describe('Set false to retire an item without deleting it. Retired items are hidden from list_items by default.'),
+          .describe('Defina como false para desativar o item sem excluí-lo. Por padrão, itens desativados ficam ocultos em list_items.'),
       }),
     },
     async ({ business_id, item_id, item_name, name, rate, description, unit, type, tax_rate, is_active }) => {
@@ -234,14 +234,14 @@ export function registerItemTools(server: McpServer, ctx: McpCtx) {
       try {
         resolvedBusinessId = ctx.db.resolveBusinessId(business_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
       }
 
       let item
       try {
         item = await resolveItem(ctx, resolvedBusinessId, item_id, item_name)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve saved item.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível localizar o item salvo.')
       }
 
       const updates: Database['public']['Tables']['items']['Update'] = {}
@@ -254,7 +254,7 @@ export function registerItemTools(server: McpServer, ctx: McpCtx) {
       if (is_active !== undefined) updates.is_active = is_active
 
       if (Object.keys(updates).length === 0) {
-        return errorResult('Nothing to update. Pass at least one field to change.')
+        return errorResult('Nada para atualizar. Informe pelo menos um campo para alterar.')
       }
 
       const { data: updated, error } = await ctx.db.svc
@@ -267,11 +267,11 @@ export function registerItemTools(server: McpServer, ctx: McpCtx) {
 
       if (error || !updated) {
         console.error('update_item (update):', error)
-        return errorResult('Could not update saved item.')
+        return errorResult('Não foi possível atualizar o item salvo.')
       }
 
       return jsonResult({
-        summary: `Updated "${updated.name}" (${Object.keys(updates).join(', ')})`,
+        summary: `Atualizado "${updated.name}" (${Object.keys(updates).join(', ')})`,
         item: {
           id: updated.id,
           business_id: updated.business_id,

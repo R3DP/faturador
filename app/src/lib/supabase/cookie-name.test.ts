@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { authCookieName } from './cookie-name'
-it('uses the public API identity even when the server has an internal URL', () => {
+it('usa a identidade da API pública mesmo quando o servidor tem uma URL interna', () => {
   expect(authCookieName('https://example.supabase.co')).toBe(
     'sb-example-auth-token',
   )

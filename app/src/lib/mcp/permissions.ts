@@ -5,7 +5,7 @@ export const KEY_PROFILES = {
   full: ['read', 'write', 'send', 'payments', 'delete'],
 } as const
 export type KeyProfile = keyof typeof KEY_PROFILES
-// Unknown tools are denied until explicitly categorized.
+// Ferramentas desconhecidas são bloqueadas até serem categorizadas explicitamente.
 const reads = new Set([
   'list_clients',
   'get_client',

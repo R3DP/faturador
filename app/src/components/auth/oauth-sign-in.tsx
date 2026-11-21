@@ -12,8 +12,8 @@ import {
 } from '@/lib/auth/oauth-providers'
 
 /**
- * GitHub's mark from Octicons (MIT), inline so it follows the text colour.
- * Google gets a neutral in-house glyph.
+ * Marca do GitHub do Octicons (MIT), incorporada para acompanhar a cor do texto.
+ * O Google usa um símbolo neutro próprio.
  */
 function GitHubMark() {
   return (
@@ -37,12 +37,12 @@ function ProviderMark({ provider }: { provider: OAuthProviderId }) {
 }
 
 /**
- * Social sign-in buttons.
+ * Botões de login por redes sociais.
  *
- * Supabase publishes provider availability, so each button appears only once
- * its provider is configured and no redeployment is needed to turn one on.
- * With none configured this collapses to spacing and the email form below is
- * the only way in.
+ * O Supabase informa quais provedores estão disponíveis, então cada botão só aparece quando
+ * o provedor está configurado; não é necessário fazer nova implantação para ativá-lo.
+ * Se nenhum estiver configurado, esta seção desaparece e o formulário de e-mail abaixo fica
+ * como única forma de entrar.
  */
 export function OAuthSignIn({ next = '/dashboard' }: { next?: string }) {
   const [providers, setProviders] = useState<OAuthProviderId[]>([])
@@ -70,7 +70,7 @@ export function OAuthSignIn({ next = '/dashboard' }: { next?: string }) {
       setError(
         e instanceof Error
           ? e.message
-          : `Could not connect to ${OAUTH_PROVIDERS[provider].label}. Please try again.`,
+          : `Não foi possível conectar a ${OAUTH_PROVIDERS[provider].label}. Tente novamente.`,
       )
       setBusy(null)
     }
@@ -96,8 +96,8 @@ export function OAuthSignIn({ next = '/dashboard' }: { next?: string }) {
                   <ProviderMark provider={provider} />
                 )}
                 {busy === provider
-                  ? `Connecting to ${OAUTH_PROVIDERS[provider].label}…`
-                  : `Continue with ${OAUTH_PROVIDERS[provider].label}`}
+                  ? `Conectando a ${OAUTH_PROVIDERS[provider].label}…`
+                  : `Continuar com ${OAUTH_PROVIDERS[provider].label}`}
               </Button>
             ))}
           </div>
@@ -111,7 +111,7 @@ export function OAuthSignIn({ next = '/dashboard' }: { next?: string }) {
           )}
           <div className="my-6 flex items-center gap-4 text-xs text-muted-foreground">
             <span className="h-px flex-1 bg-border" />
-            or continue with email
+            ou continue com e-mail
             <span className="h-px flex-1 bg-border" />
           </div>
         </>

@@ -23,9 +23,9 @@ function CodeCard({ code, id }: { code: ConnectCode; id: string }) {
     try {
       await navigator.clipboard.writeText(code.text)
       setCopied(true)
-      toast.success('Copied')
+      toast.success('Copiado')
     } catch {
-      toast.error('Could not copy. Select the text and copy it manually.')
+      toast.error('Não foi possível copiar. Selecione o texto e copie manualmente.')
     }
   }
   return (
@@ -39,11 +39,11 @@ function CodeCard({ code, id }: { code: ConnectCode; id: string }) {
           size="sm"
           onClick={copy}
           onBlur={() => setCopied(false)}
-          aria-label={`Copy ${code.label}`}
+          aria-label={`Copiar ${code.label}`}
         >
           {copied ? <Check size={13} /> : <Copy size={13} />}
           <span className="ml-2" aria-live="polite">
-            {copied ? 'Copied' : 'Copy'}
+            {copied ? 'Copiado' : 'Copiar'}
           </span>
         </Button>
       </div>
@@ -90,10 +90,10 @@ export function ConnectPanel() {
     <div className="max-w-4xl space-y-8">
       <div>
         <h2 className="text-lg font-semibold tracking-tight">
-          Bring your agent into the workspace
+          Traga seu agente para o espaço de trabalho
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
-          Most clients only need the Billr MCP URL. {CONSENT_SUMMARY}
+          A maioria dos clientes só precisa da URL do MCP do Faturador. {CONSENT_SUMMARY}
         </p>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-zinc-50/60 p-5">
@@ -104,21 +104,21 @@ export function ConnectPanel() {
             className="mt-0.5 text-primary"
           />
           <div>
-            <h3 className="text-sm font-medium">Connections and keys</h3>
+            <h3 className="text-sm font-medium">Conexões e chaves</h3>
             <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-              Every connected agent, and every manual key, is listed and
-              revocable on the API Keys tab.
+              Todos os agentes conectados e todas as chaves manuais aparecem
+              e podem ser revogados na aba Chaves de API.
             </p>
           </div>
         </div>
         <Button asChild variant="outline">
           <Link href="/agents?tab=keys">
-            Manage keys <ArrowUpRight size={13} className="ml-2" />
+            Gerenciar chaves <ArrowUpRight size={13} className="ml-2" />
           </Link>
         </Button>
       </div>
       <Tabs defaultValue={clients[0].id}>
-        <TabsList aria-label="Choose your agent" className="flex-wrap">
+        <TabsList aria-label="Escolha seu agente" className="flex-wrap">
           {clients.map((client) => (
             <TabsTrigger key={client.id} value={client.id}>
               <Image
@@ -136,14 +136,14 @@ export function ConnectPanel() {
           <TabsContent key={client.id} value={client.id} className="pt-5">
             <h3 className="text-sm font-medium">{client.title}</h3>
             <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-              <span className="font-medium text-zinc-700">What you need: </span>
+              <span className="font-medium text-zinc-700">O que você precisa: </span>
               {client.requirements}
             </p>
 
             <Steps steps={client.steps} idPrefix={client.id} />
 
             <div className="mt-6 rounded-lg bg-blue-50/50 px-4 py-3">
-              <p className="text-xs font-medium text-zinc-700">Then verify</p>
+              <p className="text-xs font-medium text-zinc-700">Depois, verifique</p>
               <p className="mt-1 text-sm leading-relaxed text-zinc-600">
                 {client.verify}
               </p>
@@ -166,17 +166,17 @@ export function ConnectPanel() {
 
             {client.source && (
               <p className="mt-5 text-[11px] leading-relaxed text-zinc-400">
-                Checked against{' '}
+                Conferido com{' '}
                 <a
                   href={client.source}
                   target="_blank"
                   rel="noreferrer"
                   className="underline underline-offset-2"
                 >
-                  the vendor documentation
+                  a documentação do fornecedor
                 </a>{' '}
-                on {client.verifiedOn}. If their menus have moved since, follow
-                their wording and keep the URL above.
+                em {client.verifiedOn}. Se os menus tiverem mudado, siga
+                os termos usados pelo fornecedor e mantenha a URL acima.
               </p>
             )}
           </TabsContent>
@@ -188,7 +188,7 @@ export function ConnectPanel() {
           target="_blank"
           className="inline-flex items-center gap-2 text-xs font-medium text-primary"
         >
-          Connection guide <ArrowUpRight size={13} />
+          Guia de conexão <ArrowUpRight size={13} />
         </Link>
       </div>
     </div>

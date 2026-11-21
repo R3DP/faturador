@@ -10,9 +10,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 function parseEmailList(input: string | undefined, label: string): string[] {
   if (!input?.trim()) return []
   const emails = input.split(',').map((e) => e.trim()).filter(Boolean)
-  if (emails.length > 10) throw new Error(`At most 10 ${label} recipients are allowed`)
+  if (emails.length > 10) throw new Error(`São permitidos no máximo 10 destinatários ${label}`)
   for (const e of emails) {
-    if (!EMAIL_RE.test(e)) throw new Error(`Invalid ${label} address: ${e}`)
+    if (!EMAIL_RE.test(e)) throw new Error(`Endereço ${label} inválido: ${e}`)
   }
   return emails
 }
@@ -32,18 +32,18 @@ async function sendDocumentAction(
   kind: 'invoice' | 'estimate'
 ): Promise<{ success: boolean; error?: string; to?: string }> {
   try {
-    if ((options.subject?.length ?? 0) > 200 || (options.message?.length ?? 0) > 2000) throw new Error('Subject or message is too long')
+    if ((options.subject?.length ?? 0) > 200 || (options.message?.length ?? 0) > 2000) throw new Error('O assunto ou a mensagem é longo demais')
     if (!process.env.RESEND_API_KEY) {
-      throw new Error('Email is not configured (missing RESEND_API_KEY)')
+      throw new Error('O e-mail não está configurado (RESEND_API_KEY ausente)')
     }
     if (!options.to || !EMAIL_RE.test(options.to.trim())) {
-      throw new Error('Please enter a valid recipient email address')
+      throw new Error('Informe um endereço de e-mail válido para o destinatário')
     }
     const to = options.to.trim()
     const cc = parseEmailList(options.cc, 'Cc')
     const bcc = parseEmailList(options.bcc, 'Bcc')
 
-    // RLS scopes this to invoices the signed-in user can access
+    // O RLS limita a operação às faturas acessíveis à pessoa autenticada
     const supabase = await createClient()
 
     const sender = kind === 'invoice' ? sendInvoiceEmail : sendEstimateEmail
@@ -60,11 +60,11 @@ async function sendDocumentAction(
     revalidatePath(`/${kind}s/${invoiceId}`)
     return { success: true, to: result.to }
   } catch (err) {
-    // Return the message so the client can show it: thrown server-action
-    // errors are masked in production
+    // Retorna a mensagem para que o cliente possa exibi-la: erros lançados por
+    // server actions são ocultados em produção
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'Failed to send invoice',
+      error: err instanceof Error ? err.message : 'Falha ao enviar a fatura',
     }
   }
 }

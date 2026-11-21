@@ -9,42 +9,42 @@ const empty: ChecklistFacts = {
 const byId = (facts: ChecklistFacts) =>
   Object.fromEntries(deriveChecklist(facts).map((s) => [s.id, s]))
 
-describe('deriveChecklist', () => {
-  it('marks nothing done for a brand new business', () => {
+describe('geração da lista de configuração', () => {
+  it('não marca nenhuma etapa como concluída para uma empresa recém-criada', () => {
     expect(deriveChecklist(empty).every((s) => !s.done)).toBe(true)
   })
-  it('business needs a name plus one contact field', () => {
+  it('a empresa precisa de um nome e pelo menos um campo de contato', () => {
     expect(byId({ ...empty, businessName: 'Acme' }).business.done).toBe(false)
     expect(byId({ ...empty, businessName: 'Acme', businessPhone: '555' }).business.done).toBe(true)
   })
-  it('branding is done by logo or a non-default color', () => {
+  it('a identidade visual é concluída com um logotipo ou uma cor não padrão', () => {
     expect(byId({ ...empty, logoUrl: 'https://x/logo.png' }).branding.done).toBe(true)
     expect(byId({ ...empty, primaryColor: '#ff0000' }).branding.done).toBe(true)
     expect(byId({ ...empty, primaryColor: '#2563eb' }).branding.done).toBe(false)
   })
-  it('agent step needs a USED key, and hints when a key exists but is unused', () => {
+  it('a etapa do agente exige uma chave JÁ USADA e dá uma dica quando há uma chave sem uso', () => {
     const created = byId({ ...empty, apiKeyCount: 1, usedApiKeyCount: 0 }).agent
     expect(created.done).toBe(false)
     expect(created.hint).toBeTruthy()
     expect(byId({ ...empty, apiKeyCount: 1, usedApiKeyCount: 1 }).agent.done).toBe(true)
   })
-  it('asks for Stripe keys and is done once card payments are configured', () => {
+  it('solicita as chaves do Stripe e é concluída quando os pagamentos com cartão estão configurados', () => {
     expect(byId(empty).stripe).toMatchObject({
-      label: 'Add your Stripe keys',
+      label: 'Adicione suas chaves do Stripe',
       href: '/agents?tab=payments',
       done: false,
     })
     expect(byId({ ...empty, stripeConfigured: true }).stripe.done).toBe(true)
   })
-  it('counts drive the client, invoice, and send steps', () => {
+  it('as contagens determinam as etapas de cliente, fatura e envio', () => {
     const facts = { ...empty, clientCount: 1, invoiceCount: 2, sentInvoiceCount: 1 }
     const s = byId(facts)
     expect([s.client.done, s.invoice.done, s.send.done]).toEqual([true, true, true])
   })
 })
 
-describe('checklistProgress', () => {
-  it('reports done, total, and percent', () => {
+describe('progresso da lista de configuração', () => {
+  it('informa as etapas concluídas, o total e o percentual', () => {
     const steps = deriveChecklist({ ...empty, clientCount: 1 })
     expect(checklistProgress(steps)).toEqual({ done: 1, total: 7, percent: 14 })
   })

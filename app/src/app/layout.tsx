@@ -15,13 +15,13 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  // Absolute URLs in metadata resolve against this installation's origin.
+  // URLs absolutas nos metadados são resolvidas com base na origem desta instalação.
   metadataBase: new URL(appOrigin()),
   title: {
-    default: "Billr - Professional Invoicing",
-    template: "%s | Billr",
+    default: "Faturador - Faturamento profissional",
+    template: "%s | Faturador",
   },
-  description: "Billr is invoicing built for AI agents. Create clients, log work, and send polished invoices from Claude Code, Codex, or any MCP client, while you stay in control.",
+  description: "Faturador é uma solução de faturamento para agentes de IA. Cadastre clientes, registre trabalhos e envie faturas profissionais pelo Claude Code, Codex ou qualquer cliente MCP, mantendo o controle.",
   keywords: ["invoicing", "billing", "freelance", "small business", "ai agents", "mcp"],
 }
 
@@ -31,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="pt-BR" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >

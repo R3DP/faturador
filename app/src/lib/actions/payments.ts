@@ -7,21 +7,20 @@ import { correctionMessage } from '@/lib/payments/messages'
 import { failure, type WriteResult } from './result'
 
 /**
- * Recording a payment, correcting one and voiding one, as server actions that
- * validate their input before anything is written. See src/lib/actions/time.ts
- * for the same shape on work entries.
+ * Registro, correção e anulação de pagamentos por server actions que validam
+ * os dados antes de qualquer gravação. Consulte src/lib/actions/time.ts para
+ * o mesmo formato aplicado aos lançamentos de trabalho.
  *
- * Every call uses the caller's own Supabase client, so membership is decided
- * by RLS for record_payment_once, which is SECURITY INVOKER, and by
- * resolve_payment_actor inside the two SECURITY DEFINER corrections.
+ * Cada chamada usa o próprio cliente Supabase de quem a iniciou. O RLS decide
+ * a associação em record_payment_once, que é SECURITY INVOKER; nas duas
+ * correções SECURITY DEFINER, a decisão cabe a resolve_payment_actor.
  *
- * Money collected by Stripe does not come through here at all: the webhook
- * records it with record_stripe_payment through the service
- * role.
+ * Valores recebidos pelo Stripe não passam por aqui: o webhook os registra
+ * com record_stripe_payment usando a função de serviço.
  */
 
 const uuid = z.string().uuid()
-/** TEXT in SQL, not a uuid: the corrections accept any stable request id. */
+/** TEXT no SQL, não uuid: as correções aceitam qualquer request id estável. */
 const requestText = z.string().trim().min(1).max(200)
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 const amount = z.number().finite().positive().max(99999999)
@@ -57,10 +56,10 @@ export async function recordPaymentAction(
     const data = recordInput.parse(input)
     const supabase = await createClient()
 
-    // The request id is minted once per form and reused on every retry, so
-    // record_payment_once returns the first payment rather
-    // than recording the same money twice. business_id, client_id and currency
-    // come from the invoice inside the RPC, never from the browser.
+    // O request id é criado uma vez por formulário e reutilizado em cada nova
+    // tentativa, para que record_payment_once retorne o primeiro pagamento em
+    // vez de registrar o mesmo valor duas vezes. business_id, client_id e
+    // currency vêm da fatura dentro da RPC, nunca do navegador.
     const { error } = await supabase.rpc('record_payment_once', {
       p_request_id: uuid.parse(requestId),
       p_invoice_id: data.invoice_id,
@@ -71,14 +70,14 @@ export async function recordPaymentAction(
       p_notes: data.notes || undefined,
       p_created_via: 'web',
     })
-    if (error) return { error: correctionMessage(error.message, 'Could not record that payment.') }
+    if (error) return { error: correctionMessage(error.message, 'Não foi possível registrar esse pagamento.') }
 
     revalidatePath('/payments')
     revalidatePath(`/invoices/${data.invoice_id}`)
     revalidatePath('/dashboard')
     return { ok: true }
   } catch (error) {
-    return failure(error, 'Could not record that payment.')
+    return failure(error, 'Não foi possível registrar esse pagamento.')
   }
 }
 
@@ -91,9 +90,9 @@ export async function updatePaymentAction(
     const data = updateInput.parse(input)
     const supabase = await createClient()
 
-    // One request id per open dialog, replayed on every attempt: update_payment
-    // keys its audit row on (payment_id, request_id) so a double submit
-    // returns the first answer instead of applying the change twice.
+    // Um request id por diálogo aberto, reutilizado a cada tentativa: update_payment
+    // identifica a linha de auditoria por (payment_id, request_id), para que um
+    // envio duplicado retorne a primeira resposta em vez de aplicar a alteração duas vezes.
     const { error } = await supabase.rpc('update_payment', {
       p_payment_id: uuid.parse(paymentId),
       p_request_id: requestText.parse(requestId),
@@ -103,14 +102,14 @@ export async function updatePaymentAction(
       p_reference_number: data.reference_number || undefined,
       p_amount: data.amount ?? undefined,
     })
-    if (error) return { error: correctionMessage(error.message, 'Could not update that payment.') }
+    if (error) return { error: correctionMessage(error.message, 'Não foi possível atualizar esse pagamento.') }
 
     revalidatePath('/payments')
     revalidatePath('/invoices')
     revalidatePath('/dashboard')
     return { ok: true }
   } catch (error) {
-    return failure(error, 'Could not update that payment.')
+    return failure(error, 'Não foi possível atualizar esse pagamento.')
   }
 }
 
@@ -121,7 +120,7 @@ export async function voidPaymentAction(
 ): Promise<WriteResult> {
   try {
     const voidReason = z.string().trim().min(1).max(2000).safeParse(reason)
-    if (!voidReason.success) return { error: 'Enter a reason for voiding this payment.' }
+    if (!voidReason.success) return { error: 'Informe um motivo para anular este pagamento.' }
 
     const supabase = await createClient()
 
@@ -130,13 +129,13 @@ export async function voidPaymentAction(
       p_request_id: requestText.parse(requestId),
       p_reason: voidReason.data,
     })
-    if (error) return { error: correctionMessage(error.message, 'Could not void that payment.') }
+    if (error) return { error: correctionMessage(error.message, 'Não foi possível anular esse pagamento.') }
 
     revalidatePath('/payments')
     revalidatePath('/invoices')
     revalidatePath('/dashboard')
     return { ok: true }
   } catch (error) {
-    return failure(error, 'Could not void that payment.')
+    return failure(error, 'Não foi possível anular esse pagamento.')
   }
 }

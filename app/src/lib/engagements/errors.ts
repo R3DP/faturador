@@ -1,72 +1,72 @@
 import { scheduleErrorMessage } from './schedule'
 
 /**
- * One vocabulary for every engagement refusal.
+ * Um vocabulário único para todas as recusas de operações de contrato.
  *
- * The engagement RPCs raise stable codes rather than sentences, so
- * that both surfaces that call them (the MCP tools and the app's server
- * actions) turn the same code into the same explanation. Without this the two
- * drift, and a person and an agent end up being told different things about
- * the same rule.
+ * As RPCs de contratos retornam códigos estáveis em vez de frases, para que
+ * as duas interfaces que as chamam (as ferramentas MCP e as ações de servidor
+ * do app) transformem o mesmo código na mesma explicação. Sem isso, elas
+ * divergiriam e uma pessoa e um agente receberiam explicações diferentes
+ * sobre a mesma regra.
  *
- * Codes the schedule math raises live in schedule.ts next to the math itself
- * and are looked up first.
+ * Os códigos gerados pelos cálculos do cronograma ficam em schedule.ts, junto
+ * dos próprios cálculos, e são consultados primeiro.
  */
 const ENGAGEMENT_ERRORS: Record<string, string> = {
-  engagement_not_found: 'Engagement not found',
-  entry_not_found: 'Schedule entry not found',
-  client_not_found: 'Client not found',
-  estimate_not_found: 'Estimate not found',
+  engagement_not_found: 'Contrato não encontrado',
+  entry_not_found: 'Item do cronograma não encontrado',
+  client_not_found: 'Cliente não encontrado',
+  estimate_not_found: 'Orçamento não encontrado',
   request_id_reused:
-    'That request_id was already used for a different engagement write. Use a new request_id.',
+    'Esse request_id já foi usado em outra gravação de contrato. Use um novo request_id.',
   key_cannot_manage_engagements:
-    'This API key does not have the write permission, which is required to create or change an engagement.',
+    'Esta chave de API não tem a permissão de gravação, necessária para criar ou alterar um contrato.',
   engagement_closed:
-    'This engagement is already completed or cancelled, so its status cannot change again.',
-  invalid_status_transition: 'An engagement cannot move to that status from the one it is in.',
-  invalid_status: 'Pick a status: draft, active, paused, completed, or cancelled.',
-  engagement_cancelled: 'This engagement was cancelled, so nothing more can be billed against it.',
+    'Este contrato já foi concluído ou cancelado, então seu status não pode ser alterado novamente.',
+  invalid_status_transition: 'Não é possível mudar o contrato do status atual para esse status.',
+  invalid_status: 'Escolha um status: draft, active, paused, completed ou cancelled.',
+  engagement_cancelled: 'Este contrato foi cancelado, então não é possível faturar mais nada nele.',
   entry_already_invoiced:
-    'That entry has already been invoiced. Billed money cannot be changed here: correct it on the invoice instead.',
-  entry_waived: 'That entry was already waived.',
+    'Esse item já foi faturado. O valor faturado não pode ser alterado aqui; faça a correção na fatura.',
+  entry_waived: 'Esse item já foi dispensado.',
   entry_invoiced_immutable:
-    'That entry has already been invoiced, so its amount cannot change and it cannot be removed.',
-  waive_reason_required: 'A reason is required to waive a schedule entry.',
+    'Esse item já foi faturado, então seu valor não pode ser alterado nem ele pode ser removido.',
+  waive_reason_required: 'É necessário informar o motivo para dispensar um item do cronograma.',
   engagement_schedule_unbalanced:
-    'The schedule entries must add up to exactly the engagement total.',
-  invalid_name: 'An engagement needs a name between 1 and 200 characters.',
-  invalid_currency: 'Use a three letter currency code, for example USD.',
-  invalid_initial_status: 'A new engagement can only start as a draft or active.',
-  invalid_actor: 'This write could not be attributed to anyone, so it was refused.',
-  invalid_agent_key: 'That API key cannot be used for this business.',
-  request_id_required: 'A request_id is required for this write.',
+    'Os itens do cronograma devem somar exatamente o valor total do contrato.',
+  invalid_name: 'O nome do contrato deve ter entre 1 e 200 caracteres.',
+  invalid_currency: 'Use um código de moeda com três letras, por exemplo USD.',
+  invalid_initial_status: 'Um contrato novo só pode começar como draft ou active.',
+  invalid_actor: 'Não foi possível atribuir esta gravação a ninguém, então ela foi recusada.',
+  invalid_agent_key: 'Essa chave de API não pode ser usada para esta empresa.',
+  request_id_required: 'É necessário informar um request_id para esta gravação.',
 
-  // Part B: billing a schedule entry onto an invoice, and
-  // turning an accepted quote into an agreement.
+  // Parte B: faturamento de um item do cronograma em uma fatura e
+  // conversão de um orçamento aceito em contrato.
   engagement_entry_already_invoiced:
-    'That schedule entry is already on an invoice. Delete that draft invoice first if it was wrong, or bill a different entry.',
+    'Esse item do cronograma já está em uma fatura. Se a fatura de rascunho estiver incorreta, exclua-a primeiro ou fature outro item.',
   engagement_entry_not_ready:
-    'That schedule entry is not ready to bill yet. Its due rule has not fired: start the engagement, mark the milestone complete, or wait for its date.',
-  engagement_entry_not_found: 'Schedule entry not found',
+    'Esse item do cronograma ainda não está pronto para faturar. A regra de vencimento ainda não foi acionada: inicie o contrato, marque a etapa como concluída ou aguarde a data.',
+  engagement_entry_not_found: 'Item do cronograma não encontrado',
   engagement_entry_client_mismatch:
-    'That schedule entry belongs to a different client, so it cannot go on this invoice.',
+    'Esse item do cronograma pertence a outro cliente, então não pode ser incluído nesta fatura.',
   engagement_entry_currency_mismatch:
-    'The engagement and the invoice are in different currencies. Billr never converts money on its own, so bill it on an invoice in the engagement currency.',
+    'O contrato e a fatura estão em moedas diferentes. O Faturador nunca converte valores por conta própria; emita a fatura na moeda do contrato.',
   engagement_not_billable:
-    'That engagement is a draft or was cancelled, so nothing can be billed against it. Start it first, if the work is going ahead.',
-  duplicate_engagement_entry_ids: 'The same schedule entry was listed twice. List each one once.',
+    'Esse contrato está em rascunho ou foi cancelado, então não é possível faturar nada nele. Se o trabalho for continuar, inicie o contrato primeiro.',
+  duplicate_engagement_entry_ids: 'O mesmo item do cronograma foi informado duas vezes. Informe cada item apenas uma vez.',
   estimate_already_converted:
-    'That estimate has already been converted into an invoice, so it cannot also become an engagement.',
+    'Esse orçamento já foi convertido em fatura, então não pode também ser convertido em contrato.',
   estimate_already_an_engagement:
-    'That estimate has already become an engagement. Bill it from the engagement schedule rather than converting it again.',
+    'Esse orçamento já foi convertido em contrato. Fature pelo cronograma do contrato em vez de convertê-lo novamente.',
   estimate_not_convertible:
-    'That estimate was declined or has expired, so it cannot be converted.',
+    'Esse orçamento foi recusado ou expirou, então não pode ser convertido.',
 }
 
 /**
- * The sentence for a raised code, or null when the code is not one of ours
- * (in which case the caller shows its own fallback rather than relaying a
- * Postgres error to a person).
+ * A frase correspondente ao código retornado, ou null quando o código não é
+ * nosso (nesse caso, quem chamou mostra sua própria mensagem alternativa, em
+ * vez de repassar um erro do Postgres para a pessoa).
  */
 export function engagementErrorMessage(raw: string | null | undefined): string | null {
   const code = (raw ?? '').trim()
@@ -75,8 +75,9 @@ export function engagementErrorMessage(raw: string | null | undefined): string |
   const exact = scheduleErrorMessage(code) ?? ENGAGEMENT_ERRORS[code]
   if (exact) return exact
 
-  // Postgres wraps the code in a longer message on some paths, so fall back to
-  // a containment match rather than giving up on an otherwise known rule.
+  // Em alguns caminhos, o Postgres inclui o código em uma mensagem mais longa;
+  // por isso, tentamos encontrar o código dentro do texto antes de desistir de
+  // identificar uma regra conhecida.
   for (const [key, message] of Object.entries(ENGAGEMENT_ERRORS)) {
     if (code.includes(key)) return message
   }

@@ -1,27 +1,27 @@
-// Option lists shared by forms and tables.
+// Listas de opções compartilhadas por formulários e tabelas.
 
-// Expense categories (values match the expenses.category CHECK constraint)
+// Categorias de despesas (os valores correspondem à restrição CHECK de expenses.category)
 export const expenseCategories = [
-  { value: 'office', label: 'Office' },
-  { value: 'travel', label: 'Travel' },
-  { value: 'meals', label: 'Meals & Entertainment' },
-  { value: 'supplies', label: 'Supplies' },
-  { value: 'utilities', label: 'Utilities' },
+  { value: 'office', label: 'Escritório' },
+  { value: 'travel', label: 'Viagens' },
+  { value: 'meals', label: 'Alimentação e entretenimento' },
+  { value: 'supplies', label: 'Materiais' },
+  { value: 'utilities', label: 'Contas de consumo' },
   { value: 'software', label: 'Software' },
   { value: 'marketing', label: 'Marketing' },
-  { value: 'professional', label: 'Legal & Professional' },
-  { value: 'insurance', label: 'Insurance' },
-  { value: 'mileage', label: 'Mileage' },
-  { value: 'other', label: 'Other' },
+  { value: 'professional', label: 'Jurídico e profissional' },
+  { value: 'insurance', label: 'Seguros' },
+  { value: 'mileage', label: 'Quilometragem' },
+  { value: 'other', label: 'Outros' },
 ]
 
-// Payment methods
+// Formas de pagamento
 export const paymentMethods = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'check', label: 'Check' },
-  { value: 'credit_card', label: 'Credit Card' },
-  { value: 'bank_transfer', label: 'Bank Transfer' },
+  { value: 'cash', label: 'Dinheiro' },
+  { value: 'check', label: 'Cheque' },
+  { value: 'credit_card', label: 'Cartão de crédito' },
+  { value: 'bank_transfer', label: 'Transferência bancária' },
   { value: 'stripe', label: 'Stripe' },
-  { value: 'other', label: 'Other' },
+  { value: 'other', label: 'Outros' },
 ]
 

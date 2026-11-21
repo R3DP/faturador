@@ -3,9 +3,10 @@ import { createFakeSupabase, type FakeSupabase } from '@/lib/mcp/fake-supabase'
 import { ROW_ID } from './action-fixture'
 
 /**
- * Marking a document sent by hand is how an owner without email opens its
- * public page. It moves a draft and nothing else, and a repeat click on a
- * document already past draft is a quiet no-op rather than an error.
+ * Marcar manualmente um documento como enviado permite que a pessoa
+ * responsável, mesmo sem e-mail, abra a página pública. A operação altera
+ * somente um rascunho; clicar novamente em um documento que já saiu desse
+ * estado não faz nada e não gera erro.
  */
 
 const { createClientMock } = vi.hoisted(() => ({ createClientMock: vi.fn() }))
@@ -32,11 +33,11 @@ beforeEach(() => {
   useRows([{ id: ROW_ID }])
 })
 
-describe('mark as sent', () => {
+describe('marcar como enviado', () => {
   it.each([
     ['invoices', markInvoiceSentAction],
     ['estimates', markEstimateSentAction],
-  ] as const)('moves only a draft %s row to sent', async (table, action) => {
+  ] as const)('altera para enviado somente um registro %s em rascunho', async (table, action) => {
     await expect(action(ROW_ID)).resolves.toEqual({ changed: true, status: 'sent' })
 
     const update = db.calls.find((call) => call.op === 'update')
@@ -50,17 +51,17 @@ describe('mark as sent', () => {
     )
   })
 
-  it('leaves a document already past draft alone and reports its status', async () => {
+  it('não altera um documento que já saiu do rascunho e informa seu status', async () => {
     useRows([], { status: 'viewed' })
 
     await expect(markInvoiceSentAction(ROW_ID)).resolves.toEqual({ changed: false, status: 'viewed' })
     await expect(markEstimateSentAction(ROW_ID)).resolves.toEqual({ changed: false, status: 'viewed' })
   })
 
-  it('still fails for a document the caller cannot see', async () => {
+  it('continua falhando para um documento que a pessoa não pode acessar', async () => {
     useRows([])
 
-    await expect(markInvoiceSentAction(ROW_ID)).rejects.toThrow(/Invoice not found/)
-    await expect(markEstimateSentAction(ROW_ID)).rejects.toThrow(/Estimate not found/)
+    await expect(markInvoiceSentAction(ROW_ID)).rejects.toThrow(/Fatura não encontrada/)
+    await expect(markEstimateSentAction(ROW_ID)).rejects.toThrow(/Orçamento não encontrado/)
   })
 })

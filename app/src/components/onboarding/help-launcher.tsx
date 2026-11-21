@@ -12,21 +12,21 @@ interface HelpLauncherProps {
 }
 
 /**
- * Fixed bottom-right help button. Gives users a way back into the
- * first-run tour and the setup checklist after they have dismissed them,
- * plus a link to the documentation.
+ * Botão de ajuda fixo no canto inferior direito. Permite que a pessoa volte ao
+ * tour inicial e à lista de configuração, mesmo depois de dispensá-los,
+ * além de oferecer um link para a documentação.
  */
 export function HelpLauncher({ onboarding }: HelpLauncherProps) {
   const [open, setOpen] = useState(false)
 
   const handleRestartTour = () => {
     setOpen(false)
-    onboarding.resetTour().catch((error) => console.error('HelpLauncher: failed to reset tour', error))
+    onboarding.resetTour().catch((error) => console.error('HelpLauncher: falha ao reiniciar o tour', error))
   }
 
   const handleShowChecklist = () => {
     setOpen(false)
-    onboarding.restore().catch((error) => console.error('HelpLauncher: failed to restore checklist', error))
+    onboarding.restore().catch((error) => console.error('HelpLauncher: falha ao restaurar a lista de configuração', error))
   }
 
   return (
@@ -36,7 +36,7 @@ export function HelpLauncher({ onboarding }: HelpLauncherProps) {
           <Button
             type="button"
             size="icon-lg"
-            aria-label="Help"
+            aria-label="Ajuda"
             className="no-print fixed bottom-6 right-6 z-40 rounded-full shadow-lg"
           >
             <HelpCircle className="h-5 w-5" />
@@ -50,7 +50,7 @@ export function HelpLauncher({ onboarding }: HelpLauncherProps) {
               className="flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent"
             >
               <RotateCcw className="h-4 w-4 text-muted-foreground" />
-              Restart the walkthrough
+              Reiniciar o tour guiado
             </button>
             <button
               type="button"
@@ -58,7 +58,7 @@ export function HelpLauncher({ onboarding }: HelpLauncherProps) {
               className="flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent"
             >
               <ListChecks className="h-4 w-4 text-muted-foreground" />
-              Show setup checklist
+              Mostrar lista de configuração
             </button>
             <a
               href={DOCS_URL}

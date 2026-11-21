@@ -7,61 +7,61 @@ import { resolveClient } from './invoices-write'
 import { appUrl, errorResult, jsonResult, truncationNote } from '@/lib/mcp/shared'
 import type { Database } from '@/types/database'
 
-const DATE_FIELD = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+const DATE_FIELD = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use o formato YYYY-MM-DD')
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
 
 /**
- * Registers the time-entry management tools (list_time_entries,
- * update_time_entry, delete_time_entry) that complement log_time in work.ts,
- * scoped to the businesses in ctx.db.scope.
+ * Registra as ferramentas de gerenciamento de lançamentos de tempo (list_time_entries,
+ * update_time_entry, delete_time_entry) que complementam log_time em work.ts,
+ * limitadas às empresas em ctx.db.scope.
  *
- * Schema mapping matches log_time: hours are stored as duration_minutes,
- * hourly_rate is nullable (null means "no rate agreed yet", which is different
- * from an explicit 0), amount = hours * rate, and an entry counts as billed
- * once invoice_id is set.
+ * O mapeamento do esquema corresponde a log_time: hours são armazenadas em duration_minutes,
+ * hourly_rate aceita null (null significa \"nenhuma tarifa acordada ainda\", o que é diferente
+ * de um 0 explícito); amount = hours * rate, e um lançamento é considerado faturado
+ * quando invoice_id está preenchido.
  *
- * Safety rule shared by update and delete: an entry already attached to an
- * invoice is refused. Editing it would silently desync the invoice the client
- * has already been shown.
+ * Regra de segurança comum a update e delete: um lançamento já associado a uma
+ * fatura é recusado. Editá-lo causaria uma divergência silenciosa em relação à fatura que o cliente
+ * já recebeu.
  */
 export function registerTimeTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'list_time_entries',
     {
-      title: 'List Time Entries',
+      title: 'Listar lançamentos de tempo',
       description:
-        'List tracked time, filtered by client, date range, and billed status. Use this to answer "how many hours did I put into X" or to find the entry to correct. To draft an invoice from unbilled work, prefer list_unbilled, which groups by client and totals it for you.',
+        'Lista o tempo registrado, filtrado por cliente, período e status de faturamento. Use para responder \"quantas horas dediquei a X\" ou encontrar o lançamento que precisa de correção. Para preparar uma fatura com trabalho não faturado, prefira list_unbilled, que agrupa por cliente e calcula os totais.',
       inputSchema: z.object({
-        offset: z.number().int().min(0).max(1000000).optional().describe('Page offset. Start at 0, then use next_offset until it is null. Keep other filters unchanged.'),
+        offset: z.number().int().min(0).max(1000000).optional().describe('Deslocamento da página. Comece em 0 e use next_offset até retornar null. Mantenha os outros filtros inalterados.'),
         business_id: z
           .string()
           .uuid()
           .optional()
           .describe(
-            'Id of the business whose time to list. Optional when the API key is scoped to exactly one business; required if scoped to multiple.'
+            'Id da empresa cujos lançamentos de tempo serão listados. Opcional quando a chave de API está limitada a uma única empresa; obrigatório quando está limitada a várias.'
           ),
-        client_id: z.string().uuid().optional().describe('Restrict to one client. Provide this or client_name.'),
+        client_id: z.string().uuid().optional().describe('Restringe a um cliente. Informe este campo ou client_name.'),
         client_name: z
           .string()
           .max(200)
           .optional()
-          .describe('Exact (case-insensitive) client name to restrict to. Provide this or client_id.'),
-        from: DATE_FIELD.optional().describe('Earliest entry date to include, YYYY-MM-DD (inclusive).'),
-        to: DATE_FIELD.optional().describe('Latest entry date to include, YYYY-MM-DD (inclusive).'),
+          .describe('Nome exato do cliente (sem diferenciar maiúsculas de minúsculas) para filtrar. Informe este campo ou client_id.'),
+        from: DATE_FIELD.optional().describe('Data inicial dos lançamentos a incluir, YYYY-MM-DD (inclusive).'),
+        to: DATE_FIELD.optional().describe('Data final dos lançamentos a incluir, YYYY-MM-DD (inclusive).'),
         billed: z
           .enum(['billed', 'unbilled', 'all'])
           .optional()
           .describe(
-            '"unbilled" returns entries not yet on an invoice, "billed" returns those already invoiced, "all" returns both. Defaults to "all".'
+            '"unbilled" retorna lançamentos ainda não incluídos em uma fatura; "billed" retorna lançamentos já faturados; "all" retorna ambos. O padrão é "all".'
           ),
         billable: z
           .boolean()
           .optional()
-          .describe('Filter by the billable flag. Omit to include both billable and non-billable time.'),
-        limit: z.number().int().min(1).max(200).optional().describe('Max entries to return (default 50, max 200).'),
+          .describe('Filtra pelo indicador de faturável. Omita para incluir tempos faturáveis e não faturáveis.'),
+        limit: z.number().int().min(1).max(200).optional().describe('Número máximo de lançamentos retornados (padrão 50, máximo 200).'),
       }),
     },
     async ({ offset, business_id, client_id, client_name, from, to, billed, billable, limit }) => {
@@ -69,7 +69,7 @@ export function registerTimeTools(server: McpServer, ctx: McpCtx) {
       try {
         resolvedBusinessId = ctx.db.resolveBusinessId(business_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
       }
 
       let clientFilterId: string | undefined
@@ -77,7 +77,7 @@ export function registerTimeTools(server: McpServer, ctx: McpCtx) {
         try {
           clientFilterId = (await resolveClient(ctx, resolvedBusinessId, client_id, client_name)).id
         } catch (err) {
-          return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve client.')
+          return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar o cliente.')
         }
       }
 
@@ -104,7 +104,7 @@ export function registerTimeTools(server: McpServer, ctx: McpCtx) {
 
       if (error) {
         console.error('list_time_entries:', error)
-        return errorResult('Could not list time entries.')
+        return errorResult('Não foi possível listar os lançamentos de tempo.')
       }
 
       const rows = data ?? []
@@ -133,7 +133,7 @@ export function registerTimeTools(server: McpServer, ctx: McpCtx) {
       return jsonResult({
         offset: offset ?? 0,
         next_offset: (data ?? []).length === resolvedLimit ? (offset ?? 0) + resolvedLimit : null,
-        summary: `${entries.length} time entr${entries.length === 1 ? 'y' : 'ies'}, ${totalHours}h total${truncated ? truncationNote(resolvedLimit) : ''}`,
+        summary: `${entries.length} lançamento${entries.length === 1 ? '' : 's'} de tempo, ${totalHours}h no total${truncated ? truncationNote(resolvedLimit) : ''}`,
         total_hours: totalHours,
         entries,
         app_url: `${appUrl()}/time`,
@@ -144,29 +144,29 @@ export function registerTimeTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'update_time_entry',
     {
-      title: 'Update Time Entry',
+      title: 'Atualizar lançamento de tempo',
       description:
-        'Correct a single logged time entry: its hours, rate, description, date, client, or billable flag. Use it to fix a mistake before the work is invoiced. Refuses entries already attached to an invoice, since changing those would not change the invoice the client received.',
+        'Corrige um único lançamento de tempo: suas horas, tarifa, descrição, data, cliente ou indicador de faturável. Use para corrigir um erro antes de faturar o trabalho. Recusa lançamentos já associados a uma fatura, pois alterá-los não modificaria a fatura recebida pelo cliente.',
       inputSchema: z.object({
         time_entry_id: z
           .string()
           .uuid()
-          .describe('Id of the entry to update, from list_time_entries or list_unbilled. Exactly one entry is affected.'),
-        description: z.string().min(1).max(500).optional().describe('New description of what the time was spent on.'),
-        hours: z.number().gt(0).lte(24).describe('New hours worked, > 0 and <= 24.').optional(),
-        date: DATE_FIELD.optional().describe('New date of the work, YYYY-MM-DD.'),
+          .describe('Id do lançamento a atualizar, obtido em list_time_entries ou list_unbilled. Apenas um lançamento será afetado.'),
+        description: z.string().min(1).max(500).optional().describe('Nova descrição da atividade realizada nesse período.'),
+        hours: z.number().gt(0).lte(24).describe('Novas horas trabalhadas, > 0 e <= 24.').optional(),
+        date: DATE_FIELD.optional().describe('Nova data do trabalho, YYYY-MM-DD.'),
         rate: z
           .number()
           .min(0)
           .optional()
-          .describe('New hourly rate. Setting this also recomputes the entry amount as hours * rate.'),
-        client_id: z.string().uuid().optional().describe('Reassign to this client id. Provide this or client_name.'),
+          .describe('Nova tarifa por hora. Ao defini-la, o valor do lançamento também é recalculado como hours * rate.'),
+        client_id: z.string().uuid().optional().describe('Reatribui a este id de cliente. Informe este campo ou client_name.'),
         client_name: z
           .string()
           .max(200)
           .optional()
-          .describe('Reassign to this exact (case-insensitive) client name. Provide this or client_id.'),
-        billable: z.boolean().optional().describe('New billable flag. Non-billable time never appears in list_unbilled.'),
+          .describe('Reatribui ao cliente com este nome exato (sem diferenciar maiúsculas de minúsculas). Informe este campo ou client_id.'),
+        billable: z.boolean().optional().describe('Novo indicador de faturável. Tempos não faturáveis nunca aparecem em list_unbilled.'),
       }),
     },
     async ({ time_entry_id, description, hours, date, rate, client_id, client_name, billable }) => {
@@ -174,12 +174,12 @@ export function registerTimeTools(server: McpServer, ctx: McpCtx) {
       try {
         entry = await ctx.db.assertTimeEntryAccess(time_entry_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access time entry.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar o lançamento de tempo.')
       }
 
       if (entry.invoice_id) {
         return errorResult(
-          `Time entry ${time_entry_id} is already billed on invoice ${entry.invoice_id} and cannot be edited. Adjust the invoice itself, or log a separate correcting entry.`
+          `O lançamento de tempo ${time_entry_id} já foi faturado na fatura ${entry.invoice_id} e não pode ser editado. Ajuste a própria fatura ou registre um lançamento separado para correção.`
         )
       }
 
@@ -191,7 +191,7 @@ export function registerTimeTools(server: McpServer, ctx: McpCtx) {
           reassignedClientId = client.id
           reassignedClientName = client.name
         } catch (err) {
-          return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve client.')
+          return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar o cliente.')
         }
       }
 
@@ -203,8 +203,8 @@ export function registerTimeTools(server: McpServer, ctx: McpCtx) {
       if (hours !== undefined) updates.duration_seconds = secondsFromHours(hours)
       if (rate !== undefined) updates.hourly_rate = rate
 
-      // amount is derived, so recompute it whenever either input moved, using
-      // the post-update values rather than a mix of old and new.
+      // amount é derivado; portanto, recalcule-o sempre que qualquer uma das entradas for alterada, usando
+      // os valores posteriores à atualização, e não uma combinação de valores antigos e novos.
       if (hours !== undefined || rate !== undefined) {
         const effectiveHours = hours ?? entrySeconds(entry) / 3600
         const effectiveRate = rate ?? entry.hourly_rate
@@ -212,7 +212,7 @@ export function registerTimeTools(server: McpServer, ctx: McpCtx) {
       }
 
       if (Object.keys(updates).length === 0) {
-        return errorResult('Nothing to update. Pass at least one field to change.')
+        return errorResult('Nada para atualizar. Informe pelo menos um campo para alterar.')
       }
 
       const { data: updated, error } = await ctx.db.svc
@@ -225,14 +225,14 @@ export function registerTimeTools(server: McpServer, ctx: McpCtx) {
 
       if (error || !updated) {
         console.error('update_time_entry (update):', error)
-        return errorResult('Could not update time entry.')
+        return errorResult('Não foi possível atualizar o lançamento de tempo.')
       }
 
       const updatedHours = entrySeconds(updated) / 3600
-      const forClient = reassignedClientName ? ` (reassigned to ${reassignedClientName})` : ''
+      const forClient = reassignedClientName ? ` (reatribuído a ${reassignedClientName})` : ''
 
       return jsonResult({
-        summary: `Updated time entry: ${updatedHours}h on ${updated.date}${forClient}`,
+        summary: `Lançamento de tempo atualizado: ${updatedHours}h em ${updated.date}${forClient}`,
         time_entry: {
           id: updated.id,
           business_id: updated.business_id,
@@ -254,15 +254,15 @@ export function registerTimeTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'delete_time_entry',
     {
-      title: 'Delete Time Entry',
+      title: 'Excluir lançamento de tempo',
       description:
-        'Permanently delete ONE time entry by its id, returning what was deleted so it can be re-logged if that was a mistake. There is no bulk delete and no filter-based delete on purpose. Refuses entries already attached to an invoice. Prefer update_time_entry when the entry is merely wrong rather than unwanted.',
+        'Exclui permanentemente UM lançamento de tempo pelo id e retorna os dados excluídos para que ele possa ser registrado novamente caso tenha sido um engano. Não há exclusão em lote nem por filtros, intencionalmente. Recusa lançamentos já associados a uma fatura. Prefira update_time_entry quando o lançamento contém um erro, em vez de excluí-lo.',
       inputSchema: z.object({
         time_entry_id: z
           .string()
           .uuid()
           .describe(
-            'Id of the single entry to delete, from list_time_entries. Required and exact: this tool never deletes by client, date, or any other filter.'
+            'Id do único lançamento a excluir, obtido em list_time_entries. Obrigatório e exato: esta ferramenta nunca exclui por cliente, data ou qualquer outro filtro.'
           ),
       }),
     },
@@ -271,12 +271,12 @@ export function registerTimeTools(server: McpServer, ctx: McpCtx) {
       try {
         entry = await ctx.db.assertTimeEntryAccess(time_entry_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access time entry.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar o lançamento de tempo.')
       }
 
       if (entry.invoice_id) {
         return errorResult(
-          `Time entry ${time_entry_id} is already billed on invoice ${entry.invoice_id} and cannot be deleted. Adjust the invoice instead.`
+          `O lançamento de tempo ${time_entry_id} já foi faturado na fatura ${entry.invoice_id} e não pode ser excluído. Ajuste a fatura.`
         )
       }
 
@@ -288,13 +288,13 @@ export function registerTimeTools(server: McpServer, ctx: McpCtx) {
 
       if (error) {
         console.error('delete_time_entry (delete):', error)
-        return errorResult('Could not delete time entry.')
+        return errorResult('Não foi possível excluir o lançamento de tempo.')
       }
 
       const hours = round2(entrySeconds(entry) / 3600)
 
       return jsonResult({
-        summary: `Deleted time entry: ${hours}h on ${entry.date}. This cannot be undone; re-log it with log_time if it was removed by mistake.`,
+        summary: `Lançamento de tempo excluído: ${hours}h em ${entry.date}. Esta ação não pode ser desfeita; se foi removido por engano, registre-o novamente com log_time.`,
         deleted_time_entry: {
           id: entry.id,
           business_id: entry.business_id,

@@ -82,9 +82,9 @@ const PAYLOAD = {
 }
 
 /**
- * list_engagements reads the summary view as a list, get_engagement reads one
- * row out of it. Both land on the same fake key, so the shape is chosen the
- * way PostgREST chooses it: by whether the query pinned a single engagement.
+ * list_engagements consulta a visão de resumo como lista; get_engagement consulta um
+ * contrato e seu cronograma em conjunto. Ambos usam a mesma chave simulada, e o formato é escolhido
+ * da mesma forma que no PostgREST: conforme a consulta seleciona um único contrato ou não.
  */
 const summaryHandler: FakeHandler = (query) =>
   query.filters.some((f) => f.method === 'eq' && f.args[0] === 'engagement_id')
@@ -137,8 +137,8 @@ beforeEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('engagement tools', () => {
-  it('registers exactly the engagement surface', () => {
+describe('ferramentas de contratos', () => {
+  it('registra exatamente as ferramentas de contratos', () => {
     const { tools } = setup()
     expect([...tools.keys()].sort()).toEqual([
       'complete_engagement',
@@ -153,18 +153,18 @@ describe('engagement tools', () => {
     ])
   })
 
-  it('promises in every description that engagements never send anything', () => {
+  it('garante em todas as descrições que contratos nunca enviam nada', () => {
     const { tools } = setup()
     for (const [name, tool] of tools) {
-      expect(tool.definition.description.toLowerCase(), `${name} must say it sends nothing`).toMatch(
-        /sent|send/
+      expect(tool.definition.description.toLowerCase(), `${name} deve informar que não envia nada`).toMatch(
+        /envi/
       )
     }
   })
 })
 
 describe('list_engagements', () => {
-  it('sweeps dated entries before answering, so a read is never stale', async () => {
+  it('atualiza os itens com data antes de responder, para que a consulta não fique desatualizada', async () => {
     const { svc, tools } = setup()
     await tools.get('list_engagements')!.handler({})
     expect(rpcCalls(svc, 'promote_due_entries')).toHaveLength(1)
@@ -174,7 +174,7 @@ describe('list_engagements', () => {
     })
   })
 
-  it('reports billed and remaining money from the summary view', async () => {
+  it('informa os valores faturados e restantes a partir da visão de resumo', async () => {
     const { tools } = setup()
     const result = body(await tools.get('list_engagements')!.handler({}))
     expect(result.engagements[0]).toMatchObject({
@@ -185,10 +185,10 @@ describe('list_engagements', () => {
       amount_remaining: 6000,
       ready_count: 1,
     })
-    expect(result.summary).toContain('1 engagement')
+    expect(result.summary).toContain('1 contrato')
   })
 
-  it('applies the client, status and ready to bill filters', async () => {
+  it('aplica os filtros de cliente, status e itens prontos para faturar', async () => {
     const { svc, tools } = setup()
     await tools.get('list_engagements')!.handler({
       client_id: 'c1',
@@ -201,7 +201,7 @@ describe('list_engagements', () => {
     expect(filters).toContainEqual({ method: 'gt', args: ['ready_count', 0] })
   })
 
-  it('pages with an offset and reports the next one only when the page was full', async () => {
+  it('usa deslocamento de página e informa a próxima somente quando a página está cheia', async () => {
     const { tools } = setup()
     const short = body(await tools.get('list_engagements')!.handler({ offset: 0, limit: 5 }))
     expect(short.next_offset).toBeNull()
@@ -213,16 +213,16 @@ describe('list_engagements', () => {
     expect(full.next_offset).toBe(2)
   })
 
-  it('refuses a business outside the key scope', async () => {
+  it('recusa uma empresa fora do escopo da chave', async () => {
     const { tools } = setup()
     const result = await tools.get('list_engagements')!.handler({ business_id: 'b2' })
     expect(result.isError).toBe(true)
-    expect(result.content[0].text).toContain('do not have access')
+    expect(result.content[0].text).toContain('Você não tem acesso')
   })
 })
 
 describe('get_engagement', () => {
-  it('returns the whole schedule with a link to each billed invoice', async () => {
+  it('retorna o cronograma completo com um link para cada fatura emitida', async () => {
     const { tools } = setup()
     const result = body(await tools.get('get_engagement')!.handler({ engagement_id: 'eng1' }))
     expect(result.schedule).toHaveLength(2)
@@ -232,7 +232,7 @@ describe('get_engagement', () => {
     expect(result.engagement.amount_remaining).toBe(6000)
   })
 
-  it('answers a missing engagement and another tenant engagement identically', async () => {
+  it('responde da mesma forma para um contrato inexistente e para o contrato de outro cliente', async () => {
     const missing = setup({ 'engagement_summary.select': { data: null, error: null } })
     const denied = setup({ 'engagement_summary.select': { data: null, error: null } })
 
@@ -240,11 +240,11 @@ describe('get_engagement', () => {
     const b = await denied.tools.get('get_engagement')!.handler({ engagement_id: 'other' })
 
     expect(a.isError).toBe(true)
-    expect(a.content[0].text).toBe('Engagement not found')
+    expect(a.content[0].text).toBe('Contrato não encontrado')
     expect(b.content[0].text).toBe(a.content[0].text)
   })
 
-  it('scopes the summary lookup to the key businesses', async () => {
+  it('limita a consulta do resumo às empresas da chave', async () => {
     const { svc, tools } = setup()
     await tools.get('get_engagement')!.handler({ engagement_id: 'eng1' })
     expect(filterArgs(svc, 'engagement_summary')).toContainEqual({
@@ -282,7 +282,7 @@ describe('list_ready_to_bill', () => {
     },
   ]
 
-  it('lists billable work across clients and totals it', async () => {
+  it('lista trabalhos faturáveis de vários clientes e calcula o total', async () => {
     const { tools } = setup({ 'engagement_entries.select': { data: READY, error: null } })
     const result = body(await tools.get('list_ready_to_bill')!.handler({}))
     expect(result.entries).toHaveLength(2)
@@ -290,13 +290,13 @@ describe('list_ready_to_bill', () => {
     expect(result.entries[0].engagement_name).toBe('Website rebuild')
   })
 
-  it('filters to one client without asking the database for the other', async () => {
+  it('filtra um cliente sem consultar os dados dos demais no banco', async () => {
     const { tools } = setup({ 'engagement_entries.select': { data: READY, error: null } })
     const result = body(await tools.get('list_ready_to_bill')!.handler({ client_id: 'c2' }))
     expect(result.entries.map((entry: { entry_id: string }) => entry.entry_id)).toEqual(['ent9'])
   })
 
-  it('only asks for entries that are ready to bill', async () => {
+  it('consulta somente itens prontos para faturar', async () => {
     const { svc, tools } = setup({ 'engagement_entries.select': { data: READY, error: null } })
     await tools.get('list_ready_to_bill')!.handler({})
     expect(filterArgs(svc, 'engagement_entries')).toContainEqual({
@@ -305,7 +305,7 @@ describe('list_ready_to_bill', () => {
     })
   })
 
-  it('flags a dated entry whose date has already passed, and reports the date', async () => {
+  it('marca o item com data já vencida e informa a data', async () => {
     const DATED = [
       { ...READY[0], id: 'ent7', due_rule: 'on_date', due_on: '2020-01-01' },
       { ...READY[1], id: 'ent8', due_rule: 'on_date', due_on: '2999-01-01' },
@@ -320,10 +320,10 @@ describe('list_ready_to_bill', () => {
     })
     expect(result.entries[1]).toMatchObject({ due_on: '2999-01-01', overdue_on_date: false })
     expect(result.overdue_count).toBe(1)
-    expect(result.summary).toContain('already passed')
+    expect(result.summary).toContain('data de vencimento já passada')
   })
 
-  it('never flags an entry that was not waiting on a date', async () => {
+  it('nunca marca um item que não aguardava uma data', async () => {
     const { tools } = setup({ 'engagement_entries.select': { data: READY, error: null } })
     const result = body(await tools.get('list_ready_to_bill')!.handler({}))
     expect(result.entries.every((entry: { overdue_on_date: boolean }) => !entry.overdue_on_date)).toBe(
@@ -332,7 +332,7 @@ describe('list_ready_to_bill', () => {
     expect(result.overdue_count).toBe(0)
   })
 
-  it('links each entry to a new invoice already carrying it', async () => {
+  it('vincula cada item a uma nova fatura que já o inclui', async () => {
     const { tools } = setup({ 'engagement_entries.select': { data: READY, error: null } })
     const result = body(await tools.get('list_ready_to_bill')!.handler({}))
     expect(result.entries[0].new_invoice_url).toContain('/invoices/new?engagement_entries=ent2')
@@ -342,7 +342,7 @@ describe('list_ready_to_bill', () => {
 describe('convert_estimate_to_engagement', () => {
   const CONVERTED = { ...PAYLOAD, estimate: { id: 'est1' } }
 
-  it('sends only the shape of the schedule, never the total or the currency', async () => {
+  it('envia somente a estrutura do cronograma, nunca o total ou a moeda', async () => {
     const { svc, tools } = setup({
       'rpc.convert_estimate_to_engagement': { data: CONVERTED, error: null },
     })
@@ -365,11 +365,11 @@ describe('convert_estimate_to_engagement', () => {
     expect(payload).not.toHaveProperty('p_total')
     expect(payload).not.toHaveProperty('p_currency')
     expect(payload).not.toHaveProperty('p_client_id')
-    expect(result.summary).toContain('Nothing was sent to the client')
-    expect(result.summary).toContain('draft')
+    expect(result.summary).toContain('Nada foi enviado ao cliente')
+    expect(result.summary).toContain('rascunho')
   })
 
-  it('refuses a quote that already became an invoice', async () => {
+  it('recusa uma proposta que já foi convertida em fatura', async () => {
     const { tools } = setup({
       'rpc.convert_estimate_to_engagement': {
         data: null,
@@ -383,10 +383,10 @@ describe('convert_estimate_to_engagement', () => {
       installments: 2,
     })
     expect(result.isError).toBe(true)
-    expect(result.content[0].text).toContain('already been converted into an invoice')
+    expect(result.content[0].text).toContain('já foi convertida em uma fatura')
   })
 
-  it('refuses a quote that already became an engagement', async () => {
+  it('recusa uma proposta que já foi convertida em contrato', async () => {
     const { tools } = setup({
       'rpc.convert_estimate_to_engagement': {
         data: null,
@@ -400,14 +400,14 @@ describe('convert_estimate_to_engagement', () => {
       installments: 2,
     })
     expect(result.isError).toBe(true)
-    expect(result.content[0].text).toContain('already become an engagement')
+    expect(result.content[0].text).toContain('já foi convertida em um contrato')
   })
 })
 
 describe('create_engagement', () => {
   const created = { data: PAYLOAD, error: null }
 
-  it('hands the schedule to the database rather than expanding it here', async () => {
+  it('envia o cronograma ao banco em vez de expandi-lo aqui', async () => {
     const { svc, tools } = setup({
       'rpc.create_engagement_with_schedule': created,
       'clients.select': { data: { id: 'c1', business_id: 'b1', name: 'Harbor and Lane' }, error: null },
@@ -437,11 +437,11 @@ describe('create_engagement', () => {
       p_status: 'draft',
       p_actor_key_id: 'key1',
     })
-    expect(result.summary).toContain('Nothing was sent to the client')
+    expect(result.summary).toContain('Nada foi enviado ao cliente')
     expect(result.schedule).toHaveLength(2)
   })
 
-  it('starts the engagement when asked, which is what fires a deposit', async () => {
+  it('inicia o contrato quando solicitado, liberando a cobrança da entrada', async () => {
     const { svc, tools } = setup({
       'rpc.create_engagement_with_schedule': created,
       'clients.select': { data: { id: 'c1', business_id: 'b1', name: 'Harbor and Lane' }, error: null },
@@ -461,7 +461,7 @@ describe('create_engagement', () => {
     })
   })
 
-  it('relays the schedule rules in words a caller can act on', async () => {
+  it('apresenta as regras do cronograma em linguagem que o chamador pode seguir', async () => {
     const { tools } = setup({
       'rpc.create_engagement_with_schedule': { data: null, error: { message: 'percent_must_total_100' } },
       'clients.select': { data: { id: 'c1', business_id: 'b1', name: 'Harbor and Lane' }, error: null },
@@ -475,10 +475,10 @@ describe('create_engagement', () => {
       entries: [{ percent: 30 }, { percent: 60 }],
     })
     expect(result.isError).toBe(true)
-    expect(result.content[0].text).toContain('add up to exactly 100')
+    expect(result.content[0].text).toContain('somar exatamente 100')
   })
 
-  it('explains a key that lacks the write permission', async () => {
+  it('explica quando a chave não tem permissão de gravação', async () => {
     const { tools } = setup({
       'rpc.create_engagement_with_schedule': { data: null, error: { message: 'key_cannot_manage_engagements' } },
       'clients.select': { data: { id: 'c1', business_id: 'b1', name: 'Harbor and Lane' }, error: null },
@@ -491,10 +491,10 @@ describe('create_engagement', () => {
       billing_mode: 'equal_installments',
       installments: 2,
     })
-    expect(result.content[0].text).toContain('write permission')
+    expect(result.content[0].text).toContain('permissão de gravação')
   })
 
-  it('refuses a client that belongs to another business', async () => {
+  it('recusa um cliente que pertence a outra empresa', async () => {
     const { tools } = setup({
       'clients.select': { data: { id: 'c9', business_id: 'b2', name: 'Other' }, error: null },
     })
@@ -511,7 +511,7 @@ describe('create_engagement', () => {
 })
 
 describe('update_engagement', () => {
-  it('refuses a call with nothing to change', async () => {
+  it('recusa uma chamada sem nada para alterar', async () => {
     const { svc, tools } = setup()
     const result = await tools.get('update_engagement')!.handler({
       request_id: '11111111-1111-4111-8111-111111111111',
@@ -521,7 +521,7 @@ describe('update_engagement', () => {
     expect(rpcCalls(svc, 'update_engagement')).toHaveLength(0)
   })
 
-  it('passes only the fields it was given', async () => {
+  it('envia somente os campos informados', async () => {
     const { svc, tools } = setup({ 'rpc.update_engagement': { data: PAYLOAD, error: null } })
     await tools.get('update_engagement')!.handler({
       request_id: '11111111-1111-4111-8111-111111111111',
@@ -537,7 +537,7 @@ describe('update_engagement', () => {
 })
 
 describe('mark_milestone_complete', () => {
-  it('says what became billable', async () => {
+  it('informa o que ficou pronto para faturar', async () => {
     const { tools } = setup({
       'rpc.mark_entry_complete': {
         data: { ...PAYLOAD, became_ready_to_bill: true, entry: { ...ENTRIES[1], status: 'ready_to_bill' } },
@@ -550,11 +550,11 @@ describe('mark_milestone_complete', () => {
         entry_id: 'ent2',
       })
     )
-    expect(result.summary).toContain('$6,000.00 is now ready to bill')
-    expect(result.summary).toContain('Nothing was sent')
+    expect(result.summary).toContain('$6,000.00 está pronto para faturar')
+    expect(result.summary).toContain('Nada foi enviado')
   })
 
-  it('says when an entry is still waiting on its own rule', async () => {
+  it('informa quando um item ainda aguarda sua própria regra', async () => {
     const { tools } = setup({
       'rpc.mark_entry_complete': {
         data: { ...PAYLOAD, became_ready_to_bill: false, entry: ENTRIES[1] },
@@ -567,10 +567,10 @@ describe('mark_milestone_complete', () => {
         entry_id: 'ent2',
       })
     )
-    expect(result.summary).toContain('still waiting on its own due rule')
+    expect(result.summary).toContain('ainda aguarda sua própria regra de vencimento')
   })
 
-  it('refuses to touch money that has already been invoiced', async () => {
+  it('recusa alterar valores que já foram faturados', async () => {
     const { tools } = setup({
       'rpc.mark_entry_complete': { data: null, error: { message: 'entry_already_invoiced' } },
     })
@@ -579,12 +579,12 @@ describe('mark_milestone_complete', () => {
       entry_id: 'ent1',
     })
     expect(result.isError).toBe(true)
-    expect(result.content[0].text).toContain('already been invoiced')
+    expect(result.content[0].text).toContain('já foi faturado')
   })
 })
 
 describe('complete_engagement', () => {
-  it('reports the money left unbilled rather than swallowing it', async () => {
+  it('informa o valor que ainda falta faturar, sem omiti-lo', async () => {
     const { svc, tools } = setup({
       'rpc.set_engagement_status': {
         data: { ...PAYLOAD, warning: 'unbilled', amount_remaining: 6000 },
@@ -598,11 +598,11 @@ describe('complete_engagement', () => {
       })
     )
     expect(rpcCalls(svc, 'set_engagement_status')[0].payload).toMatchObject({ p_status: 'completed' })
-    expect(result.summary).toContain('$6,000.00 of the agreed $12,000.00 is still unbilled')
+    expect(result.summary).toContain('Ainda faltam faturar $6,000.00 do valor acordado de $12,000.00')
     expect(result.warning).toBe('unbilled')
   })
 
-  it('refuses to reopen a closed engagement', async () => {
+  it('recusa reabrir um contrato encerrado', async () => {
     const { tools } = setup({
       'rpc.set_engagement_status': { data: null, error: { message: 'engagement_closed' } },
     })
@@ -611,12 +611,12 @@ describe('complete_engagement', () => {
       engagement_id: 'eng1',
     })
     expect(result.isError).toBe(true)
-    expect(result.content[0].text).toContain('already completed or cancelled')
+    expect(result.content[0].text).toContain('já foi concluído ou cancelado')
   })
 })
 
 describe('waive_engagement_entry', () => {
-  it('reports what is left after the write off', async () => {
+  it('informa o valor restante após o abono', async () => {
     const { svc, tools } = setup({
       'rpc.waive_entry': {
         data: { ...PAYLOAD, entry: { ...ENTRIES[1], status: 'waived', waived_reason: 'Dropped' } },
@@ -631,10 +631,10 @@ describe('waive_engagement_entry', () => {
       })
     )
     expect(rpcCalls(svc, 'waive_entry')[0].payload).toMatchObject({ p_reason: 'Dropped' })
-    expect(result.summary).toContain('Waived $6,000.00')
+    expect(result.summary).toContain('$6,000.00 abonados')
   })
 
-  it('refuses to waive billed money', async () => {
+  it('recusa abonar valores já faturados', async () => {
     const { tools } = setup({
       'rpc.waive_entry': { data: null, error: { message: 'entry_already_invoiced' } },
     })

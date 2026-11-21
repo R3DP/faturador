@@ -20,7 +20,7 @@ BEGIN
  PERFORM set_config('billr.test_invoice_late',i->>'id',true);
  BEGIN
   PERFORM record_stripe_payment((i->>'id')::uuid,10,CURRENT_DATE,'pi_forged');
-  RAISE EXCEPTION 'TEST FAILED authenticated caller wrote a Stripe payment';
+  RAISE EXCEPTION 'TEST FAILED: um usuário autenticado registrou um pagamento Stripe';
  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
 END $$;
 RESET ROLE;
@@ -31,40 +31,40 @@ DECLARE v_invoice_id uuid:=current_setting('billr.test_invoice')::uuid;
 BEGIN
  PERFORM record_stripe_payment(v_invoice_id,10,CURRENT_DATE,'pi_local_test');
  PERFORM record_stripe_payment(v_invoice_id,10,CURRENT_DATE,'pi_local_test');
- IF (SELECT COUNT(*) FROM payments WHERE invoice_id=v_invoice_id)<>1 THEN RAISE EXCEPTION 'Stripe payment duplicated'; END IF;
- IF (SELECT status FROM invoices WHERE invoices.id=v_invoice_id)<>'paid' THEN RAISE EXCEPTION 'Paid status was not atomic'; END IF;
+ IF (SELECT COUNT(*) FROM payments WHERE invoice_id=v_invoice_id)<>1 THEN RAISE EXCEPTION 'Pagamento Stripe duplicado'; END IF;
+ IF (SELECT status FROM invoices WHERE invoices.id=v_invoice_id)<>'paid' THEN RAISE EXCEPTION 'A atualização do status para pago não foi atômica'; END IF;
  PERFORM record_stripe_payment(v_invoice_id,-3,CURRENT_DATE,'re_local_test');
  PERFORM record_stripe_payment(v_invoice_id,-3,CURRENT_DATE,'re_local_test');
- IF (SELECT amount_paid FROM invoices WHERE invoices.id=v_invoice_id)<>7 OR(SELECT balance_due FROM invoices WHERE invoices.id=v_invoice_id)<>3 THEN RAISE EXCEPTION 'Refund ledger does not balance'; END IF;
+ IF (SELECT amount_paid FROM invoices WHERE invoices.id=v_invoice_id)<>7 OR(SELECT balance_due FROM invoices WHERE invoices.id=v_invoice_id)<>3 THEN RAISE EXCEPTION 'O livro de reembolsos não fecha'; END IF;
  BEGIN
   PERFORM record_stripe_payment(v_invoice_id,8,CURRENT_DATE,'pi_local_test');
-  RAISE EXCEPTION 'TEST FAILED conflicting provider amount accepted';
+  RAISE EXCEPTION 'TEST FAILED: foi aceito um valor conflitante do provedor';
  EXCEPTION WHEN raise_exception THEN IF SQLERRM NOT LIKE 'Provider payment ID conflicts%' THEN RAISE; END IF; END;
 END $$;
--- A success only claims the invoice's attempt pointer when it is empty. An
--- invoice that has moved on to a newer PaymentIntent keeps pointing at it when
--- a success for an earlier intent arrives, whether that success was already
--- booked (a replay) or is booked now (a late delivery).
+-- Um sucesso só assume o ponteiro de tentativa da fatura quando ele está vazio. Uma
+-- fatura que já avançou para um PaymentIntent mais recente continua apontando para ele quando
+-- chega um sucesso de uma intenção anterior, tenha ele já sido
+-- registrado (repetição) ou esteja sendo registrado agora (entrega atrasada).
 DO $$
 DECLARE v_replay uuid:=current_setting('billr.test_invoice_replay')::uuid;
         v_late uuid:=current_setting('billr.test_invoice_late')::uuid;
 BEGIN
  PERFORM record_stripe_payment(v_replay,4,CURRENT_DATE,'pi_old');
  IF (SELECT stripe_payment_intent_id FROM invoices WHERE id=v_replay) IS DISTINCT FROM 'pi_old' THEN
-  RAISE EXCEPTION 'TEST FAILED a success did not claim an empty pointer';
+  RAISE EXCEPTION 'TEST FAILED: o sucesso não assumiu um ponteiro vazio';
  END IF;
  UPDATE invoices SET stripe_payment_intent_id='pi_new' WHERE id=v_replay;
  PERFORM record_stripe_payment(v_replay,4,CURRENT_DATE,'pi_old');
  IF (SELECT stripe_payment_intent_id FROM invoices WHERE id=v_replay) IS DISTINCT FROM 'pi_new' THEN
-  RAISE EXCEPTION 'TEST FAILED a replayed success moved the pointer off pi_new';
+  RAISE EXCEPTION 'TEST FAILED: a repetição do sucesso alterou o ponteiro pi_new';
  END IF;
- IF (SELECT COUNT(*) FROM payments WHERE invoice_id=v_replay)<>1 THEN RAISE EXCEPTION 'TEST FAILED replayed success duplicated money'; END IF;
+ IF (SELECT COUNT(*) FROM payments WHERE invoice_id=v_replay)<>1 THEN RAISE EXCEPTION 'TEST FAILED: a repetição do sucesso duplicou o valor'; END IF;
 
  UPDATE invoices SET stripe_payment_intent_id='pi_new' WHERE id=v_late;
  PERFORM record_stripe_payment(v_late,4,CURRENT_DATE,'pi_old_late');
  IF (SELECT stripe_payment_intent_id FROM invoices WHERE id=v_late) IS DISTINCT FROM 'pi_new' THEN
-  RAISE EXCEPTION 'TEST FAILED a late success for an earlier intent moved the pointer off pi_new';
+  RAISE EXCEPTION 'TEST FAILED: um sucesso atrasado de uma intenção anterior alterou o ponteiro pi_new';
  END IF;
- IF (SELECT amount_paid FROM invoices WHERE id=v_late)<>4 THEN RAISE EXCEPTION 'TEST FAILED the late success was not booked'; END IF;
+ IF (SELECT amount_paid FROM invoices WHERE id=v_late)<>4 THEN RAISE EXCEPTION 'TEST FAILED: o sucesso atrasado não foi registrado'; END IF;
 END $$;
 ROLLBACK;

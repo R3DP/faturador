@@ -75,8 +75,8 @@ export default function NewTimeEntryPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Log Time"
-        description="Record time spent on work"
+        title="Registrar horas"
+        description="Registre o tempo dedicado ao trabalho"
       />
 
       <div className="mt-6 max-w-2xl">

@@ -16,20 +16,20 @@ type ClientRow = Database['public']['Tables']['clients']['Row']
 type InvoiceRow = Database['public']['Tables']['invoices']['Row']
 type EstimateRow = Database['public']['Tables']['estimates']['Row']
 
-/** Shape returned by the convert_estimate_to_invoice RPC. */
+/** Formato retornado pela RPC convert_estimate_to_invoice. */
 interface ConversionResult {
   /**
-   * False when another call had already claimed this estimate, in which case
-   * this call wrote nothing and `invoice` is the one that already exists.
+   * Falso quando outra chamada já reivindicou este orçamento; nesse caso,
+   * esta chamada não gravou nada e `invoice` é a fatura que já existe.
    */
   claimed: boolean
   invoice: InvoiceRow | null
   invoice_number: string | null
 }
 
-const DATE_FIELD = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+const DATE_FIELD = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use o formato YYYY-MM-DD')
 
-/** Days added to issue_date when the caller does not supply an expiry date. */
+/** Dias somados a issue_date quando a chamada não informa uma data de validade. */
 const DEFAULT_EXPIRY_DAYS = 30
 
 const ESTIMATE_STATUSES = [
@@ -46,21 +46,21 @@ const discountFields = {
   discount_type: z
     .enum(['percentage', 'fixed'])
     .optional()
-    .describe('Discount type. Defaults to "percentage".'),
+    .describe('Tipo de desconto. O padrão é "percentage".'),
   discount_value: z
     .number()
     .min(0)
     .optional()
     .describe(
-      'Discount value: a percent (0-100) if discount_type is "percentage", or a flat amount otherwise. Defaults to 0.'
+      'Valor do desconto: percentual (0-100) se discount_type for "percentage", ou valor fixo nos demais casos. O padrão é 0.'
     ),
   tax_rate: z
     .number()
     .min(0)
     .max(100)
     .optional()
-    .describe('Tax rate percent, applied after the discount. Defaults to 0.'),
-  shipping_amount: z.number().min(0).optional().describe('Flat shipping amount, added after tax. Defaults to 0.'),
+    .describe('Percentual de imposto, aplicado após o desconto. O padrão é 0.'),
+  shipping_amount: z.number().min(0).optional().describe('Valor fixo do frete, somado após o imposto. O padrão é 0.'),
 }
 
 function estimatePublicUrl(publicId: string): string {
@@ -68,16 +68,16 @@ function estimatePublicUrl(publicId: string): string {
 }
 
 /**
- * The answer convert_estimate_to_invoice gives when the estimate was ALREADY
- * converted: the invoice that exists, reported as a success.
+ * O retorno de convert_estimate_to_invoice quando o orçamento JÁ foi
+ * convertido: a fatura existente, informada como sucesso.
  *
- * Deliberately not an error. Both callers that reach it, the caller whose
- * estimate was converted before the call started and the loser of a concurrent
- * claim, are almost always the same agent retrying a request that already
- * succeeded. Telling it that its work failed is what produced duplicate
- * invoices in the first place. The shape matches the freshly converted result
- * field for field, with `already_converted` distinguishing the two, so a caller
- * needs no branch to read it.
+ * Isso não é um erro de propósito. Quem chega aqui - seja porque o orçamento
+ * foi convertido antes do início da chamada, seja porque perdeu uma disputa
+ * concorrente - quase sempre é o mesmo agente repetindo uma solicitação que já
+ * deu certo. Informar que o trabalho falhou foi o que causou faturas
+ * duplicadas. O formato corresponde campo a campo ao resultado de uma
+ * conversão recém-concluída; `already_converted` distingue os casos, então a
+ * chamada não precisa de ramificação para ler o retorno.
  */
 async function alreadyConvertedResult(ctx: McpCtx, estimate: EstimateRow, invoice: InvoiceRow) {
   const { data: lineItems } = await ctx.db.svc
@@ -88,7 +88,7 @@ async function alreadyConvertedResult(ctx: McpCtx, estimate: EstimateRow, invoic
     .limit(500)
 
   return jsonResult({
-    summary: `Estimate ${estimate.estimate_number} had already been converted into draft invoice ${invoice.invoice_number}: ${formatCurrency(invoice.total, invoice.currency)}. Nothing new was created and no second invoice exists. Call send_invoice to deliver it.`,
+    summary: `O orçamento ${estimate.estimate_number} já havia sido convertido na fatura em rascunho ${invoice.invoice_number}: ${formatCurrency(invoice.total, invoice.currency)}. Nada novo foi criado e não existe uma segunda fatura. Chame send_invoice para enviá-la.`,
     already_converted: true,
     invoice: {
       id: invoice.id,
@@ -121,40 +121,40 @@ async function alreadyConvertedResult(ctx: McpCtx, estimate: EstimateRow, invoic
 }
 
 /**
- * Registers the estimate tools (create_estimate, update_draft_estimate,
+ * Registra as ferramentas de orçamento (create_estimate, update_draft_estimate,
  * get_estimate, list_estimates, send_estimate, convert_estimate_to_invoice),
- * scoped to the businesses in ctx.db.scope.
+ * limitadas às empresas em ctx.db.scope.
  *
- * These mirror the app's own estimate flow (src/lib/actions/estimates.ts):
- * both write through the create_estimate_document and
- * convert_estimate_to_invoice database functions, so an estimate written by
- * an agent, and the invoice a conversion produces, are indistinguishable from
- * the ones the UI writes. Totals go through the shared
- * round-once-at-storage math in src/lib/invoices/build.ts, the same module the
- * invoice tools use.
+ * Elas espelham o fluxo de orçamento do próprio app (src/lib/actions/estimates.ts):
+ * ambas gravam por meio das funções de banco create_estimate_document e
+ * convert_estimate_to_invoice, então um orçamento criado por um agente e a
+ * fatura gerada pela conversão são indistinguíveis dos documentos criados pela
+ * interface. Os totais usam o cálculo compartilhado que arredonda uma única
+ * vez ao salvar em src/lib/invoices/build.ts, o mesmo módulo usado pelas
+ * ferramentas de fatura.
  */
 export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'list_estimates',
     {
-      title: 'List Estimates',
+      title: 'Listar orçamentos',
       description:
-        'List estimates (quotes) for the caller\'s businesses, most recent first, optionally filtered by business, status, or client. Use this to answer "what quotes are outstanding". Estimates are NOT invoices and never carry a balance; use list_invoices for anything about money owed.',
+        'Listar os orçamentos das empresas acessíveis à chamada, dos mais recentes aos mais antigos, com filtros opcionais por empresa, status ou cliente. Use para saber quais orçamentos estão pendentes. Orçamentos NÃO são faturas e nunca têm saldo devedor; use list_invoices para consultar valores devidos.',
       inputSchema: z.object({
-        offset: z.number().int().min(0).max(1000000).optional().describe('Page offset. Start at 0, then use next_offset until it is null. Keep other filters unchanged.'),
+        offset: z.number().int().min(0).max(1000000).optional().describe('Deslocamento da página. Comece em 0 e use next_offset até que seja null. Mantenha os demais filtros iguais.'),
         business_id: z
           .string()
           .uuid()
           .optional()
-          .describe('Id of the business whose estimates to list. Omit to list across every business in scope.'),
+          .describe('ID da empresa cujos orçamentos serão listados. Omita para listar todas as empresas dentro do escopo.'),
         status: z
           .enum(ESTIMATE_STATUSES)
           .optional()
           .describe(
-            'Filter by status: draft, sent, viewed, accepted, declined, expired, or converted (already turned into an invoice).'
+            'Filtre por status: draft, sent, viewed, accepted, declined, expired ou converted (já convertido em fatura).'
           ),
-        client_id: z.string().uuid().optional().describe('Filter to estimates for this client only.'),
-        limit: z.number().int().min(1).max(100).optional().describe('Max estimates to return (default 20, max 100).'),
+        client_id: z.string().uuid().optional().describe('Filtre para exibir somente os orçamentos deste cliente.'),
+        limit: z.number().int().min(1).max(100).optional().describe('Máximo de orçamentos a retornar (padrão 20, máximo 100).'),
       }),
     },
     async ({ offset, business_id, status, client_id, limit }) => {
@@ -164,7 +164,7 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
         try {
           resolvedId = ctx.db.resolveBusinessId(business_id)
         } catch (err) {
-          return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+          return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
         }
         businessIds = [resolvedId]
       }
@@ -193,7 +193,7 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
 
       if (error) {
         console.error('list_estimates:', error)
-        return errorResult('Could not list estimates.')
+        return errorResult('Não foi possível listar os orçamentos.')
       }
 
       const estimates = (data ?? []).map((est) => ({
@@ -210,12 +210,12 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
       }))
 
       const truncated = estimates.length === resolvedLimit
-      const countLabel = `${estimates.length} estimate${estimates.length === 1 ? '' : 's'}`
+      const countLabel = `${estimates.length} ${estimates.length === 1 ? 'orçamento' : 'orçamentos'}`
 
       return jsonResult({
         offset: offset ?? 0,
         next_offset: (data ?? []).length === resolvedLimit ? (offset ?? 0) + resolvedLimit : null,
-        summary: `${countLabel}${status ? ` with status "${status}"` : ''}${truncated ? truncationNote(resolvedLimit) : ''}`,
+        summary: `${countLabel}${status ? ` com status "${status}"` : ''}${truncated ? truncationNote(resolvedLimit) : ''}`,
         estimates,
       })
     }
@@ -224,11 +224,11 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'get_estimate',
     {
-      title: 'Get Estimate',
+      title: 'Consultar orçamento',
       description:
-        'Fetch one estimate in full: line items, totals, client, status, and the shareable link. Use it before update_draft_estimate or convert_estimate_to_invoice so you are editing the real current contents rather than assumed ones. It does not return payment or balance information, because an estimate is not an invoice; use get_payment_status for money owed.',
+        'Consultar um orçamento completo: itens, totais, cliente, status e link compartilhável. Use antes de update_draft_estimate ou convert_estimate_to_invoice para trabalhar com os dados atuais, em vez de presumir o conteúdo. Não retorna informações de pagamento ou saldo, pois orçamento não é fatura; use get_payment_status para consultar valores devidos.',
       inputSchema: z.object({
-        estimate_id: z.string().uuid().describe('Id of the estimate to fetch (from list_estimates or create_estimate).'),
+        estimate_id: z.string().uuid().describe('ID do orçamento a consultar (obtido por list_estimates ou create_estimate).'),
       }),
     },
     async ({ estimate_id }) => {
@@ -236,7 +236,7 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
       try {
         estimate = await ctx.db.assertEstimateAccess(estimate_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access estimate.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar o orçamento.')
       }
 
       const [{ data: lineItems, error: lineItemsError }, { data: client }] = await Promise.all([
@@ -256,11 +256,11 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
 
       if (lineItemsError) {
         console.error('get_estimate (line items):', lineItemsError)
-        return errorResult('Could not load estimate line items.')
+        return errorResult('Não foi possível carregar os itens do orçamento.')
       }
 
       return jsonResult({
-        summary: `${estimate.estimate_number} for ${client?.name ?? 'unknown client'}: ${formatCurrency(estimate.total, estimate.currency)} (${estimate.status})`,
+        summary: `${estimate.estimate_number} para ${client?.name ?? 'cliente desconhecido'}: ${formatCurrency(estimate.total, estimate.currency)} (${estimate.status})`,
         estimate: {
           id: estimate.id,
           business_id: estimate.business_id,
@@ -299,36 +299,36 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'create_estimate',
     {
-      title: 'Create Estimate',
+      title: 'Criar orçamento',
       description:
-        'Draft a new estimate (quote) for a client, identified by client_id or client_name. Use this when work has not been agreed yet and the client needs a price first. Always created as a draft: call send_estimate to deliver it, then convert_estimate_to_invoice once it is accepted. Do NOT use this for work already delivered; create_invoice is the right tool there.',
+        'Criar um orçamento para um cliente, identificado por client_id ou client_name. Use quando o trabalho ainda não foi aprovado e o cliente precisa receber um preço antes. Sempre é criado como rascunho: chame send_estimate para enviá-lo e, depois que for aceito, convert_estimate_to_invoice. NÃO use para trabalho já realizado; nesse caso, a ferramenta correta é create_invoice.',
       inputSchema: z.object({
-        request_id: z.uuid().describe('Stable request ID. Reuse with identical input on retries.'),
+        request_id: z.uuid().describe('ID estável da solicitação. Reutilize com os mesmos dados ao repetir a chamada.'),
         business_id: z
           .string()
           .uuid()
           .optional()
           .describe(
-            'Id of the business to create the estimate under. Optional when the API key is scoped to exactly one business; required if scoped to multiple.'
+            'ID da empresa em que o orçamento será criado. Opcional quando a chave de API está limitada a uma única empresa; obrigatório quando está limitada a várias.'
           ),
-        client_id: z.string().uuid().optional().describe('Id of the client. Provide this or client_name.'),
+        client_id: z.string().uuid().optional().describe('ID do cliente. Informe este campo ou client_name.'),
         client_name: z
           .string()
           .max(200)
           .optional()
-          .describe('Exact (case-insensitive) client name. Provide this or client_id.'),
+          .describe('Nome exato do cliente (sem diferenciar maiúsculas de minúsculas). Informe este campo ou client_id.'),
         line_items: z
           .array(lineItemInput)
           .min(1)
           .describe(
-            'Estimate line items; at least one required. Each line is either written out (description + quantity + rate) or points at a saved item via item_id / item_name, which supplies the description and rate.'
+            'Itens do orçamento; é necessário informar pelo menos um. Cada item pode ser descrito diretamente (description + quantity + rate) ou referenciar um item salvo por item_id / item_name, que fornece a descrição e o valor.'
           ),
-        issue_date: DATE_FIELD.optional().describe('Issue date, YYYY-MM-DD. Defaults to today.'),
+        issue_date: DATE_FIELD.optional().describe('Data de emissão, YYYY-MM-DD. O padrão é a data de hoje.'),
         expiry_date: DATE_FIELD.optional().describe(
-          `Date the quote stops being valid, YYYY-MM-DD. Defaults to issue_date plus ${DEFAULT_EXPIRY_DAYS} days.`
+          `Data de validade do orçamento, YYYY-MM-DD. O padrão é issue_date mais ${DEFAULT_EXPIRY_DAYS} dias.`
         ),
-        notes: z.string().max(2000).optional().describe('Notes shown on the estimate.'),
-        terms: z.string().max(2000).optional().describe('Terms shown on the estimate, e.g. what the quote does not cover.'),
+        notes: z.string().max(2000).optional().describe('Observações exibidas no orçamento.'),
+        terms: z.string().max(2000).optional().describe('Condições exibidas no orçamento, por exemplo, o que ele não inclui.'),
         ...discountFields,
       }),
     },
@@ -350,21 +350,21 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
       try {
         resolvedBusinessId = ctx.db.resolveBusinessId(business_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
       }
 
       let client: ClientRow
       try {
         client = await resolveClient(ctx, resolvedBusinessId, client_id, client_name)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve client.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar o cliente.')
       }
 
       let resolvedLineItems
       try {
         resolvedLineItems = (await resolveLineItems(ctx, resolvedBusinessId, line_items)).resolved
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve line items.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar os itens.')
       }
 
       const { data: business, error: businessError } = await ctx.db.svc
@@ -375,7 +375,7 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
 
       if (businessError || !business) {
         console.error('create_estimate (business):', businessError)
-        return errorResult('Could not load business.')
+        return errorResult('Não foi possível carregar os dados da empresa.')
       }
 
       const totals = computeInvoiceTotals(resolvedLineItems, {
@@ -389,17 +389,17 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
       const resolvedExpiryDate =
         expiry_date || toISODate(addDays(parseDay(resolvedIssueDate), DEFAULT_EXPIRY_DAYS))
 
-      // Currency follows the client, falling back to the business default,
-      // the same rule createEstimateAction applies in the app.
+      // A moeda segue a do cliente, usando como alternativa a moeda padrão da
+      // empresa, conforme a mesma regra aplicada por createEstimateAction no app.
       const estimateCurrency = client.currency || business.default_currency
 
       const {data:created,error:estimateError}=await ctx.db.svc.rpc('create_estimate_document',{p_business_id:resolvedBusinessId,p_client_id:client.id,p_request_id:request_id,p_key_id:ctx.keyId,p_patch:{issue_date:resolvedIssueDate,expiry_date:resolvedExpiryDate,discount_type,discount_value,tax_rate,shipping_amount,notes,terms},p_lines:resolvedLineItems.map(line=>({...line}))})
-      if(estimateError||!created)return errorResult(estimateError?.message||'Could not create estimate')
+      if(estimateError||!created)return errorResult(estimateError?.message||'Não foi possível criar o orçamento')
       const estimate=created as Database['public']['Tables']['estimates']['Row']
       const estimateNumber=estimate.estimate_number
 
       return jsonResult({
-        summary: `Drafted estimate ${estimateNumber} for ${client.name}: ${formatCurrency(totals.total, estimateCurrency)}`,
+        summary: `Orçamento ${estimateNumber} criado como rascunho para ${client.name}: ${formatCurrency(totals.total, estimateCurrency)}`,
         estimate: {
           id: estimate.id,
           business_id: estimate.business_id,
@@ -432,25 +432,25 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'update_draft_estimate',
     {
-      title: 'Update Draft Estimate',
+      title: 'Atualizar orçamento em rascunho',
       description:
-        'Update a draft estimate: replace its line items and/or adjust dates, notes, terms, discount, tax, or shipping. Refuses to touch an estimate that has already been sent, accepted, declined, or converted, because the client has seen those numbers; create a new estimate instead.',
+        'Atualizar um orçamento em rascunho: substituir seus itens e/ou alterar datas, observações, condições, desconto, imposto ou frete. Recusa alterações em orçamentos já enviados, aceitos, recusados ou convertidos, pois o cliente já viu esses valores; nesse caso, crie um novo orçamento.',
       inputSchema: z.object({
-        estimate_id: z.string().uuid().describe('Id of the draft estimate to update.'),
+        estimate_id: z.string().uuid().describe('ID do orçamento em rascunho a atualizar.'),
         line_items: z
           .array(lineItemInput)
           .min(1)
           .optional()
           .describe(
-            'If provided, replaces ALL existing line items and recomputes totals. Lines may reference saved items via item_id / item_name.'
+            'Se informado, substitui TODOS os itens existentes e recalcula os totais. Os itens podem referenciar itens salvos por item_id / item_name.'
           ),
-        issue_date: DATE_FIELD.optional().describe('Replaces the issue date, YYYY-MM-DD.'),
-        expiry_date: DATE_FIELD.optional().describe('Replaces the expiry date, YYYY-MM-DD.'),
-        notes: z.string().max(2000).optional().describe('Replaces the notes field.'),
-        terms: z.string().max(2000).optional().describe('Replaces the terms field.'),
+        issue_date: DATE_FIELD.optional().describe('Substitui a data de emissão, YYYY-MM-DD.'),
+        expiry_date: DATE_FIELD.optional().describe('Substitui a data de validade, YYYY-MM-DD.'),
+        notes: z.string().max(2000).optional().describe('Substitui o campo de observações.'),
+        terms: z.string().max(2000).optional().describe('Substitui o campo de condições.'),
         ...discountFields,
         discount_type: discountFields.discount_type.describe(
-          'Discount type. If provided alone, the existing discount_value is reinterpreted under the new type (a stored fixed 50 discount becomes a 50% discount). Pass discount_value together with discount_type to set both explicitly.'
+          'Tipo de desconto. Se informado sozinho, o discount_value existente será reinterpretado conforme o novo tipo (um desconto fixo armazenado como 50 passa a ser um desconto de 50%). Informe discount_value junto com discount_type para definir ambos explicitamente.'
         ),
       }),
     },
@@ -470,19 +470,19 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
       try {
         estimate = await ctx.db.assertEstimateAccess(estimate_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access estimate.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar o orçamento.')
       }
 
       if (estimate.status !== 'draft') {
         return errorResult(
-          `Estimate ${estimate.estimate_number} is "${estimate.status}", not "draft". Only draft estimates can be edited. Create a new estimate if the numbers need to change.`
+          `O orçamento ${estimate.estimate_number} está com status "${estimate.status}", não "draft". Somente orçamentos em rascunho podem ser editados. Crie um novo orçamento se os valores precisarem mudar.`
         )
       }
 
-      // Only read when the caller is NOT replacing the lines, because then the
-      // stored lines are the input to the recomputed totals. When line_items IS
-      // supplied the replacement happens inside replace_estimate_line_items and
-      // there is nothing to restore, so the read is dead weight.
+      // Só lê quando a chamada NÃO está substituindo os itens, pois nesse caso os
+      // itens armazenados são usados para recalcular os totais. Quando line_items
+      // É informado, a substituição ocorre dentro de replace_estimate_line_items
+      // e não há nada a restaurar; portanto, a leitura seria desnecessária.
       let storedLineItems: { description: string; quantity: number; rate: number }[] = []
       if (!line_items) {
         const { data, error: storedError } = await ctx.db.svc
@@ -494,7 +494,7 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
 
         if (storedError) {
           console.error('update_draft_estimate (load line items):', storedError)
-          return errorResult('Could not load existing line items.')
+          return errorResult('Não foi possível carregar os itens existentes.')
         }
         storedLineItems = data ?? []
       }
@@ -504,7 +504,7 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
         try {
           currentLineItems = (await resolveLineItems(ctx, estimate.business_id, line_items)).resolved
         } catch (err) {
-          return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve line items.')
+          return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar os itens.')
         }
       } else {
         currentLineItems = storedLineItems.map((li) => ({
@@ -539,14 +539,14 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
       let updated: EstimateRow | null = null
 
       if (line_items) {
-        // ONE TRANSACTION. replace_estimate_line_items does
-        // the delete, the re-insert and the totals update together, so the
-        // estimate can no longer be left showing a total with no lines under
-        // it. The hand-rolled version this replaces deleted the old rows,
-        // inserted the new ones, and on failure tried to re-insert the rows it
-        // had just deleted; when that restore itself failed the tool had to
-        // tell the caller the estimate was now empty and ask it to repair the
-        // document by hand. That state is no longer reachable.
+        // UMA TRANSAÇÃO. replace_estimate_line_items executa a exclusão, a nova
+        // inserção e a atualização dos totais em conjunto, impedindo que o
+        // orçamento fique com um total sem itens. A implementação manual
+        // substituída excluía as linhas antigas, inseria as novas e, em caso de
+        // falha, tentava reinserir as linhas excluídas. Se essa restauração
+        // também falhasse, a ferramenta precisava avisar que o orçamento ficara
+        // vazio e pedir que a pessoa o corrigisse manualmente. Esse estado não
+        // pode mais ocorrer.
         const { data, error: replaceError } = await ctx.db.svc.rpc('replace_estimate_line_items', {
           p_estimate_id: estimate_id,
           p_line_items: totals.line_items.map((item) => ({
@@ -562,10 +562,10 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
           console.error('update_draft_estimate (replace line items):', replaceError)
           if (replaceError?.message === 'invalid_line_items') {
             return errorResult(
-              'Those line items were rejected; the estimate was left unchanged. Send between 1 and 500 lines and retry.'
+              'Os itens foram rejeitados; o orçamento não foi alterado. Envie de 1 a 500 itens e tente novamente.'
             )
           }
-          return errorResult('Could not update the estimate; it was left unchanged.')
+          return errorResult('Não foi possível atualizar o orçamento; ele não foi alterado.')
         }
 
         updated = data as unknown as EstimateRow
@@ -579,14 +579,14 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
 
         if (updateError || !data) {
           console.error('update_draft_estimate (update):', updateError)
-          return errorResult('Could not update estimate.')
+          return errorResult('Não foi possível atualizar o orçamento.')
         }
 
         updated = data
       }
 
       return jsonResult({
-        summary: `Updated draft estimate ${updated.estimate_number}: ${formatCurrency(totals.total, updated.currency)}`,
+        summary: `Orçamento ${updated.estimate_number} em rascunho atualizado: ${formatCurrency(totals.total, updated.currency)}`,
         estimate: {
           id: updated.id,
           estimate_number: updated.estimate_number,
@@ -620,21 +620,21 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'send_estimate',
     {
-      title: 'Send Estimate',
+      title: 'Enviar orçamento',
       description:
-        'Email an estimate to its client and advance a draft to "sent". Defaults the recipient to the client\'s own email. Use it once the quote is final; it does not create an invoice and takes no payment. Refuses estimates that were already converted to an invoice.',
+        'Enviar um orçamento por e-mail ao cliente e alterar o status de um rascunho para "sent". O destinatário padrão é o e-mail do próprio cliente. Use quando o orçamento estiver finalizado; isso não cria uma fatura nem recebe pagamentos. Recusa orçamentos já convertidos em fatura.',
       inputSchema: z.object({
-        request_id: z.uuid().describe('Stable delivery ID. Reuse on retries with identical recipients and content.'),
-        estimate_id: z.string().uuid().describe('Id of the estimate to send.'),
-        to: z.string().email().optional().describe("Recipient email. Defaults to the estimate's client email."),
-        cc: z.array(z.string().email()).max(10).optional().describe('Cc recipients, at most 10.'),
-        bcc: z.array(z.string().email()).max(10).optional().describe('Bcc recipients, at most 10.'),
+        request_id: z.uuid().describe('ID estável do envio. Reutilize ao repetir a chamada com os mesmos destinatários e conteúdo.'),
+        estimate_id: z.string().uuid().describe('ID do orçamento a enviar.'),
+        to: z.string().email().optional().describe("E-mail do destinatário. O padrão é o e-mail do cliente associado ao orçamento."),
+        cc: z.array(z.string().email()).max(10).optional().describe('Destinatários em cópia (Cc), no máximo 10.'),
+        bcc: z.array(z.string().email()).max(10).optional().describe('Destinatários em cópia oculta (Bcc), no máximo 10.'),
         subject: z
           .string()
           .max(200)
           .optional()
-          .describe('Email subject. Defaults to "Estimate <number> from <business>".'),
-        message: z.string().max(2000).optional().describe('Optional personal message shown above the quote summary.'),
+          .describe('Assunto do e-mail. O padrão é "Orçamento <number> de <business>".'),
+        message: z.string().max(2000).optional().describe('Mensagem pessoal opcional exibida acima do resumo do orçamento.'),
       }),
     },
     async ({ request_id, estimate_id, to, cc, bcc, subject, message }) => {
@@ -642,12 +642,12 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
       try {
         estimate = await ctx.db.assertEstimateAccess(estimate_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access estimate.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar o orçamento.')
       }
 
       if (estimate.status === 'converted') {
         return errorResult(
-          `Estimate ${estimate.estimate_number} was already converted to an invoice. Send that invoice with send_invoice instead.`
+          `O orçamento ${estimate.estimate_number} já foi convertido em fatura. Use send_invoice para enviar essa fatura.`
         )
       }
 
@@ -662,12 +662,12 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
 
         if (clientError) {
           console.error('send_estimate (client lookup):', clientError)
-          return errorResult('Could not look up client email.')
+          return errorResult('Não foi possível consultar o e-mail do cliente.')
         }
 
         if (!client?.email) {
           return errorResult(
-            `Estimate ${estimate.estimate_number}'s client has no email on file. Pass "to" explicitly.`
+            `O cliente do orçamento ${estimate.estimate_number} não tem e-mail cadastrado. Informe "to" explicitamente.`
           )
         }
 
@@ -685,7 +685,7 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
         })
 
         return jsonResult({
-          summary: `Sent estimate ${estimate.estimate_number} to ${result.to}.`,
+          summary: `Orçamento ${estimate.estimate_number} enviado para ${result.to}.`,
           to: result.to,
           public_url: estimatePublicUrl(estimate.public_id),
         })
@@ -694,7 +694,7 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
           return errorResult(err.message)
         }
         console.error('send_estimate (send):', err)
-        return errorResult('Could not send estimate.')
+        return errorResult('Não foi possível enviar o orçamento.')
       }
     }
   )
@@ -702,14 +702,14 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'convert_estimate_to_invoice',
     {
-      title: 'Convert Estimate to Invoice',
+      title: 'Converter orçamento em fatura',
       description:
-        'Turn an estimate into a draft invoice carrying the same line items, currency, notes, and terms, then mark the estimate "converted" and link the two. Use it once the client has agreed. It does NOT send the invoice; call send_invoice after. Refuses an estimate that was already converted, declined, or expired.',
+        'Converter um orçamento em uma fatura em rascunho com os mesmos itens, moeda, observações e condições; depois, marcar o orçamento como "converted" e vincular os dois documentos. Use quando o cliente tiver aceitado. A fatura NÃO é enviada; depois, chame send_invoice. Recusa orçamentos já convertidos, recusados ou vencidos.',
       inputSchema: z.object({
-        estimate_id: z.string().uuid().describe('Id of the estimate to convert.'),
-        issue_date: DATE_FIELD.optional().describe('Invoice issue date, YYYY-MM-DD. Defaults to today.'),
+        estimate_id: z.string().uuid().describe('ID do orçamento a converter.'),
+        issue_date: DATE_FIELD.optional().describe('Data de emissão da fatura, YYYY-MM-DD. O padrão é a data de hoje.'),
         due_date: DATE_FIELD.optional().describe(
-          "Invoice due date, YYYY-MM-DD. Defaults to issue_date plus the business's default payment terms."
+          "Data de vencimento da fatura, YYYY-MM-DD. O padrão é issue_date mais o prazo de pagamento padrão da empresa."
         ),
       }),
     },
@@ -718,31 +718,32 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
       try {
         estimate = await ctx.db.assertEstimateAccess(estimate_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access estimate.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar o orçamento.')
       }
 
-      // Already converted before we even started: the caller is acting on stale
-      // information, most often because an earlier call of its own succeeded
-      // and it is retrying. Hand back the invoice that already exists instead
-      // of failing, so a retry converges. See alreadyConvertedResult.
+      // Já convertido antes mesmo do início: a chamada está usando informações
+      // desatualizadas, geralmente porque uma chamada anterior do mesmo agente
+      // foi concluída e ele está repetindo a solicitação. Retorne a fatura que
+      // já existe em vez de falhar, para que a repetição converja. Consulte
+      // alreadyConvertedResult.
       if (estimate.status === 'converted' || estimate.converted_invoice_id) {
         if (estimate.converted_invoice_id) {
           try {
             const existing = await ctx.db.assertInvoiceAccess(estimate.converted_invoice_id)
             return await alreadyConvertedResult(ctx, estimate, existing)
           } catch {
-            // Fall through to the refusal below: the link points at an invoice
-            // this key cannot see or that no longer exists, so there is nothing
-            // safe to return and nothing safe to create either.
+            // Continue para a recusa abaixo: o vínculo aponta para uma fatura que esta
+            // chave não pode consultar ou que não existe mais; portanto, não há
+            // nada seguro para retornar nem para criar.
           }
         }
         return errorResult(
-          `Estimate ${estimate.estimate_number} was already converted to invoice ${estimate.converted_invoice_id ?? '(unknown)'}. Use get_invoice on that invoice rather than converting again.`
+          `O orçamento ${estimate.estimate_number} já foi convertido na fatura ${estimate.converted_invoice_id ?? '(desconhecida)'}. Use get_invoice para consultar essa fatura em vez de converter novamente.`
         )
       }
       if (estimate.status === 'declined' || estimate.status === 'expired') {
         return errorResult(
-          `Estimate ${estimate.estimate_number} is "${estimate.status}". Create a fresh estimate and get it accepted before invoicing.`
+          `O orçamento ${estimate.estimate_number} está com status "${estimate.status}". Crie um novo orçamento e obtenha a aprovação do cliente antes de emitir a fatura.`
         )
       }
 
@@ -759,12 +760,12 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
 
       if (lineItemsError || businessError || !business) {
         console.error('convert_estimate_to_invoice (load):', lineItemsError ?? businessError)
-        return errorResult('Could not load the estimate contents.')
+        return errorResult('Não foi possível carregar o conteúdo do orçamento.')
       }
 
       if (!lineItems || lineItems.length === 0) {
         return errorResult(
-          `Estimate ${estimate.estimate_number} has no line items, so there is nothing to invoice.`
+          `O orçamento ${estimate.estimate_number} não tem itens, portanto não há nada a faturar.`
         )
       }
 
@@ -774,15 +775,16 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
       const resolvedDueDate =
         due_date || toISODate(addDays(parseDay(resolvedIssueDate), business.default_payment_terms))
 
-      // ONE TRANSACTION, CLAIM FIRST. convert_estimate_to_invoice marks the estimate converted with a conditional UPDATE before
-      // it writes anything, allocates the invoice number through
-      // allocate_document_number, and inserts the invoice and its line items,
-      // all in the same transaction.
+      // UMA TRANSAÇÃO, PRIMEIRO A REIVINDICAÇÃO. convert_estimate_to_invoice
+      // marca o orçamento como convertido com um UPDATE condicional antes de
+      // gravar qualquer dado, aloca o número da fatura por meio de
+      // allocate_document_number e insere a fatura e seus itens, tudo na mesma
+      // transação.
       //
-      // This replaces a read-then-write guard that two concurrent calls with
-      // the same estimate_id could both pass, each then creating a real
-      // invoice and consuming an invoice number. An agent retrying a timed-out
-      // request was enough to bill a client twice.
+      // Isso substitui uma verificação de leitura seguida de gravação, que duas
+      // chamadas simultâneas com o mesmo estimate_id poderiam ultrapassar,
+      // criando cada uma uma fatura real e consumindo um número. Uma repetição
+      // após o tempo limite já era suficiente para cobrar o cliente duas vezes.
       const { data: converted, error: convertError } = await ctx.db.svc.rpc(
         'convert_estimate_to_invoice',
         {
@@ -807,44 +809,44 @@ export function registerEstimateTools(server: McpServer, ctx: McpCtx) {
         console.error('convert_estimate_to_invoice (rpc):', convertError)
         const code = convertError?.message ?? ''
         if (code === 'estimate_not_found') {
-          return errorResult('Estimate not found')
+          return errorResult('Orçamento não encontrado')
         }
         if (code === 'estimate_not_convertible') {
           return errorResult(
-            `Estimate ${estimate.estimate_number} is "${estimate.status}". Create a fresh estimate and get it accepted before invoicing.`
+            `O orçamento ${estimate.estimate_number} está com status "${estimate.status}". Crie um novo orçamento e obtenha a aprovação do cliente antes de emitir a fatura.`
           )
         }
-        return errorResult('Could not convert the estimate; nothing was created.')
+        return errorResult('Não foi possível converter o orçamento; nada foi criado.')
       }
 
       const result = converted as unknown as ConversionResult
 
-      // LOSER OF THE RACE. Another call claimed the estimate between our read
-      // and our claim, so this call wrote nothing at all: no invoice, no line
-      // items, no invoice number consumed. Report the winner's invoice as a
-      // success. Failing here would tell a retrying agent that work it in fact
-      // completed had failed, which is how the duplicate invoices got created
-      // in the first place.
+      // PERDEDOR DA DISPUTA. Outra chamada reivindicou o orçamento entre a nossa
+      // leitura e a nossa reivindicação, então esta chamada não gravou nada:
+      // nenhuma fatura ou item e nenhum número de fatura foi consumido. Informe
+      // a fatura da chamada vencedora como sucesso. Falhar aqui diria ao agente
+      // que repetiu a solicitação que um trabalho já concluído havia falhado,
+      // situação que originalmente levou à criação de faturas duplicadas.
       if (!result.claimed) {
         if (result.invoice) {
           return await alreadyConvertedResult(ctx, estimate, result.invoice)
         }
         return errorResult(
-          `Estimate ${estimate.estimate_number} was converted by another request that is still in flight. Call get_estimate to find the invoice it created, and do not convert again.`
+          `O orçamento ${estimate.estimate_number} foi convertido por outra solicitação ainda em andamento. Chame get_estimate para localizar a fatura criada e não tente converter novamente.`
         )
       }
 
       const invoice = result.invoice
       if (!invoice) {
         console.error('convert_estimate_to_invoice (rpc): claimed with no invoice')
-        return errorResult('Could not convert the estimate; nothing was created.')
+        return errorResult('Não foi possível converter o orçamento; nada foi criado.')
       }
 
       const notAcceptedNote =
-        estimate.status === 'accepted' ? '' : ` (estimate was "${estimate.status}", not formally accepted)`
+        estimate.status === 'accepted' ? '' : ` (o orçamento estava com status "${estimate.status}", sem aprovação formal)`
 
       return jsonResult({
-        summary: `Converted estimate ${estimate.estimate_number} into draft invoice ${invoice.invoice_number}: ${formatCurrency(invoice.total, invoice.currency)}${notAcceptedNote}. Call send_invoice to deliver it.`,
+        summary: `Orçamento ${estimate.estimate_number} convertido na fatura em rascunho ${invoice.invoice_number}: ${formatCurrency(invoice.total, invoice.currency)}${notAcceptedNote}. Chame send_invoice para enviá-la.`,
         already_converted: false,
         invoice: {
           id: invoice.id,

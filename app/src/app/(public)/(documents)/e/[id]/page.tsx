@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { Check, X, Loader2, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -20,6 +21,16 @@ type PublicEstimate = Estimate & {
   client_snapshot: Client | null
 }
 
+const estimateStatusLabels: Record<Estimate['status'], string> = {
+  draft: 'Rascunho',
+  sent: 'Enviado',
+  viewed: 'Visualizado',
+  accepted: 'Aceito',
+  declined: 'Recusado',
+  expired: 'Expirado',
+  converted: 'Convertido em fatura',
+}
+
 export default function PublicEstimatePage() {
   const params = useParams()
   const publicId = params.id as string
@@ -33,8 +44,8 @@ export default function PublicEstimatePage() {
       const { createClient } = await import('@/lib/supabase/client')
       const supabase = createClient()
 
-      // Public access goes through a SECURITY DEFINER function keyed on public_id;
-      // direct table selects are blocked for anonymous users.
+      // O acesso público passa por uma função SECURITY DEFINER associada a public_id;
+      // consultas diretas às tabelas são bloqueadas para usuários anônimos.
       const { data } = await supabase.rpc('get_public_estimate', { p_public_id: publicId })
       const payload = data as { estimate: PublicEstimate; line_items: PublicEstimate['line_items'] } | null
 
@@ -48,7 +59,7 @@ export default function PublicEstimatePage() {
   }, [publicId])
 
   const formatCurrency = (amount: number, currency = 'USD') => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency,
     }).format(amount)
@@ -60,18 +71,18 @@ export default function PublicEstimatePage() {
 
     const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
-    // Accept/decline flows through a SECURITY DEFINER function; only estimates
-    // in 'sent'/'viewed' status can be responded to.
+    // A aceitação ou recusa passa por uma função SECURITY DEFINER; somente orçamentos
+    // com status sent/viewed podem receber uma resposta.
     const { data: ok, error } = await supabase.rpc('respond_to_estimate', {
       p_public_id: publicId,
       p_response: response,
     })
 
     if (error || !ok) {
-      setResponseNotice('This estimate can no longer be responded to.')
+      setResponseNotice('Não é mais possível responder a este orçamento.')
     } else {
       setEstimate(prev => prev ? { ...prev, status: response } : null)
-      toast.success(`Estimate ${response}`)
+      toast.success(`Orçamento ${response === 'accepted' ? 'aceito' : 'recusado'}`)
     }
     setIsResponding(false)
   }
@@ -89,9 +100,9 @@ export default function PublicEstimatePage() {
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="py-12 text-center">
-            <h1 className="text-xl font-semibold">Estimate Not Found</h1>
+            <h1 className="text-xl font-semibold">Orçamento não encontrado</h1>
             <p className="mt-2 text-muted-foreground">
-              This estimate doesn&#39;t exist or has been removed.
+              Este orçamento não existe ou foi removido.
             </p>
           </CardContent>
         </Card>
@@ -106,30 +117,30 @@ export default function PublicEstimatePage() {
   return (
     <div className="min-h-screen bg-muted/30">
       <div className="mx-auto max-w-3xl p-4 py-8 sm:p-6 md:py-12">
-        {/* Response Status Bar */}
+        {/* Barra de status da resposta */}
         {estimate.status === 'accepted' || estimate.status === 'converted' ? (
           <div className="mb-6 rounded-lg bg-green-50 p-4 text-center">
             <p className="font-medium text-green-800">
-              ✓ This estimate has been accepted
+              ✓ Este orçamento foi aceito
             </p>
           </div>
         ) : estimate.status === 'declined' ? (
           <div className="mb-6 rounded-lg bg-red-50 p-4 text-center">
             <p className="font-medium text-red-800">
-              This estimate has been declined
+              Este orçamento foi recusado
             </p>
           </div>
         ) : estimate.status === 'expired' ? (
           <div className="mb-6 rounded-lg bg-muted p-4 text-center">
             <p className="font-medium text-muted-foreground">
-              This estimate has expired
+              Este orçamento expirou
             </p>
           </div>
         ) : canRespond ? (
           <Card className="no-print mb-6">
             <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Estimate Total</p>
+                <p className="text-sm text-muted-foreground">Total do orçamento</p>
                 <p className="text-2xl font-bold">
                   {formatCurrency(estimate.total, estimate.currency)}
                 </p>
@@ -145,7 +156,7 @@ export default function PublicEstimatePage() {
                   ) : (
                     <Check className="mr-2 h-4 w-4" />
                   )}
-                  Accept
+                  Aceitar
                 </Button>
                 <Button
                   size="lg"
@@ -154,7 +165,7 @@ export default function PublicEstimatePage() {
                   disabled={isResponding}
                 >
                   <X className="mr-2 h-4 w-4" />
-                  Decline
+                  Recusar
                 </Button>
               </div>
             </CardContent>
@@ -167,24 +178,24 @@ export default function PublicEstimatePage() {
           </div>
         )}
 
-        {/* Print */}
+        {/* Impressão */}
         <div className="no-print mb-4 flex justify-end">
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="mr-2 h-4 w-4" />
-            Print / Save as PDF
+            Imprimir / Salvar como PDF
           </Button>
         </div>
 
-        {/* Estimate Document */}
+        {/* Documento do orçamento */}
         <Card className="overflow-hidden">
           <CardContent className="p-8 sm:p-12">
-            {/* Header */}
+            {/* Cabeçalho */}
             <div className="flex flex-col gap-6 sm:flex-row sm:justify-between">
               <div>
                 {business?.logo_url && (
                   <img
                     src={business.logo_url}
-                    alt={business.name || 'Business'}
+                    alt={business.name || 'Empresa'}
                     className="mb-4 h-12 w-auto"
                   />
                 )}
@@ -208,12 +219,12 @@ export default function PublicEstimatePage() {
               </div>
               <div className="sm:text-right">
                 <div className="flex items-center gap-2 sm:justify-end">
-                  <h1 className="text-3xl font-bold">Estimate</h1>
+                  <h1 className="text-3xl font-bold">Orçamento</h1>
                   <Badge
                     variant="secondary"
                     className={estimateStatusColors[estimate.status]}
                   >
-                    {estimate.status}
+                    {estimateStatusLabels[estimate.status]}
                   </Badge>
                 </div>
                 <p className="mt-2 text-lg font-medium text-muted-foreground">
@@ -223,10 +234,10 @@ export default function PublicEstimatePage() {
             </div>
 
             <div className="mt-8 grid gap-8 sm:grid-cols-2">
-              {/* Prepared For */}
+              {/* Preparado para */}
               <div>
                 <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                  Prepared For
+                  Preparado para
                 </p>
                 <p className="mt-2 font-semibold">{client?.name}</p>
                 {client?.email && (
@@ -243,41 +254,41 @@ export default function PublicEstimatePage() {
                 )}
               </div>
 
-              {/* Estimate Details */}
+              {/* Detalhes do orçamento */}
               <div className="space-y-3 sm:text-right">
                 <div>
-                  <p className="text-sm text-muted-foreground">Date</p>
+                  <p className="text-sm text-muted-foreground">Data</p>
                   <p className="font-medium">
-                    {format(parseDay(estimate.issue_date), 'MMMM d, yyyy')}
+                    {format(parseDay(estimate.issue_date), 'PPP', { locale: ptBR })}
                   </p>
                 </div>
                 {estimate.expiry_date && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Valid Until</p>
+                    <p className="text-sm text-muted-foreground">Válido até</p>
                     <p className="font-medium">
-                      {format(parseDay(estimate.expiry_date), 'MMMM d, yyyy')}
+                      {format(parseDay(estimate.expiry_date), 'PPP', { locale: ptBR })}
                     </p>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Line Items */}
+            {/* Itens */}
             <div className="mt-10">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border/50">
                     <th className="pb-3 text-left text-sm font-medium text-muted-foreground">
-                      Description
+                      Descrição
                     </th>
                     <th className="pb-3 text-right text-sm font-medium text-muted-foreground">
-                      Qty
+                      Qtd.
                     </th>
                     <th className="pb-3 text-right text-sm font-medium text-muted-foreground">
-                      Rate
+                      Valor
                     </th>
                     <th className="pb-3 text-right text-sm font-medium text-muted-foreground">
-                      Amount
+                      Valor
                     </th>
                   </tr>
                 </thead>
@@ -300,7 +311,7 @@ export default function PublicEstimatePage() {
               </table>
             </div>
 
-            {/* Totals */}
+            {/* Totais */}
             <div className="mt-8 flex justify-end">
               <div className="w-72 space-y-2">
                 <div className="flex justify-between text-sm">
@@ -311,7 +322,7 @@ export default function PublicEstimatePage() {
                 </div>
                 {estimate.discount_amount > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Discount</span>
+                    <span className="text-muted-foreground">Desconto</span>
                     <span className="tabular-nums text-green-600">
                       -{formatCurrency(estimate.discount_amount, estimate.currency)}
                     </span>
@@ -320,7 +331,7 @@ export default function PublicEstimatePage() {
                 {estimate.tax_amount > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">
-                      Tax ({estimate.tax_rate}%)
+                      Imposto ({estimate.tax_rate}%)
                     </span>
                     <span className="tabular-nums">
                       {formatCurrency(estimate.tax_amount, estimate.currency)}
@@ -329,7 +340,7 @@ export default function PublicEstimatePage() {
                 )}
                 {estimate.shipping_amount > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Shipping</span>
+                    <span className="text-muted-foreground">Frete</span>
                     <span className="tabular-nums">
                       {formatCurrency(estimate.shipping_amount, estimate.currency)}
                     </span>
@@ -345,35 +356,35 @@ export default function PublicEstimatePage() {
               </div>
             </div>
 
-            {/* Notes */}
+            {/* Observações */}
             {estimate.notes && (
               <div className="mt-10 rounded-lg bg-muted/50 p-4">
-                <p className="text-sm font-medium text-muted-foreground">Notes</p>
+                <p className="text-sm font-medium text-muted-foreground">Observações</p>
                 <p className="mt-1 whitespace-pre-wrap text-sm">{estimate.notes}</p>
               </div>
             )}
 
-            {/* Terms */}
+            {/* Termos */}
             {estimate.terms && (
               <div className="mt-4 rounded-lg bg-muted/50 p-4">
                 <p className="text-sm font-medium text-muted-foreground">
-                  Terms & Conditions
+                  Termos e condições
                 </p>
                 <p className="mt-1 whitespace-pre-wrap text-sm">{estimate.terms}</p>
               </div>
             )}
           </CardContent>
 
-          {/* Footer */}
+          {/* Rodapé */}
           <div className="border-t bg-muted/30 p-4 text-center">
             <p className="text-sm text-muted-foreground">
-              Powered by{' '}
+              Desenvolvido com{' '}
               <a
                 href="/"
                 target="_blank"
                 className="font-medium text-foreground hover:text-primary"
               >
-                Billr
+                Faturador
               </a>
             </p>
           </div>

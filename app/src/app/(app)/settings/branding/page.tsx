@@ -22,7 +22,7 @@ export default function BrandingSettingsPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Businesses load asynchronously; sync local state once data arrives
+  // As empresas carregam de forma assíncrona; sincroniza o estado local quando os dados chegam
   useEffect(() => {
     if (currentBusiness) {
       setPrimaryColor(currentBusiness.primary_color || '#2563eb')
@@ -31,12 +31,12 @@ export default function BrandingSettingsPage() {
 
   async function handleLogoSelect(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
-    // Allow re-selecting the same file later
+    // Permite selecionar o mesmo arquivo novamente depois
     event.target.value = ''
     if (!file || !currentBusiness) return
 
     if (file.size > 2 * 1024 * 1024) {
-      toast.error('Logo must be 2MB or smaller')
+      toast.error('O logotipo deve ter no máximo 2 MB')
       return
     }
 
@@ -70,7 +70,7 @@ export default function BrandingSettingsPage() {
 
       setLogoPreview(publicUrl)
       refreshBusinesses()
-      toast.success('Logo updated')
+      toast.success('Logotipo atualizado')
     } finally {
       setIsUploading(false)
     }
@@ -91,7 +91,7 @@ export default function BrandingSettingsPage() {
     if ('error' in result) {
       setMessage({ type: 'error', text: result.error })
     } else {
-      setMessage({ type: 'success', text: 'Branding updated' })
+      setMessage({ type: 'success', text: 'Identidade visual atualizada' })
       refreshBusinesses()
     }
   }
@@ -111,8 +111,8 @@ export default function BrandingSettingsPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Settings"
-        description="Manage your business settings and preferences"
+        title="Configurações"
+        description="Gerencie as configurações e preferências da sua empresa"
       />
 
       <div className="mt-6">
@@ -132,9 +132,9 @@ export default function BrandingSettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Logo</CardTitle>
+                <CardTitle>Logotipo</CardTitle>
                 <CardDescription>
-                  Your logo will appear on invoices and estimates
+                  Seu logotipo aparecerá nas faturas e nos orçamentos
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -150,7 +150,7 @@ export default function BrandingSettingsPage() {
                     <div className="flex items-center gap-4">
                       <img
                         src={logoPreview || currentBusiness.logo_url || undefined}
-                        alt="Business logo"
+                        alt="Logotipo da empresa"
                         className="h-16 w-auto rounded border"
                       />
                       <Button
@@ -159,7 +159,7 @@ export default function BrandingSettingsPage() {
                         disabled={isUploading}
                       >
                         {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Change Logo
+                        Alterar logotipo
                       </Button>
                     </div>
                   </div>
@@ -167,7 +167,7 @@ export default function BrandingSettingsPage() {
                   <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8">
                     <Upload className="h-10 w-10 text-muted-foreground" />
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Upload your business logo
+                      Envie o logotipo da sua empresa
                     </p>
                     <Button
                       className="mt-4"
@@ -176,10 +176,10 @@ export default function BrandingSettingsPage() {
                       disabled={isUploading}
                     >
                       {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Choose File
+                      Escolher arquivo
                     </Button>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      PNG, JPG up to 2MB. Recommended size: 400x200px
+                      PNG ou JPG de até 2 MB. Tamanho recomendado: 400 × 200 px
                     </p>
                   </div>
                 )}
@@ -188,9 +188,9 @@ export default function BrandingSettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Brand Color</CardTitle>
+                <CardTitle>Cor da marca</CardTitle>
                 <CardDescription>
-                  This color will be used on invoices and the payment page
+                  Esta cor será usada nas faturas e na página de pagamento
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -200,7 +200,7 @@ export default function BrandingSettingsPage() {
                     style={{ backgroundColor: primaryColor }}
                   />
                   <div className="flex-1">
-                    <Label htmlFor="primary_color">Primary Color</Label>
+                    <Label htmlFor="primary_color">Cor principal</Label>
                     <div className="mt-1 flex gap-2">
                       <Input
                         id="primary_color"
@@ -220,21 +220,21 @@ export default function BrandingSettingsPage() {
                   </div>
                 </div>
 
-                {/* Preview */}
+                {/* Prévia */}
                 <div className="rounded-lg border p-4">
-                  <p className="mb-2 text-sm font-medium text-muted-foreground">Preview</p>
+                  <p className="mb-2 text-sm font-medium text-muted-foreground">Prévia</p>
                   <div className="space-y-2">
                     <div
                       className="rounded px-4 py-2 text-white"
                       style={{ backgroundColor: primaryColor }}
                     >
-                      Primary Button
+                      Botão principal
                     </div>
                     <h2
                       className="text-2xl font-bold"
                       style={{ color: primaryColor }}
                     >
-                      INVOICE
+                      FATURA
                     </h2>
                   </div>
                 </div>
@@ -242,7 +242,7 @@ export default function BrandingSettingsPage() {
                 <div className="flex justify-end">
                   <Button onClick={handleSaveColor} disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Color
+                    Salvar cor
                   </Button>
                 </div>
               </CardContent>

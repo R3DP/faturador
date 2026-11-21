@@ -3,33 +3,34 @@ import { createServiceClient } from '@/lib/supabase/service'
 
 type ServiceDb = ReturnType<typeof createServiceClient>
 
-/** BILLR_OPEN_SIGNUP=true keeps sign-up open after the first account. */
+/** BILLR_OPEN_SIGNUP=true mantém o cadastro aberto após a primeira conta. */
 export function openSignup(env: Record<string, string | undefined> = process.env): boolean {
   return env.BILLR_OPEN_SIGNUP?.trim().toLowerCase() === 'true'
 }
 
 /**
- * Before creating an account: open when the override is on or nobody has
- * signed up yet. Fails closed: if the database cannot answer, nobody new
- * gets in.
+ * Antes de criar uma conta: fica aberto quando a opção está ativa ou quando
+ * ninguém ainda se cadastrou. Em caso de falha, recusa o acesso: se o banco de
+ * dados não responder, ninguém novo entra.
  */
 export async function signupIsOpen(db: ServiceDb = createServiceClient()): Promise<boolean> {
   if (openSignup()) return true
   const { data, error } = await db.rpc('install_has_account')
   if (error) {
-    console.error('signupIsOpen: could not read install accounts', error.message)
+    console.error('signupIsOpen: não foi possível ler as contas da instalação', error.message)
     return false
   }
   return data === false
 }
 
 /**
- * After authentication: may this account use the installation? Records the
- * first account as the owner. TRUE admitted, FALSE refused, NULL when Supabase
- * returned a placeholder user for an address that already exists.
+ * Após a autenticação: esta conta pode usar a instalação? Registra a primeira
+ * conta como responsável. TRUE = admitida, FALSE = recusada, NULL quando o
+ * Supabase retorna um usuário provisório para um endereço que já existe.
  *
- * Throws when the database cannot answer, so callers refuse the session but
- * can tell the person to try again rather than that sign-up is closed.
+ * Gera um erro quando o banco de dados não consegue responder. Assim, quem
+ * chama recusa a sessão, mas pode pedir que a pessoa tente novamente em vez de
+ * informar que o cadastro está fechado.
  */
 export async function admitAccount(
   userId: string,
@@ -40,8 +41,8 @@ export async function admitAccount(
     p_open: openSignup(),
   })
   if (error) {
-    console.error('admitAccount: could not decide', error.message)
-    throw new Error('admitAccount: could not check access')
+    console.error('admitAccount: não foi possível tomar uma decisão', error.message)
+    throw new Error('admitAccount: não foi possível verificar o acesso')
   }
   return data
 }

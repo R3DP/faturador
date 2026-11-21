@@ -1,4 +1,4 @@
-/** Keep authentication return paths on this app, including URL-normalization edge cases. */
+/** Mantém os caminhos de retorno da autenticação neste app, inclusive em casos extremos de normalização de URL. */
 export function safeAuthRedirect(value: string | null | undefined): string {
   if (!value || !value.startsWith('/') || value.startsWith('//'))
     return '/dashboard'

@@ -11,7 +11,7 @@ import {
   startOAuthSignIn,
 } from './oauth-providers'
 
-/** A Supabase `/auth/v1/settings` response with the given providers live. */
+/** Resposta do Supabase `/auth/v1/settings` com os provedores indicados ativos. */
 function settings(external: Record<string, boolean>) {
   vi.stubGlobal(
     'fetch',
@@ -30,33 +30,33 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('provider availability', () => {
-  it('offers both buttons when GitHub and Google are configured', async () => {
+describe('disponibilidade dos provedores', () => {
+  it('oferece os dois botões quando GitHub e Google estão configurados', async () => {
     settings({ github: true, google: true, email: true })
     expect(await fetchEnabledOAuthProviders()).toEqual(['github', 'google'])
   })
 
-  it('offers only Google when GitHub is turned off', async () => {
+  it('oferece apenas o Google quando o GitHub está desativado', async () => {
     settings({ github: false, google: true })
     expect(await fetchEnabledOAuthProviders()).toEqual(['google'])
   })
 
-  it('offers only GitHub when Google is turned off', async () => {
+  it('oferece apenas o GitHub quando o Google está desativado', async () => {
     settings({ github: true, google: false })
     expect(await fetchEnabledOAuthProviders()).toEqual(['github'])
   })
 
-  it('offers nothing when no social provider is configured', async () => {
+  it('não oferece opções quando nenhum provedor social está configurado', async () => {
     settings({ email: true })
     expect(await fetchEnabledOAuthProviders()).toEqual([])
   })
 
-  it('ignores providers Billr does not implement', async () => {
+  it('ignora provedores que o Faturador não implementa', async () => {
     settings({ google: true, gitlab: true, azure: true })
     expect(await fetchEnabledOAuthProviders()).toEqual(['google'])
   })
 
-  it('reads availability from the Supabase settings document', async () => {
+  it('consulta a disponibilidade no documento de configurações do Supabase', async () => {
     settings({ google: true })
     await fetchEnabledOAuthProviders()
     expect(fetch).toHaveBeenCalledWith(
@@ -65,23 +65,23 @@ describe('provider availability', () => {
     )
   })
 
-  it('offers nothing when the settings document is rejected', async () => {
+  it('não oferece opções quando o documento de configurações é rejeitado', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, json: async () => ({}) })))
     expect(await fetchEnabledOAuthProviders()).toEqual([])
   })
 
-  it('offers nothing when Supabase is unreachable', async () => {
+  it('não oferece opções quando o Supabase está inacessível', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('offline') }))
     expect(await fetchEnabledOAuthProviders()).toEqual([])
   })
 
-  it('knows exactly the two providers the buttons render', () => {
+  it('reconhece exatamente os dois provedores exibidos nos botões', () => {
     expect(OAUTH_PROVIDER_IDS).toEqual(['github', 'google'])
   })
 })
 
-describe('starting a sign-in', () => {
-  it('sends GitHub through the app callback with the requested destination', async () => {
+describe('início da autenticação', () => {
+  it('envia o GitHub pelo callback do app com o destino solicitado', async () => {
     signInWithOAuth.mockResolvedValue({
       data: { url: 'https://github.com/login/oauth/authorize?x=1' },
       error: null,
@@ -97,7 +97,7 @@ describe('starting a sign-in', () => {
     })
   })
 
-  it('asks Google for an identity only', async () => {
+  it('solicita apenas a identidade ao Google', async () => {
     signInWithOAuth.mockResolvedValue({
       data: { url: 'https://accounts.google.com/o/oauth2/v2/auth?x=1' },
       error: null,
@@ -113,7 +113,7 @@ describe('starting a sign-in', () => {
     })
   })
 
-  it('refuses to carry an off-site destination through the provider', async () => {
+  it('não permite enviar um destino externo pelo provedor', async () => {
     signInWithOAuth.mockResolvedValue({ data: { url: 'https://provider.example' }, error: null })
     await startOAuthSignIn('google', '//evil.example', 'https://invoices.example.org')
     expect(signInWithOAuth.mock.calls[0][0].options.redirectTo).toBe(
@@ -121,17 +121,17 @@ describe('starting a sign-in', () => {
     )
   })
 
-  it('names the provider when the flow cannot be started', async () => {
+  it('identifica o provedor quando não é possível iniciar o fluxo', async () => {
     signInWithOAuth.mockResolvedValue({ data: { url: null }, error: null })
     await expect(
       startOAuthSignIn('google', '/dashboard', 'https://invoices.example.org'),
-    ).rejects.toThrow('Could not start Google sign-in. Please try again.')
+    ).rejects.toThrow('Não foi possível iniciar a autenticação com Google. Tente novamente.')
   })
 
-  it('surfaces a provider error as a retryable message', async () => {
+  it('apresenta um erro do provedor como uma mensagem que permite nova tentativa', async () => {
     signInWithOAuth.mockResolvedValue({ data: null, error: new Error('provider down') })
     await expect(
       startOAuthSignIn('github', '/dashboard', 'https://invoices.example.org'),
-    ).rejects.toThrow('Could not start GitHub sign-in. Please try again.')
+    ).rejects.toThrow('Não foi possível iniciar a autenticação com GitHub. Tente novamente.')
   })
 })

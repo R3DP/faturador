@@ -1,29 +1,29 @@
 /**
- * TEST-ONLY fake of the small slice of the supabase-js query builder the MCP
- * tools use. Not imported by any runtime code path.
+ * Simulação EXCLUSIVA DE TESTES da parte do construtor de consultas supabase-js usada pelas ferramentas MCP
+ * Não é importada por nenhum caminho de execução.
  *
- * It exists so tool handlers can be exercised end to end (register the tool,
- * call it, assert on the JSON it returns) without a database, which is the
- * only way to test things like estimate-to-invoice conversion math or that a
- * handler refuses an out-of-scope row.
+ * Ela permite testar handlers de ponta a ponta (registrar a ferramenta,
+ * chamá-la e verificar o JSON retornado) sem banco de dados, sendo a
+ * única forma de testar cálculos como a conversão de estimativa em fatura ou verificar que um
+ * handler rejeita um registro fora do escopo.
  *
- * Supported chain: from(table).select(...).eq/neq/in/is/not/ilike/gt/gte/lt/lte/order/limit
- * terminated by await, .maybeSingle(), or .single(); plus .insert(), .update(),
+ * Cadeia compatível: from(table).select(...).eq/neq/in/is/not/ilike/gt/gte/lt/lte/order/limit
+ * finalizada por await, .maybeSingle() ou .single(); também há suporte a .insert(), .update() e
  * .delete().
  *
- * Also supports rpc(fn, args), which is how every transactional write reaches
- * the database. Without it those call sites could not be
- * exercised at all, which is why record_payment briefly lost its coverage.
+ * Também oferece suporte a rpc(fn, args), usado por todas as gravações transacionais para acessar
+ * o banco de dados. Sem isso, esses pontos de chamada não poderiam ser
+ * testados, motivo pelo qual record_payment ficou temporariamente sem cobertura.
  */
 
 export interface FakeQuery {
-  /** Table name, or for an rpc call the Postgres function name. */
+  /** Nome da tabela ou, em uma chamada rpc, nome da função do Postgres. */
   table: string
   op: 'select' | 'insert' | 'update' | 'delete' | 'rpc'
-  /** Set only when op is "rpc". Same value as `table`, spelled for readability. */
+  /** Definido apenas quando op é "rpc". Tem o mesmo valor de `table`, escrito separadamente para facilitar a leitura. */
   fn?: string
   filters: { method: string; args: unknown[] }[]
-  /** Insert/update payload, or for an rpc call the named-argument object. */
+  /** Conteúdo de insert/update ou, em uma chamada rpc, objeto com argumentos nomeados. */
   payload?: unknown
 }
 
@@ -34,7 +34,7 @@ export type FakeHandler = (query: FakeQuery) => FakeResult
 export interface FakeSupabase {
   from: (table: string) => unknown
   rpc: (fn: string, args?: unknown) => unknown
-  /** Every query the code under test issued, in order. */
+  /** Todas as consultas emitidas pelo código em teste, na ordem. */
   calls: FakeQuery[]
 }
 
@@ -56,11 +56,11 @@ const CHAIN_METHODS = [
 ] as const
 
 /**
- * @param handlers map of `"<table>.<op>"` (e.g. "invoices.insert") to the
- * result that query should resolve to. RPC calls are keyed
- * `"rpc.<function>"` (e.g. "rpc.record_invoice_payment"). Falls back to the
- * bare table or function name, then to an empty result, so tests only spell
- * out what they care about.
+ * @param handlers mapa de `"<table>.<op>"` (por exemplo, "invoices.insert") para o
+ * resultado que a consulta deve retornar. Chamadas RPC usam a chave
+ * `"rpc.<function>"` (por exemplo, "rpc.record_invoice_payment"). Usa como alternativa o
+ * nome simples da tabela ou função e, em seguida, um resultado vazio, para que os testes indiquem apenas
+ * o que realmente importa.
  */
 export function createFakeSupabase(handlers: Record<string, FakeHandler | FakeResult>): FakeSupabase {
   const calls: FakeQuery[] = []
@@ -93,9 +93,9 @@ export function createFakeSupabase(handlers: Record<string, FakeHandler | FakeRe
   return {
     calls,
     /**
-     * Mirrors supabase-js: `.rpc()` resolves straight to `{ data, error }`
-     * where data is whatever the function returned, and may additionally be
-     * narrowed with `.single()` when the function returns SETOF.
+     * Imita supabase-js: `.rpc()` retorna diretamente `{ data, error }`
+     * em que data contém o retorno da função; também pode ser
+     * reduzido com `.single()` quando a função retorna SETOF.
      */
     rpc(fn: string, args?: unknown) {
       const query: FakeQuery = { table: fn, op: 'rpc', fn, filters: [], payload: args }

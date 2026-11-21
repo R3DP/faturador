@@ -69,8 +69,8 @@ function refreshRows(): Row[] {
   return db.tables.oauth_refresh_tokens ?? []
 }
 
-describe('authorization code grant', () => {
-  it('exchanges a code for an api_keys-backed access token and a refresh token', async () => {
+describe('concessão do código de autorização', () => {
+  it('troca um código por um token de acesso associado a api_keys e um token de atualização', async () => {
     const client = await seedClient()
     const verifier = generateSecret(48)
     const code = await seedCode({
@@ -99,7 +99,7 @@ describe('authorization code grant', () => {
     expect(body.expires_in).toBe(30 * 86400)
     expect(body.scope).toBe('read write send')
 
-    // The access token IS an api_keys row, so resolveApiKey needs no new path.
+    // O token de acesso É uma linha de api_keys, então resolveApiKey não precisa de um caminho novo.
     expect(keys()).toHaveLength(1)
     expect(keys()[0]).toMatchObject({
       kind: 'oauth',
@@ -115,7 +115,7 @@ describe('authorization code grant', () => {
     expect(refreshRows()).toHaveLength(1)
   })
 
-  it('refuses the wrong PKCE verifier and issues nothing', async () => {
+  it('recusa o verificador PKCE incorreto e não emite nada', async () => {
     const client = await seedClient()
     const code = await seedCode({
       clientRowId: client.id,
@@ -136,7 +136,7 @@ describe('authorization code grant', () => {
     expect(keys()).toHaveLength(0)
   })
 
-  it('requires a code_verifier at all', async () => {
+  it('exige o parâmetro code_verifier', async () => {
     const client = await seedClient()
     const verifier = generateSecret(48)
     const code = await seedCode({
@@ -155,7 +155,7 @@ describe('authorization code grant', () => {
     expect((await res.json()).error).toBe('invalid_request')
   })
 
-  it('redeems a code exactly once and burns the grant when it is replayed', async () => {
+  it('resgata um código uma única vez e invalida a concessão se ele for reutilizado', async () => {
     const client = await seedClient()
     const verifier = generateSecret(48)
     const code = await seedCode({
@@ -176,13 +176,13 @@ describe('authorization code grant', () => {
     expect(replay.status).toBe(400)
     expect((await replay.json()).error).toBe('invalid_grant')
 
-    // Replay means the code leaked, so everything it issued is revoked.
+    // A repetição indica que o código vazou, então tudo o que ele emitiu é revogado.
     expect(keys()).toHaveLength(1)
     expect(keys()[0].revoked_at).toBeTruthy()
     expect(refreshRows()[0].revoked_at).toBeTruthy()
   })
 
-  it('refuses an expired code', async () => {
+  it('recusa um código expirado', async () => {
     const client = await seedClient()
     const verifier = generateSecret(48)
     const code = await seedCode({
@@ -205,7 +205,7 @@ describe('authorization code grant', () => {
     expect(keys()).toHaveLength(0)
   })
 
-  it('refuses an unknown client and a redirect_uri that is not the one in the code', async () => {
+  it('recusa um cliente desconhecido e uma redirect_uri diferente da registrada no código', async () => {
     const client = await seedClient()
     const verifier = generateSecret(48)
     const challenge = challengeFromVerifier(verifier)
@@ -235,7 +235,7 @@ describe('authorization code grant', () => {
     expect((await mismatched.json()).error).toBe('invalid_grant')
   })
 
-  it('refuses a code minted for a different client', async () => {
+  it('recusa um código emitido para outro cliente', async () => {
     const mine = await seedClient('Mine')
     const other = await seedClient('Other')
     const verifier = generateSecret(48)
@@ -257,7 +257,7 @@ describe('authorization code grant', () => {
     expect((await res.json()).error).toBe('invalid_grant')
   })
 
-  it('refuses a resource indicator naming another audience', async () => {
+  it('recusa um indicador de recurso que identifica outro público', async () => {
     const client = await seedClient()
     const verifier = generateSecret(48)
     const code = await seedCode({
@@ -279,7 +279,7 @@ describe('authorization code grant', () => {
   })
 })
 
-describe('refresh grant', () => {
+describe('concessão de atualização', () => {
   async function connect(permissions?: ('read' | 'write' | 'send' | 'delete' | 'payments')[]) {
     const client = await seedClient()
     const verifier = generateSecret(48)
@@ -300,7 +300,7 @@ describe('refresh grant', () => {
     return { client, tokens: await res.json() }
   }
 
-  it('rotates: new tokens, old refresh spent, superseded key revoked', async () => {
+  it('rotaciona: emite novos tokens, consome a atualização anterior e revoga a chave substituída', async () => {
     const { client, tokens } = await connect()
 
     const res = await POST(
@@ -324,7 +324,7 @@ describe('refresh grant', () => {
     expect(refreshRows()[1].family_id).toBe(refreshRows()[0].family_id)
   })
 
-  it('treats reuse of a rotated refresh token as theft and burns the family', async () => {
+  it('trata a reutilização de um token de atualização rotacionado como roubo e revoga toda a família', async () => {
     const { client, tokens } = await connect()
     const form = {
       grant_type: 'refresh_token',
@@ -341,7 +341,7 @@ describe('refresh grant', () => {
     expect(refreshRows().every((row) => !!row.revoked_at)).toBe(true)
   })
 
-  it('lets a refresh narrow the grant but never widen it', async () => {
+  it('permite restringir a concessão na atualização, mas nunca ampliá-la', async () => {
     const { client, tokens } = await connect(['read', 'write', 'send'])
 
     const narrowed = await POST(
@@ -369,7 +369,7 @@ describe('refresh grant', () => {
     expect((await widened.json()).error).toBe('invalid_scope')
   })
 
-  it('refuses an unknown refresh token, an expired one, and the wrong client', async () => {
+  it('recusa um token de atualização desconhecido ou expirado e um cliente incorreto', async () => {
     const { client, tokens } = await connect()
 
     const unknown = await POST(
@@ -405,8 +405,8 @@ describe('refresh grant', () => {
   })
 })
 
-describe('grant type handling', () => {
-  it('rejects a missing or unsupported grant_type', async () => {
+describe('tratamento do tipo de concessão', () => {
+  it('rejeita grant_type ausente ou incompatível', async () => {
     const missing = await POST(post({}))
     expect(missing.status).toBe(400)
     expect((await missing.json()).error).toBe('invalid_request')
@@ -416,7 +416,7 @@ describe('grant type handling', () => {
     expect((await unsupported.json()).error).toBe('unsupported_grant_type')
   })
 
-  it('fails closed when the rate limiter denies', async () => {
+  it('bloqueia a operação quando o limitador de frequência a recusa', async () => {
     _setRateLimitStore(() => ({
       rpc: async () => ({
         data: [{ allowed: false, remaining: 0, retry_after_seconds: 60 }],

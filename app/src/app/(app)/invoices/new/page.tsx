@@ -29,9 +29,9 @@ function NewInvoicePageInner() {
   const searchParams = useSearchParams()
   const defaultClientId = searchParams.get('client') || undefined
   const duplicateId = searchParams.get('duplicate')
-  // Schedule entries to tick on arrival. list_ready_to_bill and the "Draft
-  // invoice from ready entries" button on an engagement both link here with
-  // them, so the person lands on a form that is already right.
+  // Lançamentos do cronograma a selecionar ao chegar. list_ready_to_bill e o botão "Criar fatura
+  // a partir de lançamentos prontos" de um contrato apontam para cá com
+  // esses lançamentos, para que a pessoa encontre o formulário já preenchido corretamente.
   const preselectedEntries = useMemo(
     () => (searchParams.get('engagement_entries') || '').split(',').filter(Boolean),
     [searchParams],
@@ -69,7 +69,7 @@ function NewInvoicePageInner() {
           .single()
 
         if (invoiceData) {
-          // Clear the invoice number so a fresh one is assigned
+          // Limpa o número da fatura para que um novo seja atribuído
           setSourceInvoice({
             ...(invoiceData as InvoiceWithLineItems),
             invoice_number: '',
@@ -85,9 +85,9 @@ function NewInvoicePageInner() {
   async function handleSubmit(data: InvoiceFormData, status: 'draft' | 'sent') {
     if (!currentBusiness) return
 
-    // The engagement preview lines go back out here. What reaches the server
-    // is the entry ids, and the amounts are rebuilt in SQL from the agreed
-    // schedule, so a rate edited in the browser cannot re-price agreed work.
+    // As linhas de prévia do contrato são enviadas novamente daqui. O que chega ao servidor
+    // são os IDs dos lançamentos; os valores são reconstruídos no SQL a partir do cronograma
+    // acordado, para que alterar um valor no navegador não mude o preço do trabalho contratado.
     const engagementEntryIds = engagementEntryIdsOf(data.line_items)
     const typed = typedLineItemsOf(data.line_items)
 
@@ -114,8 +114,8 @@ function NewInvoicePageInner() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="New Invoice"
-        description="Create a new invoice for your client"
+        title="Nova fatura"
+        description="Crie uma nova fatura para seu cliente"
       />
 
       <div className="mt-6">

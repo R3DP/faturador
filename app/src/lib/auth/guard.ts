@@ -11,33 +11,35 @@ import {
 } from '@/lib/rate-limit'
 
 /**
- * Rate limiting and abuse lockout for the authentication endpoints.
+ * Limite de tentativas e bloqueio contra abuso nos endpoints de autenticação.
  *
- * Sign-in, sign-up and password-reset used to run straight from the browser
- * against Supabase Auth, so there was no server of ours in the path and nothing
- * to limit. They now go through the server actions in ./actions.ts, which call
- * into here first.
+ * As operações de entrada, cadastro e redefinição de senha eram executadas
+ * diretamente do navegador contra o Supabase Auth, sem passar por um servidor
+ * nosso e sem nada que pudesse limitar. Agora passam primeiro pelas ações de
+ * servidor em ./actions.ts, que chamam este módulo.
  *
- * Four buckets, deliberately layered:
+ * Quatro limites, organizados em camadas:
  *
- *   attempts per email    stops one account being ground through a wordlist
- *   attempts per IP       stops one source spraying many accounts, so rotating
- *                         the email address does not buy a fresh allowance
- *   failures per email    one hour lockout on an account under attack
- *   failures per IP       one hour lockout on a source that keeps guessing
+ *   tentativas por e-mail    impede testar uma conta usando uma lista de palavras
+ *   tentativas por IP        impede uma origem de atacar várias contas; trocar
+ *                            o endereço de e-mail não renova o limite
+ *   falhas por e-mail        bloqueio de uma hora para uma conta sob ataque
+ *   falhas por IP            bloqueio de uma hora para uma origem que insiste
  *
- * The attempt buckets are spent on every request. The failure buckets are spent
- * only when the credentials were actually wrong, and are read with peek (which
- * does not increment) before the attempt, so checking a lockout never deepens
- * it and a legitimate user's successful sign-ins never push them toward one.
+ * Os limites de tentativas são consumidos em cada solicitação. Os limites de
+ * falhas só são consumidos quando as credenciais estão realmente erradas e são
+ * consultados com peek (que não incrementa) antes da tentativa. Assim, verificar
+ * um bloqueio nunca o prolonga, e entradas bem-sucedidas de uma pessoa legítima
+ * nunca a aproximam de um bloqueio.
  *
- * All of it fails closed: the limiter defaults to denying when Postgres is
- * unreachable, and these call sites do not opt out of that.
+ * Em caso de falha, todas as operações recusam o acesso: por padrão, o limitador
+ * nega solicitações quando o Postgres está inacessível, e estes pontos de chamada
+ * mantêm esse comportamento.
  */
 
 interface AuthGuardBlock {
   blocked: true
-  /** Copy safe to show a person. Deliberately identical for every reason, so it cannot be used to probe. */
+  /** Mensagem segura para exibição. É igual para todos os motivos, para impedir sondagens. */
   message: string
   retryAfterSeconds: number
 }
@@ -50,10 +52,10 @@ interface AuthGuardPass {
 export type AuthGuardResult = AuthGuardBlock | AuthGuardPass
 
 const BLOCKED_MESSAGE =
-  'Too many attempts. Please wait a few minutes and try again.'
+  'Muitas tentativas. Aguarde alguns minutos e tente novamente.'
 
 const LOCKED_MESSAGE =
-  'Too many failed attempts. Access from here is paused for up to an hour. Please try again later, or reset your password.'
+  'Muitas tentativas malsucedidas. O acesso por aqui foi pausado por até uma hora. Tente novamente mais tarde ou redefina sua senha.'
 
 function normaliseIdentifier(identifier: string): string {
   return identifier.trim().toLowerCase()
@@ -64,9 +66,9 @@ async function clientIp(): Promise<string | null> {
 }
 
 /**
- * Runs before an authentication attempt. Returns a block result the caller must
- * return to the user verbatim, or a pass carrying the resolved IP so the caller
- * can hand it back to recordAuthFailure without resolving it twice.
+ * Executa antes de uma tentativa de autenticação. Retorna um bloqueio que quem
+ * chama deve repassar literalmente à pessoa, ou uma autorização com o IP
+ * resolvido para que possa fornecê-lo a recordAuthFailure sem resolvê-lo de novo.
  */
 export async function guardAuthAttempt(
   action: 'signin' | 'signup' | 'reset',
@@ -75,8 +77,9 @@ export async function guardAuthAttempt(
   const ip = await clientIp()
   const id = normaliseIdentifier(identifier)
 
-  // Standing lockouts first, read-only, so a locked-out attacker cannot extend
-  // their own lockout forever and a check costs nothing.
+  // Primeiro, verifica os bloqueios ativos sem gravar dados, para que um invasor
+  // bloqueado não possa prolongar o próprio bloqueio indefinidamente e a consulta
+  // não tenha custo de gravação.
   const [idLock, ipLock] = await Promise.all([
     peekRateLimit(rateLimitKey('authfail:id', id), RATE_LIMITS.authIdentifierLockout),
     peekRateLimit(ipKey('authfail:ip', ip), RATE_LIMITS.authIpLockout),
@@ -90,7 +93,8 @@ export async function guardAuthAttempt(
     }
   }
 
-  // Then spend the attempt allowance. Both layers are spent even if one denies.
+  // Depois, consome o limite de tentativas. As duas camadas são consumidas,
+  // mesmo que uma delas negue a solicitação.
   const attempt = await consumeRateLimits([
     { bucket: rateLimitKey(`auth:${action}:id`, id), policy: RATE_LIMITS.authIdentifier },
     { bucket: ipKey('auth:ip', ip), policy: RATE_LIMITS.authIp },
@@ -108,9 +112,10 @@ export async function guardAuthAttempt(
 }
 
 /**
- * Records a failed attempt against both lockout buckets. Call this only when
- * the credentials were rejected, never when the call merely errored for some
- * other reason, or an outage would lock out the whole user base.
+ * Registra uma tentativa malsucedida nos dois limites de bloqueio. Chame esta
+ * função somente quando as credenciais forem rejeitadas, nunca quando a chamada
+ * apresentar outro erro; caso contrário, uma indisponibilidade poderia bloquear
+ * toda a base de usuários.
  */
 export async function recordAuthFailure(identifier: string, ip: string | null): Promise<void> {
   const id = normaliseIdentifier(identifier)

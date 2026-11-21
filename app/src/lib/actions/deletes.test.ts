@@ -3,8 +3,8 @@ import { createFakeSupabase, type FakeSupabase } from '@/lib/mcp/fake-supabase'
 import { BUSINESS_ID, ROW_ID } from './action-fixture'
 
 /**
- * Deleting invoices and estimates only ever removes drafts; deleting a client
- * archives it rather than removing it.
+ * A exclusão de faturas e orçamentos remove apenas rascunhos; clientes são
+ * arquivados, em vez de removidos.
  */
 
 const { createClientMock } = vi.hoisted(() => ({ createClientMock: vi.fn() }))
@@ -34,23 +34,23 @@ beforeEach(() => {
   setup()
 })
 
-describe('deletes', () => {
-  it('still go through, and still only for drafts', async () => {
+describe('exclusões', () => {
+  it('continuam funcionando e apenas para rascunhos', async () => {
     await deleteInvoiceAction(ROW_ID)
     await deleteEstimateAction(ROW_ID)
     await deleteClientAction(ROW_ID)
 
     expect(db.calls.filter((call) => call.op === 'delete')).toHaveLength(2)
-    // Clients are archived rather than removed.
+    // Clientes são arquivados em vez de removidos.
     expect(db.calls.find((call) => call.op === 'update')?.payload).toEqual({ is_active: false })
   })
 
-  it('refuse a sent invoice for the old reason', async () => {
+  it('recusa uma fatura enviada pelo motivo anterior', async () => {
     db = createFakeSupabase({
       'invoices.select': { data: { business_id: BUSINESS_ID, status: 'sent' }, error: null },
     })
     createClientMock.mockResolvedValue(db)
 
-    await expect(deleteInvoiceAction(ROW_ID)).rejects.toThrow(/Only draft invoices/)
+    await expect(deleteInvoiceAction(ROW_ID)).rejects.toThrow(/Só é possível excluir faturas em rascunho/)
   })
 })

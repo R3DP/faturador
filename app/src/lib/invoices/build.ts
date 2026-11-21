@@ -1,6 +1,6 @@
-/** Canonical invoice arithmetic: round each displayed line, then discount and tax.
- * The sum of the displayed components must equal the amount due. SQL invoice
- * creation and the human editor follow this same order.
+/** Cálculo canônico de faturas: arredonda cada item exibido, depois o desconto
+ * e o imposto. A soma dos componentes exibidos deve corresponder ao total
+ * devido. A criação de faturas em SQL e a edição manual seguem esta ordem.
  */
 export interface BuildLineItem {
   description?: string
@@ -40,7 +40,7 @@ export function computeInvoiceTotals(
   const taxRate = opts.tax_rate ?? 0
   const shippingAmount = opts.shipping_amount ?? 0
 
-  // Raw (unrounded) intermediates, carried through in the app's exact order.
+  // Valores intermediários brutos (sem arredondamento), mantidos na ordem exata usada pelo aplicativo.
   const rawLineAmounts = lineItems.map((item) => round2(item.quantity * item.rate))
   const rawSubtotal = rawLineAmounts.reduce((sum, amount) => sum + amount, 0)
 
@@ -53,7 +53,7 @@ export function computeInvoiceTotals(
   const rawTaxAmount = round2((rawAfterDiscount * taxRate) / 100)
   const rawTotal = rawAfterDiscount + rawTaxAmount + shippingAmount
 
-  // Each output field is rounded exactly once, from its own raw value.
+  // Cada campo de saída é arredondado uma única vez, a partir do próprio valor bruto.
   const computedLineItems: ComputedLineItem[] = lineItems.map((item, index) => ({
     ...item,
     amount: round2(rawLineAmounts[index]),
@@ -68,7 +68,7 @@ export function computeInvoiceTotals(
   }
 }
 
-/** Formats an invoice number the same way `formatInvoiceNumber` does in `utils/invoice.ts`. */
+/** Formata o número da fatura da mesma forma que `formatInvoiceNumber` em `utils/invoice.ts`. */
 export function nextInvoiceNumber(prefix: string, number: number): string {
   return `${prefix}-${number.toString().padStart(4, '0')}`
 }

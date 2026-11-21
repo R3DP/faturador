@@ -12,10 +12,10 @@ export interface ResolvedKey {
 
 export interface ResolveApiKeyOptions {
   /**
-   * Overrides the per-key rate-limit policy for this call site. Defaults to
-   * RATE_LIMITS.apiKey (60 requests / 60s). The MCP server passes a higher
-   * allowance (RATE_LIMITS.mcp, 120/60s) rather than running a second bucket of
-   * its own, so every request is counted exactly once.
+   * Substitui a política de limite de taxa por chave para este ponto de chamada.
+   * O padrão é RATE_LIMITS.apiKey (60 solicitações / 60s). O servidor MCP usa
+   * um limite maior (RATE_LIMITS.mcp, 120/60s) em vez de manter um segundo
+   * contador próprio, para que cada solicitação seja contabilizada uma única vez.
    */
   rateLimit?: RateLimitPolicy
 }
@@ -27,9 +27,10 @@ export async function resolveApiKey(
   if (!isValidKeyFormat(secret)) return { error: 'invalid' }
 
   const hash = hashApiKey(secret)
-  // Durable, shared across instances. Fails closed: if the
-  // counter store is unreachable the key is treated as rate limited rather than
-  // waved through, because this is the only gate in front of the MCP surface.
+  // Persistente e compartilhado entre instâncias. Falha de forma restritiva:
+  // se o armazenamento do contador estiver inacessível, a chave é tratada como
+  // limitada por taxa, em vez de liberada, pois esta é a única barreira diante
+  // da interface MCP.
   const decision = await consumeRateLimit(rateLimitKey('apikey', hash), opts?.rateLimit ?? RATE_LIMITS.apiKey)
   if (!decision.allowed) return { error: 'rate_limited' }
 
@@ -60,7 +61,7 @@ export async function resolveApiKey(
     businessIds = (memberships ?? []).map((m) => m.business_id)
   }
 
-  // Best-effort usage stamp; never block the request on it
+  // Registro de uso de melhor esforço; nunca bloqueie a solicitação por causa dele
   void supabase
     .from('api_keys')
     .update({ last_used_at: new Date().toISOString() })

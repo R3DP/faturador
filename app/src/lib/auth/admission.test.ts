@@ -7,7 +7,7 @@ afterEach(() => {
 })
 
 describe('openSignup', () => {
-  it('is on only for the word true, in any case and with spaces', () => {
+  it('fica ativa somente com a palavra true, sem distinção entre maiúsculas e minúsculas e com espaços', () => {
     expect(openSignup({ BILLR_OPEN_SIGNUP: 'true' })).toBe(true)
     expect(openSignup({ BILLR_OPEN_SIGNUP: ' TRUE ' })).toBe(true)
     expect(openSignup({ BILLR_OPEN_SIGNUP: '1' })).toBe(false)
@@ -17,49 +17,49 @@ describe('openSignup', () => {
 })
 
 describe('signupIsOpen', () => {
-  it('is open on a fresh installation', async () => {
+  it('fica aberto em uma instalação nova', async () => {
     const db = createFakeSupabase({ 'rpc.install_has_account': { data: false, error: null } })
     expect(await signupIsOpen(db as never)).toBe(true)
   })
 
-  it('is closed once the owner exists', async () => {
+  it('fica fechado quando já existe uma pessoa responsável', async () => {
     const db = createFakeSupabase({ 'rpc.install_has_account': { data: true, error: null } })
     expect(await signupIsOpen(db as never)).toBe(false)
   })
 
-  it('stays open with BILLR_OPEN_SIGNUP=true, without asking the database', async () => {
+  it('permanece aberto com BILLR_OPEN_SIGNUP=true, sem consultar o banco de dados', async () => {
     vi.stubEnv('BILLR_OPEN_SIGNUP', 'true')
     const db = createFakeSupabase({ 'rpc.install_has_account': { data: true, error: null } })
     expect(await signupIsOpen(db as never)).toBe(true)
     expect(db.calls).toHaveLength(0)
   })
 
-  it('fails closed when the database cannot answer', async () => {
+  it('recusa o cadastro quando o banco de dados não consegue responder', async () => {
     const db = createFakeSupabase({ 'rpc.install_has_account': { data: null, error: { message: 'down' } } })
     expect(await signupIsOpen(db as never)).toBe(false)
   })
 })
 
 describe('admitAccount', () => {
-  it('passes the open-signup setting and returns the decision', async () => {
+  it('envia a configuração de cadastro aberto e retorna a decisão', async () => {
     vi.stubEnv('BILLR_OPEN_SIGNUP', 'true')
     const db = createFakeSupabase({ 'rpc.admit_install_account': { data: true, error: null } })
     expect(await admitAccount('user-1', db as never)).toBe(true)
     expect(db.calls[0]?.payload).toEqual({ p_user_id: 'user-1', p_open: true })
   })
 
-  it('reports a refusal', async () => {
+  it('informa uma recusa', async () => {
     const db = createFakeSupabase({ 'rpc.admit_install_account': { data: false, error: null } })
     expect(await admitAccount('user-2', db as never)).toBe(false)
   })
 
-  it('reports an unknown user as no decision', async () => {
+  it('não retorna uma decisão para um usuário desconhecido', async () => {
     const db = createFakeSupabase({ 'rpc.admit_install_account': { data: null, error: null } })
     expect(await admitAccount('user-3', db as never)).toBeNull()
   })
 
-  it('throws, never admits, when the database cannot answer', async () => {
+  it('gera um erro e nunca admite a conta quando o banco de dados não consegue responder', async () => {
     const db = createFakeSupabase({ 'rpc.admit_install_account': { data: null, error: { message: 'down' } } })
-    await expect(admitAccount('user-4', db as never)).rejects.toThrow(/could not check access/)
+    await expect(admitAccount('user-4', db as never)).rejects.toThrow(/não foi possível verificar o acesso/)
   })
 })

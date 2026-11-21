@@ -18,11 +18,11 @@ function report(overrides: Partial<ReportData> = {}): ReportData {
 }
 
 describe('toNumber', () => {
-  it('coerces PostgREST numeric strings', () => {
+  it('converte strings numéricas do PostgREST', () => {
     expect(toNumber('1234.56')).toBe(1234.56)
     expect(toNumber(' 10 ')).toBe(10)
   })
-  it('never returns NaN, Infinity, null or undefined', () => {
+  it('nunca retorna NaN, Infinity, null ou undefined', () => {
     expect(toNumber(null)).toBe(0)
     expect(toNumber(undefined)).toBe(0)
     expect(toNumber('abc')).toBe(0)
@@ -31,27 +31,27 @@ describe('toNumber', () => {
   })
 })
 
-describe('money accumulation', () => {
-  it('rounds once at the end, not per step', () => {
-    // 0.1 + 0.2 accumulates to 0.30000000000000004 in floats.
+describe('acúmulo de valores monetários', () => {
+  it('arredonda uma vez no final, não a cada etapa', () => {
+    // 0,1 + 0,2 resulta em 0,30000000000000004 em ponto flutuante.
     expect(sumMoney(['0.1', '0.2'])).toBe(0.3)
-    // Ten thirds of a cent: per-step rounding would give 0.10, one round gives 0.03.
+    // Dez parcelas de um terço de centavo: arredondar a cada etapa daria 0,10; arredondar uma vez resulta em 0,03.
     expect(sumMoney(Array(10).fill('0.003'))).toBe(0.03)
   })
-  it('rounds half up at the cent', () => {
+  it('arredonda o meio centavo para cima', () => {
     expect(roundMoney(1.005)).toBe(1.01)
     expect(roundMoney(2.344999)).toBe(2.34)
   })
 })
 
 describe('computeDelta', () => {
-  it('returns a null percent when the previous period was zero', () => {
+  it('retorna percentual null quando o período anterior foi zero', () => {
     const delta = computeDelta(500, 0)
     expect(delta.absolute).toBe(500)
     expect(delta.percent).toBeNull()
     expect(delta.direction).toBe('up')
   })
-  it('handles decreases and flat periods', () => {
+  it('trata quedas e períodos estáveis', () => {
     expect(computeDelta(80, 100).percent).toBeCloseTo(-20)
     expect(computeDelta(100, 100).direction).toBe('flat')
   })
@@ -73,7 +73,7 @@ describe('buildPnl', () => {
     ],
   })
 
-  it('accrual basis uses invoiced revenue', () => {
+  it('o regime de competência usa a receita faturada', () => {
     const pnl = buildPnl(data, 'accrual')
     expect(pnl.revenue).toBe(10000)
     expect(pnl.expenses).toBe(2500)
@@ -81,20 +81,20 @@ describe('buildPnl', () => {
     expect(pnl.margin).toBeCloseTo(75)
   })
 
-  it('cash basis uses collected revenue', () => {
+  it('o regime de caixa usa a receita recebida', () => {
     const pnl = buildPnl(data, 'cash')
     expect(pnl.revenue).toBe(8000)
     expect(pnl.profit).toBe(5500)
   })
 
-  it('compares against the previous period on the same basis', () => {
+  it('compara com o período anterior usando o mesmo regime', () => {
     const pnl = buildPnl(data, 'accrual')
     expect(pnl.previousProfit).toBe(4000)
     expect(pnl.profitDelta.absolute).toBe(3500)
     expect(pnl.expensesDelta.direction).toBe('down')
   })
 
-  it('reports a loss as a negative profit rather than clamping to zero', () => {
+  it('apresenta prejuízo como lucro negativo, sem limitá-lo a zero', () => {
     const losing = report({
       current: { invoiced: 1000, invoicedPaid: 0, collected: 0, expenses: 2500, invoiceCount: 1, paymentCount: 0, expenseCount: 4 },
     })
@@ -103,14 +103,14 @@ describe('buildPnl', () => {
     expect(pnl.margin).toBeCloseTo(-150)
   })
 
-  it('returns a null margin rather than dividing by zero revenue', () => {
+  it('retorna margem null em vez de dividir por receita zero', () => {
     const noRevenue = report({
       current: { invoiced: 0, invoicedPaid: 0, collected: 0, expenses: 300, invoiceCount: 0, paymentCount: 0, expenseCount: 2 },
     })
     expect(buildPnl(noRevenue, 'accrual').margin).toBeNull()
   })
 
-  it('expense lines carry their share of the expense total and stay sorted', () => {
+  it('as linhas de despesas mostram sua participação no total e permanecem ordenadas', () => {
     const pnl = buildPnl(data, 'accrual')
     expect(pnl.lines.map((l) => l.category)).toEqual(['software', 'travel'])
     expect(pnl.lines[0].share).toBeCloseTo(60)
@@ -118,7 +118,7 @@ describe('buildPnl', () => {
     expect(pnl.lines.reduce((sum, l) => sum + l.amount, 0)).toBe(pnl.expenses)
   })
 
-  it('does not accumulate rounding error across many expense rows', () => {
+  it('não acumula erro de arredondamento entre muitas linhas de despesas', () => {
     const many = report({
       current: { invoiced: 0, invoicedPaid: 0, collected: 0, expenses: 33.33, invoiceCount: 0, paymentCount: 0, expenseCount: 3 },
       expensesByCategory: [
@@ -145,25 +145,25 @@ describe('buildRevenueSeries', () => {
     ],
   })
 
-  it('labels buckets by their unit and omits comparison when it is off', () => {
+  it('rotula os agrupamentos pela unidade e omite a comparação quando desativada', () => {
     const points = buildRevenueSeries(data, false)
-    expect(points.map((p) => p.label)).toEqual(['Jan 2026', 'Feb 2026'])
+    expect(points.map((p) => p.label)).toEqual(['jan. de 2026', 'fev. de 2026'])
     expect(points[0].previousInvoiced).toBeUndefined()
   })
 
-  it('aligns the comparison period by position and names its own bucket', () => {
+  it('alinha o período de comparação por posição e usa o rótulo do próprio agrupamento', () => {
     const points = buildRevenueSeries(data, true)
     expect(points[0].previousInvoiced).toBe(50)
-    expect(points[0].previousLabel).toBe('Nov 2025')
+    expect(points[0].previousLabel).toBe('nov. de 2025')
     expect(points[1].previousCollected).toBe(55)
   })
 
-  it('labels day and week buckets by day', () => {
+  it('rotula agrupamentos diários e semanais pela data', () => {
     const daily = report({
       bucket: 'day',
       series: [{ bucketStart: '2026-03-05', invoiced: 1, collected: 1, expenses: 0 }],
     })
-    expect(buildRevenueSeries(daily, false)[0].label).toBe('Mar 5')
+    expect(buildRevenueSeries(daily, false)[0].label).toBe('5 de mar.')
   })
 })
 
@@ -177,14 +177,14 @@ describe('buildTopClients', () => {
     ],
   })
 
-  it('computes share against the period total, not against the listed clients', () => {
+  it('calcula a participação sobre o total do período, não apenas sobre os clientes listados', () => {
     const result = buildTopClients(data)
     expect(result.rows[0].share).toBeCloseTo(60)
     expect(result.topShare).toBeCloseTo(60)
     expect(result.topThreeShare).toBeCloseTo(100)
   })
 
-  it('handles no clients without dividing by zero', () => {
+  it('trata a ausência de clientes sem dividir por zero', () => {
     const result = buildTopClients(report())
     expect(result.rows).toEqual([])
     expect(result.topShare).toBe(0)
@@ -193,7 +193,7 @@ describe('buildTopClients', () => {
 })
 
 describe('buildExpenseBreakdown', () => {
-  it('folds the tail into Other past the slot cap instead of inventing colours', () => {
+  it('agrupa o excedente em Outros quando ultrapassa o limite, em vez de inventar cores', () => {
     const categories = ['software', 'travel', 'meals', 'office', 'supplies', 'utilities', 'marketing', 'insurance']
     const data = report({
       current: { invoiced: 0, invoicedPaid: 0, collected: 0, expenses: 800, invoiceCount: 0, paymentCount: 0, expenseCount: 8 },
@@ -202,13 +202,13 @@ describe('buildExpenseBreakdown', () => {
     const slices = buildExpenseBreakdown(data, 6)
     expect(slices).toHaveLength(6)
     expect(slices[5].category).toBe('__other__')
-    // 300 + 200 + 100 from the folded tail.
+    // 300 + 200 + 100 da parte final agrupada.
     expect(slices[5].amount).toBe(600)
     expect(slices[5].count).toBe(3)
     expect(slices.reduce((sum, s) => sum + s.amount, 0)).toBe(3600)
   })
 
-  it('leaves a short list untouched', () => {
+  it('mantém intacta uma lista curta', () => {
     const data = report({
       current: { invoiced: 0, invoicedPaid: 0, collected: 0, expenses: 100, invoiceCount: 0, paymentCount: 0, expenseCount: 1 },
       expensesByCategory: [{ category: 'meals', amount: 100, count: 1 }],
@@ -220,7 +220,7 @@ describe('buildExpenseBreakdown', () => {
 })
 
 describe('buildTimeReport', () => {
-  it('converts minutes to hours and derives the billable rate', () => {
+  it('converte minutos em horas e calcula a tarifa faturável', () => {
     const data = report({
       time: {
         totalMinutes: 600, billableMinutes: 450, nonBillableMinutes: 150,
@@ -235,7 +235,7 @@ describe('buildTimeReport', () => {
     expect(time.effectiveHourlyRate).toBe(150)
   })
 
-  it('returns zeros and a null rate for a week with no time logged', () => {
+  it('retorna zeros e tarifa null para uma semana sem horas registradas', () => {
     const time = buildTimeReport(report())
     expect(time.totalHours).toBe(0)
     expect(time.billableRate).toBe(0)
@@ -244,7 +244,7 @@ describe('buildTimeReport', () => {
 })
 
 describe('parseReportPayload', () => {
-  it('coerces every numeric string the RPC can return', () => {
+  it('converte todas as strings numéricas que a RPC pode retornar', () => {
     const data = parseReportPayload(
       {
         currency: 'EUR',
@@ -270,7 +270,7 @@ describe('parseReportPayload', () => {
     expect(data.openInvoiceCount).toBe(1)
   })
 
-  it('renders a brand new account as zeros rather than throwing', () => {
+  it('apresenta uma conta recém-criada com valores zero, sem lançar exceção', () => {
     const data = parseReportPayload(null, RANGE)
     expect(data.current.invoiced).toBe(0)
     expect(data.series).toEqual([])
@@ -278,15 +278,15 @@ describe('parseReportPayload', () => {
     expect(isReportEmpty(data)).toBe(true)
   })
 
-  it('is not empty once anything has been recorded', () => {
+  it('deixa de estar vazio quando há qualquer registro', () => {
     const data = parseReportPayload({ totals: { current: { invoice_count: 1 } } }, RANGE)
     expect(isReportEmpty(data)).toBe(false)
   })
 })
 
 describe('expenseCategoryLabel', () => {
-  it('falls back to the raw value for an unknown category', () => {
-    expect(expenseCategoryLabel('professional')).toBe('Professional services')
+  it('usa o valor original como alternativa para uma categoria desconhecida', () => {
+    expect(expenseCategoryLabel('professional')).toBe('Serviços profissionais')
     expect(expenseCategoryLabel('quantum')).toBe('quantum')
   })
 })

@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
 /**
- * The MCP tool wrapper: once the key checks out and the audit row is written,
- * read and write tools both run.
+ * Wrapper da ferramenta MCP: depois de validar a chave e registrar a auditoria,
+ * executa ferramentas de leitura e gravação.
  */
 
 vi.mock('@/lib/deployment', () => ({
@@ -15,7 +15,7 @@ import type { McpCtx } from './context'
 
 const KEY = { revoked_at: null, expires_at: null, permissions: ['read', 'write'] }
 
-/** The two tables the wrapper touches, in the order it touches them. */
+/** As duas tabelas acessadas pelo wrapper, na ordem em que são usadas. */
 function fakeDb({ auditFails = false } = {}) {
   return {
     svc: {
@@ -81,7 +81,7 @@ function setup({ auditFails = false, onCall = () => {} } = {}) {
 }
 
 describe('guardedServer', () => {
-  it('runs read tools', async () => {
+  it('executa ferramentas de leitura', async () => {
     const result = (await setup().get('list_invoices')!({})) as {
       isError?: boolean
       content: { text: string }[]
@@ -91,7 +91,7 @@ describe('guardedServer', () => {
     expect(result.content[0].text).toBe('read ok')
   })
 
-  it('runs write tools', async () => {
+  it('executa ferramentas de gravação', async () => {
     const result = (await setup().get('create_invoice')!({ business_id: 'b1' })) as {
       content: { text: string }[]
     }
@@ -99,7 +99,7 @@ describe('guardedServer', () => {
     expect(result.content[0].text).toBe('write ok')
   })
 
-  it('refuses to run a tool when the audit entry cannot be written', async () => {
+  it('impede a execução da ferramenta quando não é possível registrar a auditoria', async () => {
     const onCall = vi.fn()
     const result = (await setup({ auditFails: true, onCall }).get('list_invoices')!({})) as {
       isError?: boolean
@@ -107,7 +107,7 @@ describe('guardedServer', () => {
     }
 
     expect(result.isError).toBe(true)
-    expect(result.content[0].text).toContain('Could not record the audit entry')
+    expect(result.content[0].text).toContain('Não foi possível registrar a entrada de auditoria')
     expect(onCall).not.toHaveBeenCalled()
   })
 })

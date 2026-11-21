@@ -1,28 +1,28 @@
 #!/usr/bin/env node
 /**
- * Generates every derived file under `plugins/`.
+ * Gera todos os arquivos derivados em `plugins/`.
  *
- * Two things are generated here and must never be hand-edited:
+ * Dois itens são gerados aqui e nunca devem ser editados manualmente:
  *
- * 1. `plugins/shared/skill/references/tools.md`, built from
- *    `packages/agent-kit/src/tool-contracts.json` (the registered tool surface,
- *    with each tool's real title, description and input schema),
- *    `packages/agent-kit/src/tool-catalog.ts` (the human-facing grouping) and
- *    `app/src/lib/mcp/permissions.ts` (which permission each tool needs). A
- *    hand-maintained tool list went stale once and advertised a tool that never
- *    existed; this repository does not do that again.
+ * 1. `plugins/shared/skill/references/tools.md`, com base em
+ *    `packages/agent-kit/src/tool-contracts.json` (a superfície de ferramentas registrada,
+ *    com o título, a descrição e o esquema de entrada reais de cada ferramenta),
+ *    `packages/agent-kit/src/tool-catalog.ts` (o agrupamento voltado às pessoas) e
+ *    `app/src/lib/mcp/permissions.ts` (a permissão necessária para cada ferramenta). Uma
+ *    lista de ferramentas mantida manualmente ficou desatualizada e anunciou uma ferramenta inexistente;
+ *    este repositório não repetirá isso.
  *
- * 2. The per-platform copies of the shared skill. `plugins/shared/skill/` is
- *    the single source. Claude Code, Codex and OpenClaw each need the same
- *    text in their own layout, and Cursor needs it as `.mdc` rules with
- *    different frontmatter, so the copies are made here rather than by hand.
+ * 2. As cópias da habilidade compartilhada para cada plataforma. `plugins/shared/skill/` é
+ *    a fonte única. Claude Code, Codex e OpenClaw precisam do mesmo
+ *    texto em seus próprios formatos, e Cursor precisa dele como regras `.mdc` com
+ *    frontmatter diferente; por isso, as cópias são feitas aqui, não manualmente.
  *
- * Usage:
- *   node app/scripts/generate-plugin-tool-reference.mjs           # write
- *   node app/scripts/generate-plugin-tool-reference.mjs --check   # verify only
+ * Uso:
+ *   node app/scripts/generate-plugin-tool-reference.mjs           # gravar
+ *   node app/scripts/generate-plugin-tool-reference.mjs --check   # apenas verificar
  *
- * `--check` writes nothing and exits non-zero when anything on disk differs
- * from what would be generated. That is what the test runs.
+ * `--check` não grava nada e termina com código diferente de zero quando algum arquivo
+ * no disco difere do que seria gerado. É isso que o teste executa.
  */
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
@@ -34,7 +34,7 @@ const SHARED = 'plugins/shared/skill'
 
 const read = (p) => readFileSync(resolve(root, p), 'utf8')
 
-/** Every single-quoted string inside a fragment of the TypeScript sources. */
+/** Todas as strings entre aspas simples em um trecho dos arquivos TypeScript. */
 function quoted(fragment) {
   return [...fragment.matchAll(/'((?:[^'\\]|\\.)*)'/g)].map((m) =>
     m[1].replace(/\\'/g, "'"),
@@ -42,11 +42,11 @@ function quoted(fragment) {
 }
 
 /**
- * The human-facing grouping, parsed out of the agent-kit copy of the tool
- * catalog. Parsing rather than importing keeps this script free of a
- * TypeScript loader and of any Node version that does or does not strip types.
- * Every parse result is asserted against the contracts below, so a shape this
- * parser stops understanding fails loudly instead of silently emptying a file.
+ * O agrupamento voltado às pessoas, extraído da cópia do catálogo de ferramentas
+ * do agent-kit. Analisar o texto em vez de importá-lo dispensa um carregador
+ * TypeScript e qualquer dependência de versões do Node que removam ou não os tipos.
+ * Cada resultado da análise é comparado aos contratos abaixo; assim, se o formato
+ * deixar de ser reconhecido, haverá uma falha explícita em vez de deixar um arquivo vazio sem aviso.
  */
 function toolGroups() {
   const src = read('packages/agent-kit/src/tool-catalog.ts')
@@ -59,11 +59,11 @@ function toolGroups() {
     blurb: m[2].replace(/\\'/g, "'"),
     tools: quoted(m[3]),
   }))
-  if (!groups.length) throw Error('Parsed no tool groups from the tool catalog')
+  if (!groups.length) throw Error('Nenhum grupo de ferramentas foi encontrado no catálogo')
   return groups
 }
 
-/** Which permission each tool needs, parsed out of the MCP permission gate. */
+/** Permissão necessária para cada ferramenta, extraída da verificação de permissões do MCP. */
 function toolPermissions() {
   const src = read('app/src/lib/mcp/permissions.ts')
   const permissions = new Map()
@@ -72,30 +72,30 @@ function toolPermissions() {
   ))
     for (const tool of quoted(body))
       permissions.set(tool, name === 'reads' ? 'read' : 'write')
-  // The tail of toolPermission() handles send, delete and payments as
-  // explicit comparisons rather than sets.
+  // O trecho final de toolPermission() trata send, delete e payments com
+  // comparações explícitas, em vez de conjuntos.
   for (const [, condition, permission] of src.matchAll(
     /if \(([^)]*name ===[^)]*)\) return '(\w+)'/g,
   ))
     for (const tool of quoted(condition)) permissions.set(tool, permission)
   if (!permissions.size)
-    throw Error('Parsed no tool permissions from the permission gate')
+    throw Error('Nenhuma permissão de ferramenta foi encontrada na verificação de permissões')
   return permissions
 }
 
 function contracts() {
   const parsed = JSON.parse(read('packages/agent-kit/src/tool-contracts.json'))
   if (!Array.isArray(parsed) || !parsed.length)
-    throw Error('Tool contracts are empty')
+    throw Error('Os contratos de ferramentas estão vazios')
   return parsed
 }
 
 const PERMISSION_NOTE = {
   read: 'read',
   write: 'write',
-  send: 'send (puts a document in front of a client)',
-  payments: 'payments (moves recorded money)',
-  delete: 'delete (removes a record)',
+  send: 'send (apresenta um documento ao cliente)',
+  payments: 'payments (registra movimentações financeiras)',
+  delete: 'delete (remove um registro)',
 }
 
 function toolsMarkdown() {
@@ -106,36 +106,36 @@ function toolsMarkdown() {
   const grouped = groups.flatMap((g) => g.tools)
   const duplicates = grouped.filter((n, i) => grouped.indexOf(n) !== i)
   if (duplicates.length)
-    throw Error(`Tool listed in more than one group: ${duplicates.join(', ')}`)
+    throw Error(`Ferramenta listada em mais de um grupo: ${duplicates.join(', ')}`)
   const missing = grouped.filter((n) => !byName.has(n))
   if (missing.length)
-    throw Error(`Catalog advertises tools with no contract: ${missing.join(', ')}`)
+    throw Error(`O catálogo anuncia ferramentas sem contrato: ${missing.join(', ')}`)
   const unlisted = [...byName.keys()].filter((n) => !grouped.includes(n))
   if (unlisted.length)
-    throw Error(`Tools with a contract but no catalog group: ${unlisted.join(', ')}`)
+    throw Error(`Ferramentas com contrato, mas sem grupo no catálogo: ${unlisted.join(', ')}`)
   const unpermissioned = grouped.filter((n) => !permissions.has(n))
   if (unpermissioned.length)
-    throw Error(`Tools with no permission mapping: ${unpermissioned.join(', ')}`)
+    throw Error(`Ferramentas sem mapeamento de permissão: ${unpermissioned.join(', ')}`)
 
   const lines = [
-    '# Billr MCP tools',
+    '# Ferramentas MCP do Faturador',
     '',
-    `<!-- Generated by ${GENERATOR}. Do not edit. -->`,
+    `<!-- Gerado por ${GENERATOR}. Não edite. -->`,
     '',
-    `Every tool the Billr MCP server registers: ${grouped.length} of them, in the`,
-    'groups the app itself uses. Titles, descriptions and inputs come straight',
-    'from the registered tool contracts, so nothing here can advertise a tool',
-    'that does not exist.',
+    `Todas as ferramentas registradas pelo servidor MCP do Faturador: ${grouped.length}, nos`,
+    'grupos usados pelo próprio app. Títulos, descrições e entradas vêm diretamente',
+    'dos contratos das ferramentas registradas, então nada aqui pode anunciar uma ferramenta',
+    'que não exista.',
     '',
-    'The **Needs** column is the permission the connection must have been',
-    'granted. A tool you cannot see was not granted; say so rather than working',
-    'around it.',
+    'A coluna **Permissão necessária** indica a permissão que a conexão precisa ter',
+    'recebido. Se você não consegue ver uma ferramenta, ela não foi concedida; informe isso em vez de',
+    'tentar contornar a restrição.',
     '',
-    '`request_id` appears on write tools for idempotency: generate a fresh UUID',
-    'per intended operation, and reuse the same one with identical input when',
-    'retrying a call that may have half landed.',
+    '`request_id` aparece nas ferramentas de escrita para garantir idempotência: gere um UUID novo',
+    'para cada operação pretendida e reutilize o mesmo, com entrada idêntica, ao',
+    'repetir uma chamada que talvez tenha sido parcialmente concluída.',
     '',
-    '## Contents',
+    '## Conteúdo',
     '',
   ]
   for (const group of groups)
@@ -145,12 +145,12 @@ function toolsMarkdown() {
 
   for (const group of groups) {
     lines.push('', `## ${group.name}`, '', group.blurb, '')
-    lines.push('| Tool | Needs | Required input |', '| --- | --- | --- |')
+    lines.push('| Ferramenta | Permissão necessária | Entrada obrigatória |', '| --- | --- | --- |')
     for (const name of group.tools) {
       const required = byName.get(name).inputSchema?.required ?? []
       lines.push(
         `| \`${name}\` | ${permissions.get(name)} | ${
-          required.length ? required.map((r) => `\`${r}\``).join(', ') : 'none'
+          required.length ? required.map((r) => `\`${r}\``).join(', ') : 'nenhum'
         } |`,
       )
     }
@@ -165,37 +165,37 @@ function toolsMarkdown() {
         '',
         `### \`${name}\``,
         '',
-        `*${tool.title ?? name}*, needs **${PERMISSION_NOTE[permissions.get(name)]}**.`,
+        `*${tool.title ?? name}*, exige **${PERMISSION_NOTE[permissions.get(name)]}**.`,
         '',
         (tool.description ?? '').trim(),
         '',
-        `- Required: ${required.length ? required.map((r) => `\`${r}\``).join(', ') : 'nothing'}`,
-        `- Optional: ${optional.length ? optional.map((o) => `\`${o}\``).join(', ') : 'nothing'}`,
+        `- Obrigatórios: ${required.length ? required.map((r) => `\`${r}\``).join(', ') : 'nenhum'}`,
+        `- Opcionais: ${optional.length ? optional.map((o) => `\`${o}\``).join(', ') : 'nenhum'}`,
       )
     }
   }
   lines.push('')
   const markdown = lines.join('\n')
-  // House rule: no em-dashes in anything Billr ships. A tool description that
-  // grows one upstream is caught here rather than in a published package.
+  // Regra da casa: nada de travessões longos no que o Faturador distribui. Se uma descrição
+  // de ferramenta ganhar um deles na origem, isso será detectado aqui, não no pacote publicado.
   if (markdown.includes('\u2014'))
-    throw Error('Generated tool reference contains an em-dash')
+    throw Error('A referência de ferramentas gerada contém um travessão longo')
   return markdown
 }
 
-/** Split a markdown file into its YAML frontmatter and its body. */
+/** Separa o frontmatter YAML e o corpo de um arquivo Markdown. */
 function split(text) {
   const match = text.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
-  if (!match) throw Error('Expected YAML frontmatter')
+  if (!match) throw Error('Era esperado um frontmatter YAML')
   return { frontmatter: match[1], body: match[2] }
 }
 
 function stamped(text, sourcePath) {
   const { frontmatter, body } = split(text)
-  return `---\n${frontmatter}\n---\n\n<!-- Generated by ${GENERATOR} from ${sourcePath}. Do not edit; edit the source and re-run the generator. -->\n${body.replace(/^\n+/, '\n')}`
+  return `---\n${frontmatter}\n---\n\n<!-- Gerado por ${GENERATOR} a partir de ${sourcePath}. Não edite; edite a fonte e execute o gerador novamente. -->\n${body.replace(/^\n+/, '\n')}`
 }
 
-/** Every file this script owns, as path -> contents. */
+/** Todos os arquivos controlados por este script, no formato caminho -> conteúdo. */
 export function generatedFiles() {
   const files = new Map()
   files.set(`${SHARED}/references/tools.md`, toolsMarkdown())
@@ -204,8 +204,8 @@ export function generatedFiles() {
   const workflows = read(`${SHARED}/references/workflows.md`)
   const tools = files.get(`${SHARED}/references/tools.md`)
 
-  // Codex uses skills/<name>/SKILL.md with references
-  // alongside. OpenClaw is a bare skill folder.
+  // Codex usa skills/<name>/SKILL.md com as referências
+  // ao lado. No OpenClaw, a pasta da habilidade fica na raiz.
   for (const dir of [
     'plugins/codex/billr/skills/billr',
     'plugins/openclaw/billr',
@@ -213,7 +213,7 @@ export function generatedFiles() {
     files.set(`${dir}/SKILL.md`, stamped(skill, `${SHARED}/SKILL.md`))
     files.set(
       `${dir}/references/workflows.md`,
-      `<!-- Generated by ${GENERATOR} from ${SHARED}/references/workflows.md. Do not edit. -->\n\n${workflows}`,
+      `<!-- Gerado por ${GENERATOR} a partir de ${SHARED}/references/workflows.md. Não edite. -->\n\n${workflows}`,
     )
     files.set(`${dir}/references/tools.md`, tools)
   }
@@ -228,10 +228,10 @@ export function checkGenerated() {
     try {
       current = read(path)
     } catch {
-      stale.push(`${path}: missing`)
+      stale.push(`${path}: ausente`)
       continue
     }
-    if (current !== contents) stale.push(`${path}: out of date`)
+    if (current !== contents) stale.push(`${path}: desatualizado`)
   }
   return stale
 }
@@ -241,12 +241,12 @@ function main(argv) {
     const stale = checkGenerated()
     if (stale.length) {
       console.error(
-        `Generated plugin files are not current:\n${stale.map((s) => `  ${s}`).join('\n')}\n\nRun: node ${GENERATOR}`,
+        `Os arquivos gerados dos plugins estão desatualizados:\n${stale.map((s) => `  ${s}`).join('\n')}\n\nExecute: node ${GENERATOR}`,
       )
       process.exitCode = 1
       return
     }
-    console.log('Generated plugin files are current.')
+    console.log('Os arquivos gerados dos plugins estão atualizados.')
     return
   }
   let written = 0
@@ -256,7 +256,7 @@ function main(argv) {
     writeFileSync(full, contents)
     written++
   }
-  console.log(`Wrote ${written} generated plugin files.`)
+  console.log(`${written} arquivos gerados dos plugins foram gravados.`)
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)

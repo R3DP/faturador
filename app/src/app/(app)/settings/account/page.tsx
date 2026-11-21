@@ -16,14 +16,14 @@ import { useBusiness } from '@/lib/hooks/use-business'
 import { createClient } from '@/lib/supabase/client'
 
 const profileSchema = z.object({
-  full_name: z.string().min(1, 'Name is required'),
+  full_name: z.string().min(1, 'O nome é obrigatório'),
 })
 
 const passwordSchema = z.object({
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres'),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
+  message: "As senhas não coincidem.",
   path: ['confirmPassword'],
 })
 
@@ -49,7 +49,7 @@ export default function AccountSettingsPage() {
     },
   })
 
-  // Profile loads asynchronously; sync the form once data arrives
+  // O perfil carrega de forma assíncrona; sincroniza o formulário quando os dados chegam
   useEffect(() => {
     if (profile) {
       resetProfile({ full_name: profile.full_name || '' })
@@ -82,7 +82,7 @@ export default function AccountSettingsPage() {
     if (error) {
       setMessage({ type: 'error', text: error.message })
     } else {
-      setMessage({ type: 'success', text: 'Profile updated' })
+      setMessage({ type: 'success', text: 'Perfil atualizado' })
     }
   }
 
@@ -100,7 +100,7 @@ export default function AccountSettingsPage() {
     if (error) {
       setMessage({ type: 'error', text: error.message })
     } else {
-      setMessage({ type: 'success', text: 'Password updated' })
+      setMessage({ type: 'success', text: 'Senha atualizada' })
       resetPassword()
     }
   }
@@ -114,8 +114,8 @@ export default function AccountSettingsPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Settings"
-        description="Manage your business settings and preferences"
+        title="Configurações"
+        description="Gerencie as configurações e preferências da sua empresa"
       />
 
       <div className="mt-6">
@@ -133,16 +133,16 @@ export default function AccountSettingsPage() {
               </div>
             )}
 
-            {/* Profile */}
+            {/* Perfil */}
             <Card>
               <CardHeader>
-                <CardTitle>Profile</CardTitle>
-                <CardDescription>Your personal account information</CardDescription>
+                <CardTitle>Perfil</CardTitle>
+                <CardDescription>Informações da sua conta pessoal</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmitProfile(onSubmitProfile)} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="full_name">Full Name</Label>
+                    <Label htmlFor="full_name">Nome completo</Label>
                     <Input id="full_name" {...registerProfile('full_name')} />
                     {profileErrors.full_name && (
                       <p className="text-sm text-destructive">
@@ -156,23 +156,23 @@ export default function AccountSettingsPage() {
                       {isSubmittingProfile && (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       )}
-                      Update Profile
+                      Atualizar perfil
                     </Button>
                   </div>
                 </form>
               </CardContent>
             </Card>
 
-            {/* Password */}
+            {/* Senha */}
             <Card>
               <CardHeader>
-                <CardTitle>Change Password</CardTitle>
-                <CardDescription>Update your account password</CardDescription>
+                <CardTitle>Alterar senha</CardTitle>
+                <CardDescription>Atualize a senha da sua conta</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmitPassword(onSubmitPassword)} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="password">New Password</Label>
+                    <Label htmlFor="password">Nova senha</Label>
                     <Input
                       id="password"
                       type="password"
@@ -186,7 +186,7 @@ export default function AccountSettingsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <Label htmlFor="confirmPassword">Confirmar senha</Label>
                     <Input
                       id="confirmPassword"
                       type="password"
@@ -204,22 +204,22 @@ export default function AccountSettingsPage() {
                       {isSubmittingPassword && (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       )}
-                      Update Password
+                      Atualizar senha
                     </Button>
                   </div>
                 </form>
               </CardContent>
             </Card>
 
-            {/* Sign Out */}
+            {/* Sair */}
             <Card>
               <CardHeader>
-                <CardTitle>Sign Out</CardTitle>
-                <CardDescription>Sign out of your account on this device</CardDescription>
+                <CardTitle>Sair</CardTitle>
+                <CardDescription>Desconecte sua conta neste dispositivo</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button variant="outline" onClick={handleSignOut}>
-                  Sign Out
+                  Sair
                 </Button>
               </CardContent>
             </Card>

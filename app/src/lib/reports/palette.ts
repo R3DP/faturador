@@ -1,33 +1,37 @@
 /**
- * The reports colour system. Data only - no React - so it can be imported by
- * charts, legends, table views and tests alike, and so every surface that
- * paints a series reads the same hex from one place.
+ * Sistema de cores dos relatórios. Contém somente dados, sem React, para ser
+ * importado por gráficos, legendas, tabelas e testes; assim, todas as interfaces
+ * usam os mesmos códigos hexadecimais definidos em um único lugar.
  *
- * How these values were chosen (not by eye):
+ * Como esses valores foram escolhidos (não a olho):
  *
- * - Slot 1 is Billr's brand blue (#2563eb light / #3b82f6 dark, the app's own
- *   --primary in each theme). The remaining slots are the validated
- *   categorical order from the dataviz palette, stepped for each surface.
- * - The set was run through the palette validator against the real chart
- *   surface in each mode (card white #ffffff light, card slate #1e293b dark):
- *     light: lightness band PASS, chroma floor PASS, CVD separation PASS
- *            (worst adjacent dE 9.1), normal-vision floor PASS (worst 19.6),
- *            contrast WARN on aqua/yellow/magenta -> those slots always ship
- *            with visible labels and a table view (the relief rule).
- *     dark:  all six checks PASS (worst adjacent CVD dE 8.4, contrast >= 3:1).
- * - The aging ramp is ORDINAL (age has a natural order), so it is one hue,
- *   light to dark, validated with the ordinal rules: light-mode steps run
- *   #86b6ef -> #184f95 (light-end contrast 2.11:1), dark-mode steps run
- *   #256abf -> #b7d3f6 (light-end contrast 2.71:1) because on a dark surface
- *   the LIGHTER step is the salient one. Both directions were validated so the
- *   oldest bucket is the most prominent mark in either theme.
- * - "Not yet due" is deliberately outside the ramp, in the de-emphasis grey:
- *   it is context, not a stage of overdue-ness, and greying it puts the
- *   reader's eye on the money that is actually late.
+ * - A primeira posição usa o azul da marca Faturador (#2563eb no tema claro /
+ *   #3b82f6 no escuro, o --primary do aplicativo em cada tema). As demais
+ *   posições seguem a ordem categórica validada da paleta de visualização de
+ *   dados, ajustada para cada superfície.
+ * - O conjunto foi validado na superfície real do gráfico em cada tema (cartão
+ *   branco #ffffff no claro e cartão ardósia #1e293b no escuro):
+ *     claro: faixa de luminosidade PASSOU, limite mínimo de croma PASSOU,
+ *            separação para daltonismo PASSOU (pior dE adjacente 9,1),
+ *            limite para visão normal PASSOU (pior 19,6), AVISO de contraste
+ *            em ciano/amarelo/magenta -> essas posições sempre são acompanhadas
+ *            por rótulos visíveis e uma tabela (regra de reforço).
+ *     escuro: as seis verificações PASSARAM (pior dE adjacente para daltonismo
+ *             8,4, contraste >= 3:1).
+ * - A escala de envelhecimento é ORDINAL (a idade tem uma ordem natural), por
+ *   isso usa um único tom, do claro ao escuro, validado segundo as regras ordinais:
+ *   no tema claro, os níveis vão de #86b6ef a #184f95 (contraste de 2,11:1 na
+ *   extremidade clara); no tema escuro, vão de #256abf a #b7d3f6 (contraste de
+ *   2,71:1), pois numa superfície escura o tom MAIS CLARO é o que se destaca.
+ *   As duas direções foram validadas para que a faixa mais antiga seja a mais
+ *   proeminente em ambos os temas.
+ * - "Ainda não vencido" fica intencionalmente fora da escala, em cinza discreto:
+ *   é contexto, não uma etapa de atraso, e o cinza direciona o olhar para os
+ *   valores que realmente estão vencidos.
  *
- * Charts consume these through CSS custom properties (see
- * components/reports/chart-theme.tsx) so light and dark swap in one place and
- * recharts never has to be told which theme is active.
+ * Os gráficos usam essas cores por meio de propriedades personalizadas de CSS
+ * (consulte components/reports/chart-theme.tsx), para alternar entre os temas
+ * claro e escuro em um só lugar, sem precisar informar ao Recharts qual tema está ativo.
  */
 
 type VizRole =
@@ -50,17 +54,17 @@ type VizRole =
 export type VizPalette = Record<VizRole, string>
 
 export const VIZ_LIGHT: VizPalette = {
-  'series-1': '#2563eb', // blue - Billr primary
-  'series-2': '#eb6834', // orange
-  'series-3': '#1baf7a', // aqua
-  'series-4': '#eda100', // yellow
+  'series-1': '#2563eb', // azul; cor primária do Faturador
+  'series-2': '#eb6834', // laranja
+  'series-3': '#1baf7a', // turquesa
+  'series-4': '#eda100', // amarelo
   'series-5': '#e87ba4', // magenta
-  'series-6': '#4a3aa7', // violet
-  compare: '#9ca3af', // de-emphasis grey for the comparison period
+  'series-6': '#4a3aa7', // violeta
+  compare: '#9ca3af', // cinza menos destacado para o período de comparação
   grid: '#e5e7eb',
   axis: '#6b7280',
   surface: '#ffffff',
-  'age-0': '#9ca3af', // not yet due - outside the ramp on purpose
+  'age-0': '#9ca3af', // ainda não venceu; fica fora da escala de propósito
   'age-1': '#86b6ef',
   'age-2': '#5598e7',
   'age-3': '#2563eb',
@@ -85,12 +89,12 @@ export const VIZ_DARK: VizPalette = {
   'age-4': '#b7d3f6',
 }
 
-/** CSS custom property name for a role. */
+/** Nome da propriedade personalizada de CSS para uma função. */
 function vizVar(role: VizRole): string {
   return `var(--viz-${role})`
 }
 
-/** Fixed series assignments. Colour follows the entity, never its rank. */
+/** Atribuições fixas de séries. A cor acompanha a entidade, nunca sua posição. */
 export const SERIES_COLORS = {
   invoiced: vizVar('series-1'),
   collected: vizVar('series-2'),
@@ -110,7 +114,7 @@ export const AGING_COLORS: Record<string, string> = {
   d90_plus: vizVar('age-4'),
 }
 
-/** Serialises a palette to the CSS custom-property block a theme scope needs. */
+/** Serializa uma paleta para o bloco de propriedades CSS personalizadas exigido pelo escopo do tema. */
 export function paletteToCss(palette: VizPalette): string {
   return Object.entries(palette)
     .map(([role, hex]) => `--viz-${role}: ${hex};`)

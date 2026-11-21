@@ -35,10 +35,10 @@ export default function ClientsPage() {
 
       const { createClient } = await import('@/lib/supabase/client')
       const supabase = createClient()
-      // Totals come from the client_financials view, which
-      // computes them from the invoices table. The clients table used to carry
-      // total_invoiced / total_paid columns that nothing ever wrote, so this
-      // card showed $0.00 for every client.
+      // Os totais vêm da view client_financials, que
+      // os calcula a partir da tabela invoices. A tabela clients antes tinha
+      // as colunas total_invoiced / total_paid, que nunca eram preenchidas; por isso este
+      // cartão mostrava $0,00 para todos os clientes.
       const [{ data }, { data: financials }] = await Promise.all([
         supabase
           .from('clients')
@@ -81,7 +81,7 @@ export default function ClientsPage() {
   )
 
   const formatCurrency = (amount: number, currency = currentBusiness?.default_currency || 'USD') => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency,
     }).format(amount)
@@ -94,23 +94,23 @@ export default function ClientsPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Clients"
-        description="Manage your clients and their information"
+        title="Clientes"
+        description="Gerencie seus clientes e as informações deles"
       >
         <Button asChild>
           <Link href="/clients/new">
             <Plus className="mr-2 h-4 w-4" />
-            Add Client
+            Adicionar cliente
           </Link>
         </Button>
       </PageHeader>
 
-      {/* Search */}
+      {/* Busca */}
       <div className="mt-6">
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search clients..."
+            placeholder="Buscar clientes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -118,7 +118,7 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* Client List */}
+      {/* Lista de clientes */}
       <div className="mt-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -129,15 +129,15 @@ export default function ClientsPage() {
             <CardContent className="py-12">
               <EmptyState
                 icon={Users}
-                title={searchQuery ? 'No clients found' : 'No clients yet'}
+                title={searchQuery ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
                 description={
                   searchQuery
-                    ? 'Try a different search term'
-                    : 'Add your first client to start creating invoices'
+                    ? 'Tente outro termo de busca'
+                    : 'Adicione seu primeiro cliente para começar a criar faturas'
                 }
                 action={
                   !searchQuery
-                    ? { label: 'Add Client', href: '/clients/new' }
+                    ? { label: 'Adicionar cliente', href: '/clients/new' }
                     : undefined
                 }
               />
@@ -165,28 +165,28 @@ export default function ClientsPage() {
                         </div>
                         {(totals.get(`${client.id}:${client.currency}`) ?? ZERO_TOTALS).outstanding_balance > 0 && (
                           <p className="text-sm text-amber-600">
-                            {formatCurrency((totals.get(`${client.id}:${client.currency}`) ?? ZERO_TOTALS).outstanding_balance, client.currency)} outstanding
+                            {formatCurrency((totals.get(`${client.id}:${client.currency}`) ?? ZERO_TOTALS).outstanding_balance, client.currency)} em aberto
                           </p>
                         )}
                       </div>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
+                        <Button aria-label={`Abrir ações de ${client.name}`} variant="ghost" size="icon">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/clients/${client.id}`}>View details</Link>
+                          <Link href={`/clients/${client.id}`}>Ver detalhes</Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link href={`/invoices/new?client=${client.id}`}>
-                            Create invoice
+                            Criar fatura
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/clients/${client.id}/edit`}>Edit</Link>
+                          <Link href={`/clients/${client.id}/edit`}>Editar</Link>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -208,7 +208,7 @@ export default function ClientsPage() {
                   </div>
 
                   <div className="mt-4 flex items-center justify-between border-t pt-4 text-sm">
-                    <span className="text-muted-foreground">Total invoiced</span>
+                    <span className="text-muted-foreground">Total faturado</span>
                     <span className="font-medium tabular-nums">
                       {formatCurrency((totals.get(`${client.id}:${client.currency}`) ?? ZERO_TOTALS).total_invoiced, client.currency)}
                     </span>

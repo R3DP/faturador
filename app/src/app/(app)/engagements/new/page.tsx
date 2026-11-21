@@ -63,8 +63,8 @@ export default function NewEngagementPage() {
   const [billingMode, setBillingMode] = useState<BillingMode>('percent_split')
   const [installments, setInstallments] = useState('3')
   const [entries, setEntries] = useState<DraftEntry[]>([
-    { ...blankEntry('on_start'), label: 'Deposit', percent: '50' },
-    { ...blankEntry('on_complete'), label: 'On completion', percent: '50' },
+    { ...blankEntry('on_start'), label: 'Entrada', percent: '50' },
+    { ...blankEntry('on_complete'), label: 'Na conclusão', percent: '50' },
   ])
   const [startsOn, setStartsOn] = useState('')
   const [targetEnd, setTargetEnd] = useState('')
@@ -91,8 +91,8 @@ export default function NewEngagementPage() {
       ])
 
       if (clientRows) setClients(clientRows as Client[])
-      // The seeded templates live on the business. A row
-      // that predates the column falls back to the same list the app ships.
+      // Os modelos iniciais ficam na empresa. Uma linha
+      // criada antes dessa coluna usa a mesma lista incluída no aplicativo.
       const seeded = business?.schedule_templates as ScheduleTemplate[] | null
       if (Array.isArray(seeded) && seeded.length > 0) setTemplates(seeded)
       setIsLoading(false)
@@ -107,9 +107,9 @@ export default function NewEngagementPage() {
     'USD'
 
   /**
-   * The preview runs the SAME expansion the database runs
-   * (expand_engagement_schedule, mirrored by expandSchedule
-   * here), so what is shown is exactly what will be written.
+   * A prévia executa a MESMA expansão que o banco de dados
+   * (expand_engagement_schedule, espelhada por expandSchedule
+   * aqui), então o que é exibido corresponde exatamente ao que será gravado.
    */
   const preview = useMemo((): { entries: ScheduleEntry[]; error: string | null } => {
     const amount = Number(total)
@@ -136,7 +136,7 @@ export default function NewEngagementPage() {
     } catch (error) {
       return {
         entries: [],
-        error: error instanceof ScheduleError ? error.message : 'That schedule does not work yet.',
+        error: error instanceof ScheduleError ? error.message : 'Esse cronograma ainda não é válido.',
       }
     }
   }, [billingMode, entries, installments, total])
@@ -166,11 +166,11 @@ export default function NewEngagementPage() {
   async function handleSubmit() {
     if (!currentBusiness) return
     if (!clientId) {
-      toast.error('Pick a client for this engagement.')
+      toast.error('Selecione um cliente para este contrato.')
       return
     }
     if (preview.error || preview.entries.length === 0) {
-      toast.error(preview.error ?? 'Give the engagement a total and a schedule.')
+      toast.error(preview.error ?? 'Informe o valor total do contrato e um cronograma.')
       return
     }
 
@@ -186,9 +186,9 @@ export default function NewEngagementPage() {
         total: Number(total),
         currency: currencyCode,
         billing_mode: billingMode,
-        // The schedule is sent as intent. The database expands it again and is
-        // the one that decides, so a stale browser cannot write a schedule
-        // that does not add up.
+        // O cronograma é enviado como intenção. O banco de dados o expande novamente e
+        // decide o resultado, para que um navegador desatualizado não grave um cronograma
+        // com valores inconsistentes.
         entries: preview.entries.map((entry) => ({
           label: entry.label,
           percent: entry.percent ?? undefined,
@@ -228,23 +228,23 @@ export default function NewEngagementPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="New Engagement"
-        description="Record what was agreed and how it will be billed. Creating one sends nothing to the client."
+        title="Novo contrato"
+        description="Registre o que foi acordado e como será cobrado. Criar um contrato não envia nada ao cliente."
       />
 
       <div className="mt-6 grid max-w-5xl gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>The agreement</CardTitle>
+              <CardTitle>O contrato</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Client</Label>
+                  <Label>Cliente</Label>
                   <Select value={clientId} onValueChange={setClientId}>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a client" />
+                      <SelectValue placeholder="Selecione um cliente" />
                     </SelectTrigger>
                     <SelectContent>
                       {clients.map((client) => (
@@ -256,19 +256,19 @@ export default function NewEngagementPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="engagement-name">Name</Label>
+                  <Label htmlFor="engagement-name">Nome</Label>
                   <Input
                     id="engagement-name"
                     value={name}
                     onChange={(event) => setName(event.target.value)}
-                    placeholder="Website rebuild"
+                    placeholder="Recriação do site"
                   />
                 </div>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
-                  <Label htmlFor="engagement-total">Agreed total</Label>
+                  <Label htmlFor="engagement-total">Total acordado</Label>
                   <Input
                     id="engagement-total"
                     type="number"
@@ -280,7 +280,7 @@ export default function NewEngagementPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="engagement-currency">Currency</Label>
+                  <Label htmlFor="engagement-currency">Moeda</Label>
                   <Input
                     id="engagement-currency"
                     value={currency}
@@ -290,7 +290,7 @@ export default function NewEngagementPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Billing mode</Label>
+                  <Label>Forma de cobrança</Label>
                   <Select
                     value={billingMode}
                     onValueChange={(value) => setBillingMode(value as BillingMode)}
@@ -311,7 +311,7 @@ export default function NewEngagementPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="engagement-start">Starts on</Label>
+                  <Label htmlFor="engagement-start">Início</Label>
                   <Input
                     id="engagement-start"
                     type="date"
@@ -320,7 +320,7 @@ export default function NewEngagementPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="engagement-end">Target end</Label>
+                  <Label htmlFor="engagement-end">Previsão de término</Label>
                   <Input
                     id="engagement-end"
                     type="date"
@@ -331,12 +331,12 @@ export default function NewEngagementPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="engagement-notes">Internal notes</Label>
+                <Label htmlFor="engagement-notes">Observações internas</Label>
                 <Textarea
                   id="engagement-notes"
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
-                  placeholder="Never shown to the client"
+                  placeholder="Nunca será exibida ao cliente"
                   rows={3}
                 />
               </div>
@@ -345,12 +345,12 @@ export default function NewEngagementPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>The schedule</CardTitle>
+              <CardTitle>O cronograma</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {billingMode === 'equal_installments' && (
                 <div className="space-y-2 sm:max-w-[200px]">
-                  <Label htmlFor="engagement-installments">Installments</Label>
+                  <Label htmlFor="engagement-installments">Parcelas</Label>
                   <Input
                     id="engagement-installments"
                     type="number"
@@ -369,7 +369,7 @@ export default function NewEngagementPage() {
                       <Input
                         value={entry.label}
                         onChange={(event) => updateEntry(index, { label: event.target.value })}
-                        placeholder={`Payment ${index + 1}`}
+                        placeholder={`Parcela ${index + 1}`}
                       />
                       {showPercent ? (
                         <Input
@@ -388,10 +388,10 @@ export default function NewEngagementPage() {
                           step="0.01"
                           value={entry.amount}
                           onChange={(event) => updateEntry(index, { amount: event.target.value })}
-                          placeholder="Amount"
+                          placeholder="Valor"
                         />
                       ) : (
-                        <div className="flex items-center text-sm text-muted-foreground">Equal</div>
+                        <div className="flex items-center text-sm text-muted-foreground">Iguais</div>
                       )}
                       <Select
                         value={entry.due_rule}
@@ -420,7 +420,7 @@ export default function NewEngagementPage() {
                         size="icon"
                         onClick={() => setEntries((current) => current.filter((_, i) => i !== index))}
                         disabled={entries.length <= 1}
-                        aria-label="Remove entry"
+                        aria-label="Remover lançamento"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -438,7 +438,7 @@ export default function NewEngagementPage() {
                   disabled={entries.length >= MAX_ENTRIES}
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Add entry
+                  Adicionar lançamento
                 </Button>
                 {billingMode === 'equal_installments' && (
                   <Button
@@ -447,7 +447,7 @@ export default function NewEngagementPage() {
                     size="sm"
                     onClick={() => setEntries([])}
                   >
-                    Use plain numbered installments
+                    Usar parcelas numeradas simples
                   </Button>
                 )}
               </div>
@@ -458,7 +458,7 @@ export default function NewEngagementPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Templates</CardTitle>
+              <CardTitle>Modelos</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {templates.map((template) => (
@@ -477,14 +477,14 @@ export default function NewEngagementPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Preview</CardTitle>
+              <CardTitle>Prévia</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               {preview.error ? (
                 <p className="text-destructive">{preview.error}</p>
               ) : preview.entries.length === 0 ? (
                 <p className="text-muted-foreground">
-                  Enter a total to see how it will be billed.
+                  Informe um valor total para ver como será cobrado.
                 </p>
               ) : (
                 <>
@@ -521,7 +521,7 @@ export default function NewEngagementPage() {
                 onChange={(event) => setStartNow(event.target.checked)}
                 className="h-4 w-4 rounded border-input"
               />
-              Start it now, which makes any deposit ready to bill
+              Inicie agora para deixar qualquer entrada pronta para faturar
             </label>
             <Button
               type="button"
@@ -529,10 +529,10 @@ export default function NewEngagementPage() {
               onClick={handleSubmit}
               disabled={isSaving || !!preview.error}
             >
-              {isSaving ? 'Saving...' : 'Create engagement'}
+              {isSaving ? 'Salvando...' : 'Criar contrato'}
             </Button>
             <Button type="button" variant="ghost" className="w-full" onClick={() => router.back()}>
-              Cancel
+              Cancelar
             </Button>
           </div>
         </div>

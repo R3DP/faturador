@@ -50,7 +50,7 @@ export default function EditTimeEntryPage() {
   async function handleSubmit(data: TimeEntryFormData) {
     if (!entry) return
     if (entry.invoice_id) {
-      toast.error('Invoiced work cannot be edited. Create a correcting entry instead.')
+      toast.error('Um trabalho faturado não pode ser editado. Crie um lançamento de correção.')
       return
     }
 
@@ -84,9 +84,9 @@ export default function EditTimeEntryPage() {
       <div className="p-6 lg:p-8">
         <EmptyState
           icon={Clock}
-          title="Time entry not found"
-          description="The time entry you're looking for doesn't exist."
-          action={{ label: 'Back to Time Tracking', href: '/time' }}
+          title="Lançamento de horas não encontrado"
+          description="O lançamento de horas que você procura não existe."
+          action={{ label: 'Voltar para controle de horas', href: '/time' }}
         />
       </div>
     )
@@ -95,8 +95,8 @@ export default function EditTimeEntryPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Edit Time Entry"
-        description="Update this time entry"
+        title="Editar lançamento de horas"
+        description="Atualize este lançamento de horas"
       />
 
       <div className="mt-6 max-w-2xl">

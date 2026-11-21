@@ -10,26 +10,26 @@ import {
 
 const actions = [
   {
-    title: 'Create an invoice',
-    description: 'Bill a client for your work',
+    title: 'Criar uma fatura',
+    description: 'Cobrar de um cliente pelo seu trabalho',
     href: '/invoices/new',
     icon: FileText,
   },
   {
-    title: 'Send an estimate',
-    description: 'Agree on the work up front',
+    title: 'Enviar um orçamento',
+    description: 'Acordar o trabalho antecipadamente',
     href: '/estimates/new',
     icon: FileCheck,
   },
   {
-    title: 'Add a client',
-    description: 'Keep their details in one place',
+    title: 'Adicionar cliente',
+    description: 'Manter os dados organizados em um só lugar',
     href: '/clients/new',
     icon: Users,
   },
   {
-    title: 'Record an expense',
-    description: 'Keep track of what you spend',
+    title: 'Registrar uma despesa',
+    description: 'Acompanhar seus gastos',
     href: '/expenses/new',
     icon: Receipt,
   },
@@ -37,7 +37,7 @@ const actions = [
 export function QuickActions() {
   return (
     <div>
-      <h2 className="mb-4 text-sm font-semibold">Quick actions</h2>
+      <h2 className="mb-4 text-sm font-semibold">Ações rápidas</h2>
       <div className="divide-y divide-zinc-100">
         {actions.map((a) => (
           <Link
@@ -69,13 +69,13 @@ export function QuickActions() {
       >
         <Bot size={19} strokeWidth={1.5} className="mb-3 text-primary" />
         <span className="block text-sm font-medium">
-          Let your agent handle it
+          Deixe seu agente cuidar disso
         </span>
         <span className="mt-2 block text-xs leading-relaxed text-zinc-500">
-          Connect an agent to log work and draft invoices in your workspace.
+          Conecte um agente para registrar trabalhos e criar rascunhos de faturas no seu espaço de trabalho.
         </span>
         <span className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-primary">
-          Connect your agent
+          Conectar seu agente
           <ArrowUpRight size={13} />
         </span>
       </Link>

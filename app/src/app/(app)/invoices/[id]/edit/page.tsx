@@ -78,9 +78,9 @@ export default function EditInvoicePage() {
       <div className="p-6 lg:p-8">
         <EmptyState
           icon={FileText}
-          title="Invoice not found"
-          description="The invoice you're looking for doesn't exist."
-          action={{ label: 'Back to Invoices', href: '/invoices' }}
+          title="Fatura não encontrada"
+          description="A fatura que você procura não existe."
+          action={{ label: 'Voltar para faturas', href: '/invoices' }}
         />
       </div>
     )
@@ -89,8 +89,8 @@ export default function EditInvoicePage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title={`Edit ${invoice.invoice_number}`}
-        description="Update the details of this invoice"
+        title={`Editar ${invoice.invoice_number}`}
+        description="Atualize os dados desta fatura"
       />
 
       <div className="mt-6">

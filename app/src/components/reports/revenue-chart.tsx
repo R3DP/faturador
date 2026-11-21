@@ -1,15 +1,15 @@
 'use client'
 
 /**
- * Revenue over time: what was invoiced against what was actually collected.
+ * Receitas ao longo do tempo: valores faturados em comparação aos efetivamente recebidos.
  *
- * Two bars per bucket, one axis. Invoiced and collected are the same unit
- * (money in the selected currency), so they share a scale and can be compared
- * honestly; nothing here ever gets a second y-axis.
+ * São exibidas duas barras por período, em um único eixo. Valores faturados e recebidos usam
+ * a mesma unidade (dinheiro na moeda selecionada) e, portanto, compartilham a escala e podem
+ * ser comparados com clareza; não há um segundo eixo Y.
  *
- * The comparison period rides along as a single de-emphasis line rather than
- * two more bars: four bars per bucket is noise, and the per-series deltas
- * already live in the KPI row above.
+ * O período de comparação aparece como uma única linha discreta, em vez de duas barras
+ * adicionais: quatro barras por período gerariam ruído, e as variações de cada série já aparecem
+ * na faixa de indicadores acima.
  */
 
 import { Bar, ComposedChart, Line } from 'recharts'
@@ -49,13 +49,13 @@ export function RevenueChart({
   const hasActivity = points.some((p) => p.invoiced !== 0 || p.collected !== 0)
 
   const legend = [
-    { key: 'invoiced', label: 'Invoiced', color: SERIES_COLORS.invoiced, mark: 'rect' as const },
-    { key: 'collected', label: 'Collected', color: SERIES_COLORS.collected, mark: 'rect' as const },
+    { key: 'invoiced', label: 'Faturado', color: SERIES_COLORS.invoiced, mark: 'rect' as const },
+    { key: 'collected', label: 'Recebido', color: SERIES_COLORS.collected, mark: 'rect' as const },
     ...(compare
       ? [
           {
             key: 'previous',
-            label: 'Invoiced, previous period',
+            label: 'Faturado no período anterior',
             color: SERIES_COLORS.previous,
             mark: 'line' as const,
           },
@@ -69,35 +69,35 @@ export function RevenueChart({
       withReportContext(
         toCsv(points, [
           { header: bucketNoun, value: (row: RevenuePoint) => row.label },
-          { header: 'Bucket start', value: (row: RevenuePoint) => row.key },
-          { header: `Invoiced (${currency})`, value: (row: RevenuePoint) => row.invoiced },
-          { header: `Collected (${currency})`, value: (row: RevenuePoint) => row.collected },
+          { header: 'Início do período', value: (row: RevenuePoint) => row.key },
+          { header: `Faturado (${currency})`, value: (row: RevenuePoint) => row.invoiced },
+          { header: `Recebido (${currency})`, value: (row: RevenuePoint) => row.collected },
           ...(compare
             ? [
-                { header: 'Previous bucket', value: (row: RevenuePoint) => row.previousLabel ?? '' },
+                { header: 'Período anterior', value: (row: RevenuePoint) => row.previousLabel ?? '' },
                 {
-                  header: `Previous invoiced (${currency})`,
+                  header: `Faturado no período anterior (${currency})`,
                   value: (row: RevenuePoint) => row.previousInvoiced ?? '',
                 },
                 {
-                  header: `Previous collected (${currency})`,
+                  header: `Recebido no período anterior (${currency})`,
                   value: (row: RevenuePoint) => row.previousCollected ?? '',
                 },
               ]
             : []),
         ]),
-        { title: 'Revenue over time', range: data.range, currency }
+        { title: 'Receitas ao longo do tempo', range: data.range, currency }
       ),
   }
 
   const table = (
     <ReportTable
-      caption="Invoiced and collected revenue per period"
+      caption="Receita faturada e recebida por período"
       columns={[
         { key: 'period', label: bucketNoun },
-        { key: 'invoiced', label: 'Invoiced', align: 'right' },
-        { key: 'collected', label: 'Collected', align: 'right' },
-        ...(compare ? [{ key: 'previous', label: 'Previous invoiced', align: 'right' as const }] : []),
+        { key: 'invoiced', label: 'Faturado', align: 'right' },
+        { key: 'collected', label: 'Recebido', align: 'right' },
+        ...(compare ? [{ key: 'previous', label: 'Faturado no período anterior', align: 'right' as const }] : []),
       ]}
     >
       {points.map((point) => (
@@ -119,16 +119,16 @@ export function RevenueChart({
 
   return (
     <ReportCard
-      title="Revenue over time"
-      description={`Invoiced against collected, by ${bucketNoun.toLowerCase()}`}
+      title="Receitas ao longo do tempo"
+      description={`Faturado em comparação ao recebido, por ${bucketNoun.toLowerCase()}`}
       csv={csv}
       table={hasActivity ? table : undefined}
     >
       {!hasActivity ? (
         <EmptyState
           icon={LineChartIcon}
-          title="No revenue in this range"
-          description="Once you send an invoice or record a payment in this period, the trend shows up here."
+          title="Nenhuma receita neste período"
+          description="Quando você enviar uma fatura ou registrar um pagamento neste período, a tendência aparecerá aqui."
           className="py-10"
         />
       ) : (
@@ -136,7 +136,7 @@ export function RevenueChart({
           <VizLegend items={legend} className="mb-3" />
           <VizFrame
             height={280}
-            label={`Bar chart of invoiced and collected revenue by ${bucketNoun.toLowerCase()} in ${currency}`}
+            label={`Gráfico de barras da receita faturada e recebida por ${bucketNoun.toLowerCase()}, na moeda ${currency}`}
           >
             <ComposedChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barGap={2}>
               <VizGrid />
@@ -153,13 +153,13 @@ export function RevenueChart({
                       rows={[
                         {
                           key: 'invoiced',
-                          name: 'Invoiced',
+                          name: 'Faturado',
                           value: formatMoney(point.invoiced, currency),
                           color: SERIES_COLORS.invoiced,
                         },
                         {
                           key: 'collected',
-                          name: 'Collected',
+                          name: 'Recebido',
                           value: formatMoney(point.collected, currency),
                           color: SERIES_COLORS.collected,
                         },
@@ -167,7 +167,7 @@ export function RevenueChart({
                           ? [
                               {
                                 key: 'previous',
-                                name: `Invoiced, ${point.previousLabel}`,
+                                name: `Faturado, ${point.previousLabel}`,
                                 value: formatMoney(point.previousInvoiced, currency),
                                 color: SERIES_COLORS.previous,
                                 mark: 'line' as const,
@@ -181,7 +181,7 @@ export function RevenueChart({
               />
               <Bar
                 dataKey="invoiced"
-                name="Invoiced"
+                name="Faturado"
                 fill={SERIES_COLORS.invoiced}
                 radius={BAR_RADIUS}
                 maxBarSize={MAX_BAR_SIZE}
@@ -189,7 +189,7 @@ export function RevenueChart({
               />
               <Bar
                 dataKey="collected"
-                name="Collected"
+                name="Recebido"
                 fill={SERIES_COLORS.collected}
                 radius={BAR_RADIUS}
                 maxBarSize={MAX_BAR_SIZE}
@@ -199,7 +199,7 @@ export function RevenueChart({
                 <Line
                   type="monotone"
                   dataKey="previousInvoiced"
-                  name="Invoiced, previous period"
+                  name="Faturado no período anterior"
                   stroke={SERIES_COLORS.previous}
                   strokeWidth={2}
                   dot={false}

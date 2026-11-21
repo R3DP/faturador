@@ -6,8 +6,8 @@ import { createClient } from '@/lib/supabase/server'
 import { failure, type WriteResult } from './result'
 
 /**
- * Catalog writes, including the delete on /items, run server-side as actions
- * that validate their input before anything is written.
+ * Gravações do catálogo, incluindo a exclusão em /items, são executadas no
+ * servidor por actions que validam os dados antes de qualquer gravação.
  */
 
 const itemInput = z.object({
@@ -39,7 +39,7 @@ export async function createItemAction(
     revalidatePath('/items')
     return { ok: true }
   } catch (error) {
-    return failure(error, 'Could not save that item.')
+    return failure(error, 'Não foi possível salvar esse item.')
   }
 }
 
@@ -63,13 +63,13 @@ export async function updateItemAction(
       .select('id')
 
     if (error) return { error: error.message }
-    if (!saved?.length) return { error: 'Item not found.' }
+    if (!saved?.length) return { error: 'Item não encontrado.' }
 
     revalidatePath('/items')
     revalidatePath(`/items/${itemId}`)
     return { ok: true }
   } catch (error) {
-    return failure(error, 'Could not save that item.')
+    return failure(error, 'Não foi possível salvar esse item.')
   }
 }
 
@@ -83,6 +83,6 @@ export async function deleteItemAction(itemId: string): Promise<WriteResult> {
     revalidatePath('/items')
     return { ok: true }
   } catch (error) {
-    return failure(error, 'Could not delete that item.')
+    return failure(error, 'Não foi possível excluir esse item.')
   }
 }

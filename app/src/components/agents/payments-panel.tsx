@@ -13,9 +13,9 @@ import { getStripeSetupAction, type StripeSetupView } from '@/lib/actions/stripe
 import { STRIPE_WEBHOOK_EVENTS } from '@/lib/stripe/webhook-events'
 
 /**
- * Card payments run on the Stripe account whose keys this installation is
- * configured with. This panel says whether they are on and, if not, exactly
- * what to set. It never shows a key value.
+ * Os pagamentos com cartão usam a conta Stripe cujas chaves estão configuradas nesta
+ * instalação. Este painel informa se estão ativados e, caso não estejam, o que
+ * deve ser configurado. Ele nunca exibe o valor de uma chave.
  */
 export function PaymentsPanel() {
   const [setup, setSetup] = useState<StripeSetupView | null | undefined>(undefined)
@@ -45,7 +45,7 @@ export function PaymentsPanel() {
   if (setup === null) {
     return (
       <p className="text-sm text-muted-foreground">
-        Could not read the payment settings. Reload the page to try again.
+        Não foi possível ler as configurações de pagamento. Recarregue a página para tentar novamente.
       </p>
     )
   }
@@ -55,11 +55,11 @@ export function PaymentsPanel() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Card payments</CardTitle>
+        <CardTitle>Pagamentos com cartão</CardTitle>
         <CardDescription>
-          Clients pay invoices by card on the invoice page. The money goes to the Stripe
-          account whose keys this Billr is configured with, and every business here uses
-          that same account.
+          Os clientes pagam faturas com cartão na página da fatura. O dinheiro vai para a conta Stripe
+          cujas chaves estão configuradas neste Faturador, e todas as empresas aqui usam
+          essa mesma conta.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
@@ -67,14 +67,14 @@ export function PaymentsPanel() {
           <div className="flex items-start gap-3 rounded-lg bg-green-50 p-4 text-green-800">
             <CheckCircle className="mt-0.5 h-5 w-5 shrink-0" />
             <div className="space-y-1">
-              <p className="font-medium">Card payments are on</p>
+              <p className="font-medium">Pagamentos com cartão ativados</p>
               <p>
                 {setup.mode === 'test'
-                  ? 'Test mode: use Stripe test cards. No real money moves.'
-                  : 'Live mode: clients pay real money into your Stripe account.'}
+                  ? 'Modo de teste: use cartões de teste da Stripe. Nenhum dinheiro real será movimentado.'
+                  : 'Modo de produção: os clientes pagam valores reais na sua conta Stripe.'}
               </p>
               <p>
-                Webhook endpoint: <code className="break-all">{setup.webhookUrl}</code>
+                Endpoint de webhook: <code className="break-all">{setup.webhookUrl}</code>
               </p>
             </div>
           </div>
@@ -83,40 +83,36 @@ export function PaymentsPanel() {
             <div className="flex items-start gap-3 rounded-lg bg-amber-50 p-4 text-amber-900">
               <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
               <div className="space-y-1">
-                <p className="font-medium">Card payments are off</p>
-                <p>{setup.problem ?? `Not set: ${setup.missing.join(', ')}.`}</p>
+                <p className="font-medium">Pagamentos com cartão desativados</p>
+                <p>{setup.problem ?? `Não configurado: ${setup.missing.join(', ')}.`}</p>
               </div>
             </div>
             <ol className="list-decimal space-y-3 pl-5">
               <li>
-                In the Stripe Dashboard, open <strong>Developers</strong>, then{' '}
-                <strong>API keys</strong>. Copy the publishable key (<code>pk_...</code>) and
-                the secret key (<code>sk_...</code>). Start with test keys.
+                No painel da Stripe, abra <strong>Desenvolvedores (Developers)</strong> e depois <strong>Chaves de API</strong>. Copie a chave publicável (<code>pk_...</code>) e
+                a chave secreta (<code>sk_...</code>). Comece pelas chaves de teste.
               </li>
               <li>
-                Open <strong>Developers</strong>, then <strong>Webhooks</strong>, and add an
-                endpoint at <code className="break-all">{setup.webhookUrl}</code> that sends{' '}
+                Abra <strong>Desenvolvedores (Developers)</strong>, depois <strong>Webhooks</strong> e adicione um
+                endpoint em <code className="break-all">{setup.webhookUrl}</code> que envie{' '}
                 {STRIPE_WEBHOOK_EVENTS.map((type, index) => (
                   <span key={type}>
                     {index > 0 ? ', ' : ''}
                     <code>{type}</code>
                   </span>
                 ))}
-                . Copy its signing secret (<code>whsec_...</code>). Running Billr on your own
-                computer? <code>stripe listen --forward-to {forwardTo}</code> prints a signing
-                secret to use instead.
+                . Copie o segredo de assinatura (<code>whsec_...</code>). Se estiver executando o Faturador no seu próprio computador, o comando <code>stripe listen --forward-to {forwardTo}</code> exibirá um segredo de assinatura
+                para usar no lugar.
               </li>
               <li>
-                Set <code>STRIPE_SECRET_KEY</code>, <code>NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code>{' '}
-                and <code>STRIPE_WEBHOOK_SECRET</code> in <code>app/.env.local</code> (or your
-                server&apos;s environment) and restart Billr. Rebuild a Docker image: the
-                publishable key is compiled into the browser code.
+                Configure <code>STRIPE_SECRET_KEY</code>, <code>NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code>{' '}
+                e <code>STRIPE_WEBHOOK_SECRET</code> em <code>app/.env.local</code> (ou no ambiente do servidor) e reinicie o Faturador. Ao reconstruir uma imagem Docker, a chave publicável será incorporada ao código do navegador.
               </li>
             </ol>
           </>
         )}
         <p className="text-muted-foreground">
-          Without card payments you can still record payments by hand on any invoice.
+          Sem pagamentos com cartão, você ainda pode registrar pagamentos manualmente em qualquer fatura.
         </p>
       </CardContent>
     </Card>

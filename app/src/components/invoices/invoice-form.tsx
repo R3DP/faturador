@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useForm, Controller, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { format, addDays } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { CalendarIcon, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -46,10 +47,10 @@ interface InvoiceFormProps {
   onCancel: () => void
   defaultClientId?: string
   /**
-   * Extra cards rendered under the line items, given the form state they need
-   * to react to. The new invoice page uses it for the engagement picker, which
-   * has to know which client and currency the form is currently on and has to
-   * be able to write preview lines into it.
+   * Cartões adicionais exibidos abaixo dos itens, com o estado do formulário necessário
+   * para reagirem. A página de nova fatura usa isso para selecionar contratos, o que
+   * precisa saber qual cliente e moeda estão selecionados no formulário e também
+   * precisa inserir nele linhas de pré-visualização.
    */
   renderExtras?: (context: {
     clientId: string
@@ -140,7 +141,7 @@ export function InvoiceForm({
   const currency = watch('currency')
   const clientId = watch('client_id')
 
-  // Recalculate totals when line items or discounts change
+  // Recalcular os totais quando os itens ou descontos mudarem
   useEffect(() => {
     const totals = calculateInvoiceTotals(
       lineItems,
@@ -162,7 +163,7 @@ export function InvoiceForm({
     setValue,
   ])
 
-  // Update due date when client changes
+  // Atualizar a data de vencimento quando o cliente mudar
   useEffect(() => {
     if (clientId && !invoice) {
       const client = clients.find((c) => c.id === clientId)
@@ -177,7 +178,7 @@ export function InvoiceForm({
   }, [clientId, clients, invoice, setValue])
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency,
     }).format(amount)
@@ -195,17 +196,17 @@ export function InvoiceForm({
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
-        {/* Left Column - Main Form */}
+        {/* Coluna esquerda - formulário principal */}
         <div className="min-w-0 space-y-6">
-          {/* Client & Invoice Info */}
+          {/* Dados do cliente e da fatura */}
           <Card>
             <CardHeader>
-              <CardTitle>Invoice details</CardTitle>
+              <CardTitle>Detalhes da fatura</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="client_id">Client *</Label>
+                  <Label htmlFor="client_id">Cliente *</Label>
                   <Controller
                     name="client_id"
                     control={control}
@@ -215,7 +216,7 @@ export function InvoiceForm({
                         onValueChange={field.onChange}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a client" />
+                          <SelectValue placeholder="Selecione um cliente" />
                         </SelectTrigger>
                         <SelectContent>
                           {clients.map((client) => (
@@ -235,7 +236,7 @@ export function InvoiceForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="invoice_number">Invoice Number *</Label>
+                  <Label htmlFor="invoice_number">Número da fatura *</Label>
                   <Input {...register('invoice_number')} />
                   {errors.invoice_number && (
                     <p className="text-sm text-destructive">
@@ -245,7 +246,7 @@ export function InvoiceForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Issue Date</Label>
+                  <Label>Data de emissão</Label>
                   <Controller
                     name="issue_date"
                     control={control}
@@ -261,8 +262,8 @@ export function InvoiceForm({
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {field.value
-                              ? format(parseDay(field.value), 'PPP')
-                              : 'Pick a date'}
+                              ? format(parseDay(field.value), 'PPP', { locale: ptBR })
+                              : 'Escolha uma data'}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
@@ -283,7 +284,7 @@ export function InvoiceForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Due Date</Label>
+                  <Label>Data de vencimento</Label>
                   <Controller
                     name="due_date"
                     control={control}
@@ -299,8 +300,8 @@ export function InvoiceForm({
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {field.value
-                              ? format(parseDay(field.value), 'PPP')
-                              : 'Pick a date'}
+                              ? format(parseDay(field.value), 'PPP', { locale: ptBR })
+                              : 'Escolha uma data'}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
@@ -321,12 +322,12 @@ export function InvoiceForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="po_number">PO Number</Label>
-                  <Input {...register('po_number')} placeholder="Optional" />
+                  <Label htmlFor="po_number">Número do pedido de compra</Label>
+                  <Input {...register('po_number')} placeholder="Opcional" />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="currency">Currency</Label>
+                  <Label htmlFor="currency">Moeda</Label>
                   <Controller
                     name="currency"
                     control={control}
@@ -353,10 +354,10 @@ export function InvoiceForm({
             </CardContent>
           </Card>
 
-          {/* Line items */}
+          {/* Itens */}
           <Card>
             <CardHeader>
-              <CardTitle>Line items</CardTitle>
+              <CardTitle>Itens</CardTitle>
             </CardHeader>
             <CardContent>
               <Controller
@@ -373,7 +374,7 @@ export function InvoiceForm({
               {errors.line_items && (
                 <p className="mt-2 text-sm text-destructive">
                   {errors.line_items.message ||
-                    'Please add at least one line item'}
+                    'Adicione pelo menos um item'}
                 </p>
               )}
             </CardContent>
@@ -387,35 +388,35 @@ export function InvoiceForm({
               setValue('line_items', items, { shouldDirty: true, shouldValidate: true }),
           })}
 
-          {/* Notes & Terms */}
+          {/* Observações & Termos */}
           <Card>
             <CardHeader>
-              <CardTitle>Additional information</CardTitle>
+              <CardTitle>Informações adicionais</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">Observações</Label>
                 <Textarea
                   {...register('notes')}
-                  placeholder="Notes visible to client"
+                  placeholder="Observações visíveis ao cliente"
                   rows={3}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="terms">Terms & Conditions</Label>
+                <Label htmlFor="terms">Termos e condições</Label>
                 <Textarea
                   {...register('terms')}
-                  placeholder="Payment terms, conditions, etc."
+                  placeholder="Condições e prazos de pagamento, etc."
                   rows={3}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="payment_instructions">
-                  Payment Instructions
+                  Instruções de pagamento
                 </Label>
                 <Textarea
                   {...register('payment_instructions')}
-                  placeholder="Bank details, payment methods, etc."
+                  placeholder="Dados bancários, formas de pagamento etc."
                   rows={3}
                 />
               </div>
@@ -423,11 +424,11 @@ export function InvoiceForm({
           </Card>
         </div>
 
-        {/* Right Column - Summary */}
+        {/* Coluna direita - resumo */}
         <div className="space-y-6">
           <Card className="sticky top-6">
             <CardHeader>
-              <CardTitle>Summary</CardTitle>
+              <CardTitle>Resumo</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Subtotal */}
@@ -438,11 +439,11 @@ export function InvoiceForm({
                 </span>
               </div>
 
-              {/* Discount */}
+              {/* Desconto */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-muted-foreground">
-                    Discount
+                    Desconto
                   </Label>
                 </div>
                 <div className="flex gap-2">
@@ -479,11 +480,11 @@ export function InvoiceForm({
                 </div>
               </div>
 
-              {/* Tax */}
+              {/* Imposto */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-muted-foreground">
-                    Tax Rate
+                    Alíquota de imposto
                   </Label>
                 </div>
                 <div className="flex gap-2">
@@ -506,10 +507,10 @@ export function InvoiceForm({
                 </div>
               </div>
 
-              {/* Shipping */}
+              {/* Frete */}
               <div className="flex items-center justify-between">
                 <Label className="text-sm text-muted-foreground">
-                  Shipping
+                  Frete
                 </Label>
                 <Input
                   type="number"
@@ -532,7 +533,7 @@ export function InvoiceForm({
                 </div>
               </div>
 
-              {/* Actions */}
+              {/* Ações */}
               <div className="space-y-2 pt-4">
                 <Button
                   type="submit"
@@ -543,7 +544,7 @@ export function InvoiceForm({
                   {isSubmitting && submitType === 'sent' && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  Save & Send
+                  Salvar e enviar
                 </Button>
                 <Button
                   type="submit"
@@ -555,7 +556,7 @@ export function InvoiceForm({
                   {isSubmitting && submitType === 'draft' && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  Save as Draft
+                  Salvar como rascunho
                 </Button>
                 <Button
                   type="button"
@@ -564,7 +565,7 @@ export function InvoiceForm({
                   onClick={onCancel}
                   disabled={isSubmitting}
                 >
-                  Cancel
+                  Cancelar
                 </Button>
               </div>
             </CardContent>

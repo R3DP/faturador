@@ -95,23 +95,23 @@ export default function ItemsPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Items"
-        description="Manage your products and services catalog"
+        title="Itens"
+        description="Gerencie seu catálogo de produtos e serviços"
       >
         <Button asChild>
           <Link href="/items/new">
             <Plus className="mr-2 h-4 w-4" />
-            Add Item
+            Adicionar item
           </Link>
         </Button>
       </PageHeader>
 
-      {/* Search */}
+      {/* Busca */}
       <div className="mt-6">
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search items..."
+            placeholder="Buscar itens..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -119,7 +119,7 @@ export default function ItemsPage() {
         </div>
       </div>
 
-      {/* Items Table */}
+      {/* Tabela de itens */}
       <div className="mt-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -130,15 +130,15 @@ export default function ItemsPage() {
             <CardContent className="py-12">
               <EmptyState
                 icon={Package}
-                title={searchQuery ? 'No items found' : 'No items yet'}
+                title={searchQuery ? 'Nenhum item encontrado' : 'Nenhum item cadastrado'}
                 description={
                   searchQuery
-                    ? 'Try a different search term'
-                    : 'Create reusable items to quickly add to invoices and estimates'
+                    ? 'Tente outro termo de busca'
+                    : 'Cadastre itens reutilizáveis para adicioná-los rapidamente a faturas e orçamentos'
                 }
                 action={
                   !searchQuery
-                    ? { label: 'Add Item', href: '/items/new' }
+                    ? { label: 'Adicionar item', href: '/items/new' }
                     : undefined
                 }
               />
@@ -150,10 +150,10 @@ export default function ItemsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Rate</TableHead>
-                    <TableHead>Unit</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Unidade</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -192,7 +192,7 @@ export default function ItemsPage() {
                             <DropdownMenuItem asChild>
                               <Link href={`/items/${item.id}`}>
                                 <Pencil className="mr-2 h-4 w-4" />
-                                Edit
+                                Editar
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
@@ -200,7 +200,7 @@ export default function ItemsPage() {
                               className="text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              Excluir
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -214,21 +214,21 @@ export default function ItemsPage() {
         )}
       </div>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Diálogo de confirmação de exclusão */}
       <Dialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Item</DialogTitle>
+            <DialogTitle>Excluir item</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{deleteItem?.name}&quot;? This action cannot be undone.
+              Tem certeza de que deseja excluir &quot;{deleteItem?.name}&quot;? Esta ação não pode ser desfeita.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteItem(null)}>
-              Cancel
+              Cancelar
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
-              Delete
+              Excluir
             </Button>
           </DialogFooter>
         </DialogContent>

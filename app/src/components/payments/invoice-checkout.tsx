@@ -16,27 +16,27 @@ interface IntentResponse {
 
 type Phase =
   | { kind: 'loading' }
-  /** Card payment cannot be offered; the invoice's own instructions apply. */
+  /** O pagamento com cartão não está disponível; valem as instruções da própria fatura. */
   | { kind: 'unavailable'; message: string }
-  /** The charge already went through and we are waiting on the webhook. */
+  /** A cobrança já foi processada e estamos aguardando o webhook. */
   | { kind: 'confirming' }
   | { kind: 'ready'; intent: IntentResponse }
 
 const CARD_UNAVAILABLE =
-  'Card payment is not available for this invoice right now. Use the payment instructions on the invoice, or contact the sender.'
+  'O pagamento com cartão não está disponível para esta fatura. Siga as instruções de pagamento ou entre em contato com quem a enviou.'
 
 interface InvoiceCheckoutProps {
   publicId: string
   balanceDue: number
   currency: string
-  /** Called once the webhook has flipped the invoice to paid. */
+  /** Chamado quando o webhook marcar a fatura como paga. */
   onConfirmed?: () => void
 }
 
 /**
- * Card payment for the public invoice page, on the Stripe account this
- * installation is configured with. Card details go straight from the browser
- * to Stripe; Billr never sees them.
+ * Pagamento com cartão na página pública da fatura, usando a conta Stripe em que esta
+ * instalação está configurada. Os dados do cartão vão direto do navegador
+ * para a Stripe; o Faturador nunca os recebe.
  */
 export function InvoiceCheckout({ publicId, balanceDue, currency, onConfirmed }: InvoiceCheckoutProps) {
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
@@ -57,8 +57,8 @@ export function InvoiceCheckout({ publicId, balanceDue, currency, onConfirmed }:
           setPhase({ kind: 'ready', intent: data as IntentResponse })
           return
         }
-        // Paid already, webhook not landed yet: a live form here is how
-        // double charges happen.
+        // Pagamento já realizado, mas o webhook ainda não chegou: manter o formulário ativo
+        // poderia gerar cobranças duplicadas.
         if (res.status === 409 && data?.status === 'processing') {
           setPhase({ kind: 'confirming' })
           return
@@ -87,7 +87,7 @@ export function InvoiceCheckout({ publicId, balanceDue, currency, onConfirmed }:
     return (
       <div className="flex items-center gap-3 py-6 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Loading the secure payment form
+        Carregando o formulário seguro de pagamento
       </div>
     )
   }
@@ -147,17 +147,17 @@ function CheckoutForm({
       const result = await stripe
         .confirmPayment({
           elements,
-          // Cards and 3D Secure complete in place (Stripe shows the
-          // authentication step in a modal). Only payment methods that
-          // genuinely require leaving the page will use return_url, and they
-          // come back to the same invoice with the paid banner.
+          // Cartões e 3D Secure são processados na própria página (a Stripe exibe a
+          // etapa de autenticação em uma janela). Somente formas de pagamento que
+          // realmente exigem sair da página usarão return_url e, ao retornar,
+          // abrirão a mesma fatura com o aviso de pagamento.
           redirect: 'if_required',
           confirmParams: {
             return_url: `${window.location.origin}/i/${publicId}?paid=1`,
           },
         })
         .catch((err: unknown) => {
-          // confirmPayment rejects only on a genuine network/runtime fault.
+          // confirmPayment falha apenas diante de um erro real de rede ou execução.
           return { error: { type: 'api_connection_error', message: String(err) } as StripeError }
         })
 
@@ -169,8 +169,8 @@ function CheckoutForm({
 
       const status = result.paymentIntent?.status
       if (status === 'succeeded' || status === 'processing' || status === 'requires_capture') {
-        // The webhook is the source of truth. Never mark the invoice paid
-        // from here: show an optimistic state and let reconciliation confirm.
+        // O webhook é a fonte da verdade. Nunca marque a fatura como paga
+        // aqui: mostre um estado otimista e aguarde a confirmação da reconciliação.
         setSucceeded(true)
         setSubmitting(false)
         return
@@ -178,7 +178,7 @@ function CheckoutForm({
 
       setSubmitting(false)
       setError({
-        message: 'That payment was not completed. Please try again or use a different card.',
+        message: 'O pagamento não foi concluído. Tente novamente ou use outro cartão.',
         retryable: true,
       })
     },
@@ -212,7 +212,7 @@ function CheckoutForm({
                 className="text-sm font-medium underline"
                 onClick={() => window.location.reload()}
               >
-                Reload and try again
+                Recarregar e tentar novamente
               </button>
             )}
           </div>
@@ -223,12 +223,12 @@ function CheckoutForm({
         {submitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Processing payment
+            Processando pagamento
           </>
         ) : (
           <>
             <CreditCard className="mr-2 h-4 w-4" />
-            Pay{' '}
+            Pagar{' '}
             {formatAmount(balanceDue, currency)}
           </>
         )}
@@ -236,16 +236,16 @@ function CheckoutForm({
 
       <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
         <ShieldCheck className="h-3.5 w-3.5" />
-        Payments are processed by Stripe. Billr never sees your card details.
+        Os pagamentos são processados pela Stripe. O Faturador nunca vê os dados do seu cartão.
       </p>
     </form>
   )
 }
 
 /**
- * Maps a Stripe.js error into copy the payer can act on. Card declines,
- * validation problems and connectivity failures need different responses,
- * and Stripe's own decline messages are already payer-appropriate.
+ * Converte erros da Stripe.js em mensagens úteis para quem paga. Recusas de cartão,
+ * problemas de validação e falhas de conexão exigem respostas diferentes,
+ * e as próprias mensagens de recusa da Stripe já são adequadas para o pagador.
  */
 function describeStripeError(error: StripeError): { message: string; retryable: boolean } {
   switch (error.type) {
@@ -253,29 +253,29 @@ function describeStripeError(error: StripeError): { message: string; retryable: 
       return {
         message:
           error.message ||
-          'Your card was declined. Please check the details or try a different card.',
+          'Seu cartão foi recusado. Confira os dados ou tente outro cartão.',
         retryable: true,
       }
     case 'validation_error':
-      return { message: error.message || 'Please check the payment details.', retryable: true }
+      return { message: error.message || 'Confira os dados do pagamento.', retryable: true }
     case 'api_connection_error':
       return {
-        message: 'We could not reach Stripe. Check your connection and try again.',
+        message: 'Não foi possível conectar à Stripe. Confira sua conexão e tente novamente.',
         retryable: true,
       }
     default:
       return {
-        message: error.message || 'Something went wrong taking that payment.',
+        message: error.message || 'Ocorreu um erro ao processar o pagamento.',
         retryable: false,
       }
   }
 }
 
 /**
- * Optimistic post-charge state. The money has moved but Billr will not mark
- * the invoice paid until the webhook says so, so this polls the public
- * invoice until reconciliation lands rather than asserting a paid state the
- * ledger has not recorded.
+ * Estado otimista após a cobrança. O dinheiro já foi movimentado, mas o Faturador não marcará
+ * a fatura como paga até receber a confirmação do webhook; por isso consulta a página pública
+ * da fatura até a reconciliação ocorrer, sem afirmar um pagamento que o
+ * livro-razão ainda não registrou.
  */
 function ConfirmingNotice({
   publicId,
@@ -324,8 +324,8 @@ function ConfirmingNotice({
       <div className="flex items-start gap-3 rounded-lg bg-green-50 p-4 text-green-800">
         <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
         <div>
-          <p className="font-medium">Payment confirmed</p>
-          <p className="text-sm">This invoice is now marked as paid. Thank you.</p>
+          <p className="font-medium">Pagamento confirmado</p>
+          <p className="text-sm">Esta fatura está marcada como paga. Obrigado.</p>
         </div>
       </div>
     )
@@ -335,10 +335,10 @@ function ConfirmingNotice({
     <div className="flex items-start gap-3 rounded-lg bg-green-50 p-4 text-green-800">
       <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin" />
       <div>
-        <p className="font-medium">Payment received, confirming now</p>
+        <p className="font-medium">Pagamento recebido, aguardando confirmação</p>
         <p className="text-sm">
-          Your card has been charged. We are waiting on Stripe to confirm, which usually takes a
-          few seconds. You can safely close this page.
+          Seu cartão foi cobrado. Estamos aguardando a confirmação da Stripe, que normalmente leva
+          alguns segundos. Você pode fechar esta página com segurança.
         </p>
       </div>
     </div>

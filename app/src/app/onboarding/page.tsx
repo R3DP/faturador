@@ -15,8 +15,8 @@ import { createClient } from '@/lib/supabase/client'
 import { SIGNUP_CLOSED_MESSAGE } from '@/lib/auth/signup-closed'
 
 const onboardingSchema = z.object({
-  name: z.string().min(1, 'Business name is required'),
-  email: z.string().email('Invalid email').optional().or(z.literal('')),
+  name: z.string().min(1, 'O nome da empresa é obrigatório'),
+  email: z.string().email('E-mail inválido').optional().or(z.literal('')),
 })
 
 type OnboardingForm = z.infer<typeof onboardingSchema>
@@ -36,7 +36,7 @@ export default function OnboardingPage() {
     defaultValues: { name: '', email: '' },
   })
 
-  // This route lives outside the (app) group, so it does its own auth check
+  // Esta rota fica fora do grupo (app), então faz a própria verificação de autenticação
   useEffect(() => {
     async function checkAuth() {
       const supabase = createClient()
@@ -76,11 +76,11 @@ export default function OnboardingPage() {
     }
 
     if (!business) {
-      setError('Something went wrong creating your business. Please try again.')
+      setError('Ocorreu um erro ao criar sua empresa. Tente novamente.')
       return
     }
 
-    // The (app) BusinessProvider mounts fresh on navigation and fetches businesses
+    // O BusinessProvider do grupo (app) é montado novamente na navegação e busca as empresas
     router.push('/dashboard')
     router.refresh()
   }
@@ -95,7 +95,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Simple header with logo */}
+      {/* Cabeçalho simples com logotipo */}
       <header className="border-b border-border/40">
         <div className="mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
           <Link href="/">
@@ -104,7 +104,7 @@ export default function OnboardingPage() {
         </div>
       </header>
 
-      {/* Main content */}
+      {/* Conteúdo principal */}
       <main className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
         <div className="w-full max-w-sm">
           <div className="text-center">
@@ -112,11 +112,10 @@ export default function OnboardingPage() {
               <Building2 className="h-6 w-6 text-primary" />
             </div>
             <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-              Welcome to Billr
+              Bem-vindo ao Faturador
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Set up your business to start invoicing. You can fill in the
-              details later in settings.
+              Cadastre sua empresa para começar a emitir faturas. Você poderá preencher os dados depois, nas configurações.
             </p>
           </div>
 
@@ -128,11 +127,11 @@ export default function OnboardingPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="name">Business name</Label>
+              <Label htmlFor="name">Nome da empresa</Label>
               <Input
                 id="name"
                 type="text"
-                placeholder="Acme Design Studio"
+                placeholder="Estúdio de Design Acme"
                 autoFocus
                 {...register('name')}
               />
@@ -143,8 +142,8 @@ export default function OnboardingPage() {
 
             <div className="space-y-2">
               <Label htmlFor="email">
-                Business email{' '}
-                <span className="font-normal text-muted-foreground">(optional)</span>
+                E-mail da empresa{' '}
+                <span className="font-normal text-muted-foreground">(opcional)</span>
               </Label>
               <Input
                 id="email"
@@ -159,7 +158,7 @@ export default function OnboardingPage() {
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create business
+              Criar empresa
             </Button>
           </form>
         </div>

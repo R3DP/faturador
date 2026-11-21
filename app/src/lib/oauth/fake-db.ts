@@ -1,22 +1,22 @@
 /**
- * TEST-ONLY in-memory stand-in for the slice of the Supabase query builder
- * src/lib/oauth/store.ts uses. Not imported by any runtime code path.
+ * Substituto em memória, SOMENTE PARA TESTES, da parte do construtor de consultas
+ * do Supabase usada por src/lib/oauth/store.ts. Não é importado em nenhum fluxo de execução.
  *
- * It exists because the interesting parts of the OAuth server are exactly the
- * ones a mocked-out store would paper over: a code being redeemable exactly
- * once, a rotated refresh token revoking its whole family, a superseded access
- * key being marked revoked. Those are properties of the QUERIES, so the tests
- * run the real store against real rows held in a JavaScript object.
+ * Ele existe porque as partes mais importantes do servidor OAuth são justamente
+ * aquelas que um armazenamento simulado esconderia: um código resgatável exatamente
+ * uma vez, um token de renovação rotacionado que revoga toda a família e uma chave de
+ * acesso substituída marcada como revogada. Essas propriedades pertencem às CONSULTAS,
+ * então os testes executam o armazenamento real sobre linhas reais mantidas em um objeto JavaScript.
  *
- * Supported: from(table).select/insert/update/delete chained with
- * eq/is/in/lt/order/limit, terminated by await, .maybeSingle() or .single().
+ * Suportados: from(table).select/insert/update/delete encadeados com
+ * eq/is/in/lt/order/limit, finalizados com await, .maybeSingle() ou .single().
  *
- * It does NOT resolve PostgREST resource embedding, and that is deliberate.
- * Embedding `other_table(column)` needs SELECT on `other_table` for the
- * QUERYING role, which several of these tables revoke outright, so a fake that
- * happily resolved a join would report a query working that the database
- * refuses. Every requested column list is recorded in `selects` instead, so a
- * test can assert what was actually asked for.
+ * Ele NÃO resolve a inclusão de recursos do PostgREST, intencionalmente.
+ * Incluir `other_table(column)` exige SELECT em `other_table` para a função que
+ * faz a CONSULTA; várias dessas tabelas revogam esse acesso. Um substituto que
+ * aceitasse uma junção indicaria como válida uma consulta que o banco rejeitaria.
+ * Em vez disso, cada lista de colunas solicitada é registrada em `selects`, permitindo
+ * que o teste confirme o que foi realmente solicitado.
  */
 import { randomUUID } from 'node:crypto'
 
@@ -46,9 +46,9 @@ function matches(row: Row, filters: Filter[]): boolean {
 
 export interface FakeDb {
   tables: Record<string, Row[]>
-  /** Every column list this fake was asked for, in order. */
+  /** Cada lista de colunas solicitada a este substituto, na ordem em que foi pedida. */
   selects: { table: string; columns: string }[]
-  /** Cast at the call site; it only implements what the store calls. */
+  /** Conversão no ponto de uso; implementa somente o que o armazenamento chama. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   client: any
 }
@@ -140,7 +140,7 @@ export function createFakeDb(seed: Record<string, Row[]> = {}): FakeDb {
   return { tables, selects, client }
 }
 
-/** Rate limiter stub that always allows, so limits never mask a real failure. */
+/** Substituto do limitador de requisições que sempre permite, para que os limites não ocultem uma falha real. */
 export function allowAllRateLimitStore() {
   return {
     rpc: async () => ({

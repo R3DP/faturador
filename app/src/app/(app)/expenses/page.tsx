@@ -99,7 +99,7 @@ export default function ExpensesPage() {
     return matchesSearch && matchesCategory && matchesBilled
   })
 
-  // Calculate totals
+  // Calcula os totais
   const totalExpenses = filteredExpenses.filter(e=>e.currency===currentBusiness?.default_currency).reduce((sum, e) => sum + e.amount, 0)
   const billableAmount = filteredExpenses.filter(e=>(e.currency || currentBusiness?.default_currency)===currentBusiness?.default_currency)
     .filter((e) => e.is_billable && !e.is_billed)
@@ -130,18 +130,18 @@ export default function ExpensesPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Expenses"
-        description="Track business expenses and billable costs"
+        title="Despesas"
+        description="Acompanhe as despesas da empresa e os custos faturáveis"
       >
         <Button asChild>
           <Link href="/expenses/new">
             <Plus className="mr-2 h-4 w-4" />
-            Add Expense
+            Adicionar despesa
           </Link>
         </Button>
       </PageHeader>
 
-      {/* Stats */}
+      {/* Estatísticas */}
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <Card>
           <CardContent className="pt-6">
@@ -150,7 +150,7 @@ export default function ExpensesPage() {
                 <Receipt className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Expenses ({currentBusiness?.default_currency})</p>
+                <p className="text-sm text-muted-foreground">Total de despesas ({currentBusiness?.default_currency})</p>
                 <p className="text-2xl font-bold tabular-nums">{formatCurrency(totalExpenses)}</p>
               </div>
             </div>
@@ -163,7 +163,7 @@ export default function ExpensesPage() {
                 <TrendingUp className="h-5 w-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Unbilled Expenses</p>
+                <p className="text-sm text-muted-foreground">Despesas não faturadas</p>
                 <p className="text-2xl font-bold tabular-nums">{formatCurrency(billableAmount)}</p>
               </div>
             </div>
@@ -171,12 +171,12 @@ export default function ExpensesPage() {
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Filtros */}
       <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1 sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search expenses..."
+            placeholder="Buscar despesas..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -184,10 +184,10 @@ export default function ExpensesPage() {
         </div>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All categories" />
+            <SelectValue placeholder="Todas as categorias" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="all">Todas as categorias</SelectItem>
             {uniqueCategories.map((cat) => (
               <SelectItem key={cat} value={cat}>
                 {cat}
@@ -197,17 +197,17 @@ export default function ExpensesPage() {
         </Select>
         <Select value={billedFilter} onValueChange={setBilledFilter}>
           <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="All" />
+            <SelectValue placeholder="Todos" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="unbilled">Unbilled</SelectItem>
-            <SelectItem value="billed">Billed</SelectItem>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="unbilled">Não faturadas</SelectItem>
+            <SelectItem value="billed">Faturado</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Expenses List */}
+      {/* Lista de despesas */}
       <div className="mt-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -218,15 +218,15 @@ export default function ExpensesPage() {
             <CardContent className="py-12">
               <EmptyState
                 icon={Receipt}
-                title={searchQuery || categoryFilter !== 'all' ? 'No expenses found' : 'No expenses yet'}
+                title={searchQuery || categoryFilter !== 'all' ? 'Nenhuma despesa encontrada' : 'Nenhuma despesa cadastrada'}
                 description={
                   searchQuery || categoryFilter !== 'all'
-                    ? 'Try adjusting your filters'
-                    : 'Track your business expenses for better accounting'
+                    ? 'Ajuste os filtros da busca'
+                    : 'Acompanhe as despesas da sua empresa para manter a contabilidade em dia.'
                 }
                 action={
                   !searchQuery && categoryFilter === 'all'
-                    ? { label: 'Add Expense', href: '/expenses/new' }
+                    ? { label: 'Adicionar despesa', href: '/expenses/new' }
                     : undefined
                 }
               />
@@ -238,12 +238,12 @@ export default function ExpensesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Fornecedor</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead>Situação</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -267,14 +267,14 @@ export default function ExpensesPage() {
                       </TableCell>
                       <TableCell>
                         {!expense.is_billable ? (
-                          <Badge variant="secondary">Non-billable</Badge>
+                          <Badge variant="secondary">Não faturável</Badge>
                         ) : expense.is_billed ? (
                           <Badge variant="secondary" className="bg-green-100 text-green-700">
-                            Billed
+                            Faturado
                           </Badge>
                         ) : (
                           <Badge variant="secondary" className="bg-amber-100 text-amber-700">
-                            Unbilled
+                            Não faturadas
                           </Badge>
                         )}
                       </TableCell>
@@ -289,7 +289,7 @@ export default function ExpensesPage() {
                             <DropdownMenuItem asChild>
                               <Link href={`/expenses/${expense.id}`}>
                                 <Pencil className="mr-2 h-4 w-4" />
-                                Edit
+                                Editar
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
@@ -297,7 +297,7 @@ export default function ExpensesPage() {
                               className="text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              Excluir
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -311,21 +311,21 @@ export default function ExpensesPage() {
         )}
       </div>
 
-      {/* Delete Confirmation */}
+      {/* Confirmação de exclusão */}
       <Dialog open={!!deleteExpense} onOpenChange={() => setDeleteExpense(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Expense</DialogTitle>
+            <DialogTitle>Excluir despesa</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this expense? This action cannot be undone.
+              Tem certeza de que deseja excluir esta despesa? Esta ação não pode ser desfeita.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteExpense(null)}>
-              Cancel
+              Cancelar
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
-              Delete
+              Excluir
             </Button>
           </DialogFooter>
         </DialogContent>

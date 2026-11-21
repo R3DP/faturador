@@ -19,12 +19,12 @@ interface DashboardStats {
 }
 
 /**
- * Agreed work that has become billable and has not been invoiced yet.
+ * Trabalho acordado que já pode ser faturado, mas ainda não foi incluído em uma fatura.
  *
- * This is the reminder engagements exist for: the second half of a job that
- * shipped four months ago is exactly the invoice people forget. It is read off
- * engagement_summary rather than counted here, and only the business default
- * currency is added up, because Billr never converts money on its own.
+ * Este é o motivo da existência dos contratos: a segunda metade de um trabalho que
+ * foi entregue há quatro meses é justamente a fatura que as pessoas esquecem. O dado vem de
+ * engagement_summary, em vez de ser contado aqui, e apenas a moeda padrão da empresa
+ * é somada, pois o Faturador não faz conversão de moeda.
  */
 interface ReadyToBill {
   count: number
@@ -74,9 +74,9 @@ export default function DashboardPage() {
       })
       if (!error && summary) setStats(summary as unknown as DashboardStats)
 
-      // The scheduled-date sweep runs on read paths rather than on a cron,
-      // so opening the dashboard is what makes an entry
-      // whose date has passed count as ready.
+      // A verificação de vencimentos do cronograma ocorre nas consultas, não por cron;
+      // então é ao abrir o painel que um lançamento
+      // com data vencida passa a ser considerado pronto.
       await supabase.rpc('promote_due_entries', { p_business_id: currentBusiness.id })
       const { data: engagements } = await supabase
         .from('engagement_summary')
@@ -124,15 +124,15 @@ export default function DashboardPage() {
   if (!currentBusiness) {
     return (
       <div className="flex h-full flex-col items-center justify-center p-8">
-        <h2 className="text-xl font-semibold">Welcome to Billr!</h2>
+        <h2 className="text-xl font-semibold">Boas-vindas ao Faturador!</h2>
         <p className="mt-2 text-center text-muted-foreground">
-          Get started by creating your first business.
+          Comece criando sua primeira empresa.
         </p>
         <a
           href="/onboarding"
           className="mt-4 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
-          Create Business
+          Criar empresa
         </a>
       </div>
     )
@@ -141,41 +141,41 @@ export default function DashboardPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Overview"
-        description={`A clear view of ${currentBusiness.name}.`}
+        title="Visão geral"
+        description={`Visão clara de ${currentBusiness.name}.`}
       >
         <Button asChild>
           <Link href="/invoices/new">
             <Plus size={14} className="mr-2" />
-            New invoice
+            Nova fatura
           </Link>
         </Button>
       </PageHeader>
-      {/* Stats */}
+      {/* Estatísticas */}
       <div className="mt-6 grid grid-cols-2 divide-x divide-zinc-100 overflow-hidden rounded-xl border border-zinc-200 lg:grid-cols-5">
         <StatsCard
-          title="Recorded payments"
+          title="Pagamentos recebidos"
           value={isLoading ? '…' : formatCurrency(stats.totalRevenue)}
           icon={DollarSign}
         />
         <StatsCard
-          title="Outstanding"
+          title="Em aberto"
           value={isLoading ? '…' : formatCurrency(stats.outstanding)}
           icon={Clock}
         />
         <StatsCard
-          title="Active clients"
+          title="Clientes ativos"
           value={isLoading ? '…' : stats.activeClients.toString()}
           icon={Users}
         />
         <StatsCard
-          title="Overdue invoices"
+          title="Faturas atrasadas"
           value={isLoading ? '…' : stats.overdueCount.toString()}
           icon={AlertCircle}
         />
         <Link href="/engagements?ready=1" className="block hover:bg-zinc-50">
           <StatsCard
-            title="Ready to bill"
+            title="Pronto para faturar"
             value={
               isLoading
                 ? '…'
@@ -191,22 +191,22 @@ export default function DashboardPage() {
       {!isLoading && readyToBill.count > 0 && (
         <p className="mt-3 text-[11px] text-zinc-500">
           {readyToBill.count === 1
-            ? 'One agreed schedule entry is ready to invoice.'
-            : `${readyToBill.count} agreed schedule entries are ready to invoice.`}{' '}
-          {readyToBill.otherCurrencies && 'Some are in another currency. '}
+            ? 'Um lançamento do cronograma acordado está pronto para faturar.'
+            : `${readyToBill.count} lançamentos do cronograma acordado estão prontos para faturar.`}{' '}
+          {readyToBill.otherCurrencies && 'Alguns estão em outra moeda. '}
           <Link href="/engagements?ready=1" className="underline">
-            Review them
+            Revisar
           </Link>
           .
         </p>
       )}
 
       <p className="mt-3 text-[11px] text-zinc-400">
-        Financial totals in {currentBusiness.default_currency}. View other
-        currencies in Reports.
+        Totais financeiros em {currentBusiness.default_currency}. Veja outras
+        moedas em Relatórios.
       </p>
 
-      {/* Content Grid */}
+      {/* Grade de conteúdo */}
       <div className="mt-9 grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_280px]">
         <RecentInvoices invoices={recentInvoices} />
         <QuickActions />

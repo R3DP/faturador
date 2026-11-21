@@ -9,23 +9,23 @@ import { engagementErrorMessage } from '@/lib/engagements/errors'
 import { todayISO } from '@/lib/dates'
 
 /**
- * Engagement tools: the agreed total and the schedule it is billed off.
+ * Ferramentas de contratos: o valor acordado e o cronograma de cobrança.
  *
- * Every write goes through a SECURITY DEFINER RPC, which
- * owns the rules the tool layer must not be trusted with: it re-checks the
- * key's permission in SQL, expands the schedule server side so the entries sum
- * to exactly the total, is idempotent on request_id, and refuses to touch
- * money that has already been invoiced.
+ * Toda gravação passa por uma RPC SECURITY DEFINER, responsável pelas regras
+ * que não devem ficar a cargo da camada de ferramentas: ela verifica novamente
+ * a permissão da chave no SQL, expande o cronograma no servidor para que os itens
+ * somem exatamente o valor total, é idempotente por request_id e impede alterações
+ * em valores que já foram faturados.
  *
- * NOTHING HERE SENDS ANYTHING. An engagement is a plan, not a message: no
- * email leaves Billr because of any tool in this file, and the schedule
- * becoming billable is an entry changing status, not a client being contacted.
+ * NADA AQUI ENVIA QUALQUER COISA. Um contrato é um plano, não uma mensagem: nenhuma
+ * ferramenta deste arquivo envia e-mail pelo Faturador, e um item do cronograma ficar
+ * faturável significa que seu status mudou, não que o cliente foi contatado.
  */
 
 const LIST_LIMIT_DEFAULT = 20
 const READY_LIMIT_DEFAULT = 50
 
-const DATE_FIELD = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+const DATE_FIELD = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use o formato YYYY-MM-DD')
 
 interface SummaryRow {
   engagement_id: string
@@ -86,14 +86,23 @@ interface EngagementPayload {
 }
 
 /**
- * Turns the RPC's error codes into sentences a calling agent
- * can act on. The vocabulary is shared with the app's server actions through
- * src/lib/engagements/errors.ts, so a person and an agent are told the same
- * thing about the same rule. Anything unrecognised falls back to the caller's
- * generic message rather than relaying a Postgres error.
+ * Converte os códigos de erro da RPC em mensagens que o agente chamador
+ * pode seguir. O vocabulário é compartilhado com as ações do servidor do app por
+ * src/lib/engagements/errors.ts, para que pessoas e agentes recebam a mesma
+ * explicação para cada regra. Códigos desconhecidos usam a mensagem genérica
+ * fornecida pelo chamador, em vez de repassar um erro do Postgres.
  */
 function engagementError(error: { message?: string } | null, fallback: string): string {
-  const message = engagementErrorMessage(error?.message)
+  const code = error?.message ?? ''
+  const localizedMessages: Record<string, string> = {
+    estimate_already_converted: 'Esta estimativa já foi convertida em uma fatura.',
+    estimate_already_an_engagement: 'Esta estimativa já foi convertida em um contrato.',
+    entry_already_invoiced: 'Este item do cronograma já foi faturado.',
+    engagement_closed: 'Este contrato já foi concluído ou cancelado.',
+  }
+  if (localizedMessages[code]) return localizedMessages[code]
+
+  const message = engagementErrorMessage(code)
   if (message) return message
   console.error('engagements (rpc):', error)
   return fallback
@@ -117,7 +126,7 @@ function entryView(entry: EntryRow, currency: string) {
   }
 }
 
-/** One answer shape for every write, so an agent reads one format. */
+/** Usa o mesmo formato de resposta em todas as gravações, facilitando a leitura pelo agente. */
 function payloadResult(data: unknown, summary: string) {
   const payload = data as unknown as EngagementPayload
   const currency = payload.engagement.currency
@@ -146,10 +155,10 @@ function payloadResult(data: unknown, summary: string) {
 }
 
 /**
- * The scheduled-date sweep, run before a read answers. There is no cron: an
- * entry due on a date becomes billable the first time anybody looks. Failures
- * are logged and swallowed, because a sweep that cannot run is not a reason to
- * refuse to show somebody their engagements.
+ * Atualização dos itens com data programada, executada antes de responder a uma
+ * consulta. Não há cron: um item com vencimento por data fica faturável na
+ * primeira consulta. Falhas são registradas e ignoradas, pois não são motivo
+ * para deixar de mostrar os contratos.
  */
 async function sweep(ctx: McpCtx, businessIds: string[]): Promise<void> {
   await Promise.all(
@@ -163,7 +172,7 @@ async function sweep(ctx: McpCtx, businessIds: string[]): Promise<void> {
   )
 }
 
-/** Client names for a set of ids, scoped to the businesses already resolved. */
+/** Busca nomes de clientes por ID, limitando a consulta às empresas já resolvidas. */
 async function clientNames(ctx: McpCtx, businessIds: string[], clientIds: string[]) {
   const names = new Map<string, string>()
   if (clientIds.length === 0) return names
@@ -177,37 +186,37 @@ async function clientNames(ctx: McpCtx, businessIds: string[], clientIds: string
 }
 
 const scheduleEntryInput = z.object({
-  label: z.string().max(200).optional().describe('What this payment is for, for example "Deposit" or "On delivery".'),
+  label: z.string().max(200).optional().describe('Identificação desta cobrança, por exemplo "Sinal" ou "Na entrega".'),
   amount: z
     .number()
     .positive()
     .optional()
-    .describe('Amount for this entry. Required for billing_mode "milestones" and "manual"; the entry amounts must add up to exactly the engagement total.'),
+    .describe('Valor deste item. Obrigatório para billing_mode "milestones" e "manual"; a soma dos valores dos itens deve ser exatamente igual ao total do contrato.'),
   percent: z
     .number()
     .positive()
     .max(100)
     .optional()
-    .describe('Share of the total for this entry, 0 to 100. Required for billing_mode "percent_split"; the percentages must add up to exactly 100.'),
+    .describe('Percentual do valor total deste item, de 0 a 100. Obrigatório para billing_mode "percent_split"; a soma dos percentuais deve ser exatamente 100.'),
   due_rule: z
     .enum(DUE_RULES)
     .optional()
     .describe(
-      'When this entry becomes billable: "on_start" when the engagement is started, "on_complete" when it is completed, "on_milestone" when you call mark_milestone_complete, "on_date" when its date passes, or "manual" for one a person decides about. Defaults to on_start for the first entry, on_complete for the last, and on_milestone in between.'
+      'Quando este item fica faturável: "on_start" quando o contrato é iniciado, "on_complete" quando é concluído, "on_milestone" quando você chama mark_milestone_complete, "on_date" quando chega a data definida ou "manual" quando uma pessoa decide. Por padrão, usa on_start no primeiro item, on_complete no último e on_milestone nos itens intermediários.'
     ),
-  due_on: DATE_FIELD.optional().describe('The date an "on_date" entry becomes billable, YYYY-MM-DD.'),
+  due_on: DATE_FIELD.optional().describe('Data em que um item "on_date" fica faturável, no formato YYYY-MM-DD.'),
 })
 
 export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
   // -------------------------------------------------------------------------
-  // Reads
+  // Consultas
   // -------------------------------------------------------------------------
   server.registerTool(
     'list_engagements',
     {
-      title: 'List Engagements',
+      title: 'Listar contratos',
       description:
-        'List engagements: agreed pieces of work with a total and a payment schedule, for example "12,000 for the website rebuild, 50% up front and 50% on delivery". Use this to answer "what have we agreed with this client" or "what is still unbilled on this project". Each one reports how much has been billed, how much is left, and how many schedule entries are ready to bill now. Read-only, and nothing in the engagement tools ever sends anything to a client.',
+        'Lista contratos: trabalhos acordados com valor total e cronograma de cobrança, por exemplo, "12.000 para reformar o site, 50% de entrada e 50% na entrega". Use para responder "o que combinamos com este cliente?" ou "quanto ainda falta faturar neste projeto?". Cada contrato informa quanto já foi faturado, quanto falta e quantos itens do cronograma estão prontos para faturar. A consulta não altera dados; nenhuma ferramenta de contratos envia qualquer coisa ao cliente.',
       inputSchema: z.object({
         offset: z
           .number()
@@ -215,22 +224,22 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
           .min(0)
           .max(1000000)
           .optional()
-          .describe('Page offset. Start at 0, then use next_offset until it is null. Keep other filters unchanged.'),
+          .describe('Deslocamento da página. Comece em 0 e use next_offset até que seja null. Mantenha os demais filtros inalterados.'),
         business_id: z
           .string()
           .uuid()
           .optional()
-          .describe('Id of the business whose engagements to list. Omit to list across every business in scope.'),
-        client_id: z.string().uuid().optional().describe('Filter to engagements for this client only.'),
+          .describe('ID da empresa cujos contratos serão listados. Omita para listar todas as empresas dentro do escopo.'),
+        client_id: z.string().uuid().optional().describe('Filtra os contratos para mostrar apenas os deste cliente.'),
         status: z
           .enum(ENGAGEMENT_STATUSES)
           .optional()
-          .describe('Filter by status: draft, active, paused, completed, or cancelled.'),
+          .describe('Filtra pelo status: draft, active, paused, completed ou cancelled.'),
         has_ready_to_bill: z
           .boolean()
           .optional()
-          .describe('True to list only engagements with at least one schedule entry ready to bill right now.'),
-        limit: z.number().int().min(1).max(100).optional().describe('Max engagements to return (default 20, max 100).'),
+          .describe('Use true para listar apenas contratos com pelo menos um item do cronograma pronto para faturar agora.'),
+        limit: z.number().int().min(1).max(100).optional().describe('Número máximo de contratos a retornar (padrão: 20; máximo: 100).'),
       }),
     },
     async ({ offset, business_id, client_id, status, has_ready_to_bill, limit }) => {
@@ -239,7 +248,7 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
         try {
           businessIds = [ctx.db.resolveBusinessId(business_id)]
         } catch (err) {
-          return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+          return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
         }
       }
 
@@ -264,7 +273,7 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
       const { data, error } = await query
       if (error) {
         console.error('list_engagements:', error)
-        return errorResult('Could not list engagements.')
+        return errorResult('Não foi possível listar os contratos.')
       }
 
       const rows = (data ?? []) as SummaryRow[]
@@ -296,7 +305,7 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
       return jsonResult({
         offset: resolvedOffset,
         next_offset: truncated ? resolvedOffset + resolvedLimit : null,
-        summary: `${engagements.length} engagement${engagements.length === 1 ? '' : 's'}${status ? ` with status "${status}"` : ''}, ${readyTotal} schedule ${readyTotal === 1 ? 'entry' : 'entries'} ready to bill${truncated ? truncationNote(resolvedLimit) : ''}`,
+        summary: `${engagements.length} ${engagements.length === 1 ? 'contrato' : 'contratos'}${status ? ` com status "${status}"` : ''}, ${readyTotal} ${readyTotal === 1 ? 'item do cronograma pronto' : 'itens do cronograma prontos'} para faturar${truncated ? truncationNote(resolvedLimit) : ''}`,
         engagements,
       })
     }
@@ -305,14 +314,14 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'get_engagement',
     {
-      title: 'Get Engagement',
+      title: 'Consultar contrato',
       description:
-        'Read one engagement in full: the agreed total, what has been billed, what is left, and every schedule entry with its status, its due rule and the invoice it became. Use this before billing anything, so you bill the entries that are ready and not the ones that are already invoiced. Read-only, and nothing is sent to anyone.',
+        'Consulta todos os dados de um contrato: valor acordado, quanto já foi faturado, quanto falta e cada item do cronograma, com status, regra de vencimento e fatura associada. Consulte antes de faturar para selecionar os itens prontos, e não os que já foram faturados. A consulta não altera dados nem envia qualquer coisa.',
       inputSchema: z.object({
         engagement_id: z
           .string()
           .uuid()
-          .describe('Id of the engagement, from list_engagements or create_engagement.'),
+          .describe('ID do contrato, obtido em list_engagements ou create_engagement.'),
       }),
     },
     async ({ engagement_id }) => {
@@ -327,8 +336,8 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
         .maybeSingle()
 
       if (error) console.error('get_engagement (summary):', error)
-      // Missing and out of scope answer identically: no existence oracle.
-      if (error || !data) return errorResult('Engagement not found')
+      // IDs inexistentes e fora do escopo recebem a mesma resposta: não se revela se o registro existe.
+      if (error || !data) return errorResult('Contrato não encontrado')
 
       const summary = data as SummaryRow
 
@@ -347,7 +356,7 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
 
       if (entriesError) {
         console.error('get_engagement (entries):', entriesError)
-        return errorResult('Could not load the schedule for this engagement.')
+        return errorResult('Não foi possível carregar o cronograma deste contrato.')
       }
 
       const rows = (entries ?? []) as EntryRow[]
@@ -355,7 +364,7 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
       const remaining = formatCurrency(summary.amount_remaining, summary.currency)
 
       return jsonResult({
-        summary: `${summary.name} for ${names.get(summary.client_id) ?? 'unknown client'}: ${formatCurrency(summary.total, summary.currency)} agreed, ${billed} billed, ${remaining} remaining (${summary.status}). ${summary.ready_count} schedule ${summary.ready_count === 1 ? 'entry is' : 'entries are'} ready to bill.`,
+        summary: `${summary.name} para ${names.get(summary.client_id) ?? 'cliente desconhecido'}: total acordado: ${formatCurrency(summary.total, summary.currency)}, ${billed} faturados, ${remaining} restantes (${summary.status}). ${summary.ready_count} ${summary.ready_count === 1 ? 'item do cronograma está' : 'itens do cronograma estão'} prontos para faturar.`,
         engagement: {
           id: summary.engagement_id,
           business_id: summary.business_id,
@@ -383,9 +392,9 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'list_ready_to_bill',
     {
-      title: 'List Ready to Bill',
+      title: 'Listar itens prontos para faturar',
       description:
-        'List every engagement schedule entry that is ready to bill right now, across all clients. This is the "what should I invoice today" list: deposits on engagements that have started, milestones marked complete, dated payments whose date has passed, and final payments on completed engagements. Each entry reports its due_on date and an overdue_on_date flag when that date has already gone by. Nothing here has been invoiced yet, and nothing is sent to anyone by looking. Pass the entry_ids you want to bill to create_invoice as engagement_entry_ids. Read-only.',
+        'Lista todos os itens de cronogramas de contratos que estão prontos para faturar agora, para todos os clientes. É a lista de "o que devo faturar hoje": entradas de contratos iniciados, etapas marcadas como concluídas, cobranças com data já vencida e parcelas finais de contratos concluídos. Cada item informa a data due_on e indica overdue_on_date quando ela já passou. Nada desta lista foi faturado, e a consulta não envia qualquer coisa. Para faturar, passe os entry_ids desejados a create_invoice como engagement_entry_ids. A consulta não altera dados.',
       inputSchema: z.object({
         offset: z
           .number()
@@ -393,14 +402,14 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
           .min(0)
           .max(1000000)
           .optional()
-          .describe('Page offset. Start at 0, then use next_offset until it is null. Keep other filters unchanged.'),
+          .describe('Deslocamento da página. Comece em 0 e use next_offset até que seja null. Mantenha os demais filtros inalterados.'),
         business_id: z
           .string()
           .uuid()
           .optional()
-          .describe('Id of the business to look at. Omit to look across every business in scope.'),
-        client_id: z.string().uuid().optional().describe('Filter to one client only.'),
-        limit: z.number().int().min(1).max(200).optional().describe('Max entries to return (default 50, max 200).'),
+          .describe('ID da empresa a consultar. Omita para incluir todas as empresas dentro do escopo.'),
+        client_id: z.string().uuid().optional().describe('Filtra para mostrar somente um cliente.'),
+        limit: z.number().int().min(1).max(200).optional().describe('Número máximo de itens a retornar (padrão: 50; máximo: 200).'),
       }),
     },
     async ({ offset, business_id, client_id, limit }) => {
@@ -409,7 +418,7 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
         try {
           businessIds = [ctx.db.resolveBusinessId(business_id)]
         } catch (err) {
-          return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+          return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
         }
       }
 
@@ -433,7 +442,7 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
       const { data, error } = await query
       if (error) {
         console.error('list_ready_to_bill:', error)
-        return errorResult('Could not list the work that is ready to bill.')
+        return errorResult('Não foi possível listar os trabalhos prontos para faturar.')
       }
 
       type Joined = EntryRow & {
@@ -449,11 +458,11 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
         rows.map((row) => row.engagement?.client_id).filter((id): id is string => !!id)
       )
 
-      // An entry whose date has passed is already ready to bill by the time it
-      // is read (the sweep above is what promoted it), so "overdue" here means
-      // the money has been billable since that date and still is not on an
-      // invoice. It is a flag rather than a separate list, so an agent sorting
-      // by urgency does not have to work the dates out itself.
+      // Quando a consulta encontra um item cuja data já passou, ele já está pronto
+      // para faturar (a atualização acima mudou seu status). Portanto, "overdue"
+      // significa que o valor está faturável desde aquela data e ainda não consta
+      // em uma fatura. É um indicador, não uma lista separada, para que o agente
+      // possa ordenar por urgência sem precisar calcular as datas.
       const today = todayISO()
       const entries = rows.map((row) => ({
         entry_id: row.id,
@@ -485,7 +494,7 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
       return jsonResult({
         offset: resolvedOffset,
         next_offset: truncated ? resolvedOffset + resolvedLimit : null,
-        summary: `${entries.length} schedule ${entries.length === 1 ? 'entry is' : 'entries are'} ready to bill${totals.length ? `, worth ${totals.join(' plus ')}` : ''}${overdue > 0 ? `, ${overdue} of them past a date that has already passed` : ''}${truncated ? truncationNote(resolvedLimit) : ''}. Pass their entry_ids to create_invoice as engagement_entry_ids to bill them.`,
+        summary: `${entries.length} ${entries.length === 1 ? 'item do cronograma pronto' : 'itens do cronograma prontos'} para faturar${totals.length ? `, no valor de ${totals.join(' mais ')}` : ''}${overdue > 0 ? `, ${overdue} com data de vencimento já passada` : ''}${truncated ? truncationNote(resolvedLimit) : ''}. Para faturá-los, passe seus entry_ids a create_invoice como engagement_entry_ids.`,
         overdue_count: overdue,
         entries,
       })
@@ -493,63 +502,63 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
   )
 
   // -------------------------------------------------------------------------
-  // Writes
+  // Gravações
   // -------------------------------------------------------------------------
   server.registerTool(
     'create_engagement',
     {
-      title: 'Create Engagement',
+      title: 'Criar contrato',
       description:
-        'Record an agreed piece of work with a total and a payment schedule, for example "12,000 for the rebuild, 50% deposit and 50% on delivery" or "9,000 in 3 equal installments". The schedule is worked out on the server so the entries always add up to exactly the total; the last entry absorbs any rounding. Nothing is billed and nothing is sent by creating one: entries become ready to bill as their due rules fire, and you then raise an invoice for them. Use create_estimate instead when the price has not been agreed yet, and create_invoice when work is already delivered and should be billed now.',
+        'Registra um trabalho acordado com valor total e cronograma de cobrança, por exemplo, "12.000 pela reforma, 50% de entrada e 50% na entrega" ou "9.000 em 3 parcelas iguais". O cronograma é calculado no servidor para que a soma dos itens seja sempre exatamente igual ao total; o último item absorve eventuais diferenças de arredondamento. Criar o contrato não fatura nem envia nada: os itens ficam prontos para faturar conforme suas regras de vencimento, e então você emite uma fatura. Use create_estimate se o preço ainda não foi acordado e create_invoice se o trabalho já foi entregue e deve ser faturado agora.',
       inputSchema: z.object({
-        request_id: z.uuid().describe('Stable request ID. Reuse with identical input on retries.'),
+        request_id: z.uuid().describe('ID estável da solicitação. Em novas tentativas, reutilize-o com os mesmos dados.'),
         business_id: z
           .string()
           .uuid()
           .optional()
-          .describe('Id of the business. Optional when the API key is scoped to exactly one business; required if scoped to multiple.'),
-        client_id: z.string().uuid().optional().describe('Id of the client. Provide this or client_name.'),
+          .describe('ID da empresa. Opcional quando a chave de API está limitada a uma única empresa; obrigatório quando está limitada a várias.'),
+        client_id: z.string().uuid().optional().describe('ID do cliente. Informe este campo ou client_name.'),
         client_name: z
           .string()
           .max(200)
           .optional()
-          .describe('Exact (case-insensitive) client name. Provide this or client_id.'),
-        name: z.string().min(1).max(200).describe('What was agreed, for example "Website rebuild".'),
-        total: z.number().positive().describe('The agreed total for the whole engagement, in the engagement currency.'),
+          .describe('Nome exato do cliente, sem distinção entre maiúsculas e minúsculas. Informe este campo ou client_id.'),
+        name: z.string().min(1).max(200).describe('Descrição do que foi acordado, por exemplo, "Reforma do site".'),
+        total: z.number().positive().describe('Valor total acordado para o contrato, na moeda definida para ele.'),
         currency: z
           .string()
           .length(3)
           .optional()
-          .describe('Three letter currency code. Defaults to the client currency, then the business default.'),
+          .describe('Código de moeda com três letras. Usa a moeda do cliente por padrão ou, se não houver, a moeda padrão da empresa.'),
         billing_mode: z
           .enum(BILLING_MODES)
           .describe(
-            'How the total is split: "percent_split" (each entry carries a percent), "equal_installments" (n equal parts, set installments), "milestones" (each entry carries its own amount), or "manual" (amounts you state, each waiting for a person).'
+            'Como dividir o valor total: "percent_split" (cada item tem um percentual), "equal_installments" (n parcelas iguais; defina installments), "milestones" (cada item tem seu próprio valor) ou "manual" (valores informados por você, cada um aguardando decisão de uma pessoa).'
           ),
         entries: z
           .array(scheduleEntryInput)
           .max(MAX_ENTRIES)
           .optional()
-          .describe('The schedule. Required for percent_split, milestones and manual. Optional for equal_installments, where it only names the parts.'),
+          .describe('Cronograma. Obrigatório para percent_split, milestones e manual. Opcional para equal_installments, caso em que apenas dá nome às parcelas.'),
         installments: z
           .number()
           .int()
           .min(1)
           .max(MAX_ENTRIES)
           .optional()
-          .describe('How many equal parts to split the total into. Only for billing_mode "equal_installments".'),
+          .describe('Número de parcelas iguais em que o valor será dividido. Usado somente com billing_mode "equal_installments".'),
         start_now: z
           .boolean()
           .optional()
-          .describe('True to start the engagement immediately, which makes any "on_start" entry ready to bill. Defaults to false, which leaves it as a draft.'),
-        starts_on: DATE_FIELD.optional().describe('Date the work starts, YYYY-MM-DD.'),
-        target_end: DATE_FIELD.optional().describe('Date the work is meant to finish, YYYY-MM-DD.'),
-        notes: z.string().max(2000).optional().describe('Internal notes about the agreement. Never shown to the client.'),
+          .describe('Use true para iniciar o contrato imediatamente, deixando pronto para faturar qualquer item "on_start". Por padrão, é false e o contrato permanece como rascunho.'),
+        starts_on: DATE_FIELD.optional().describe('Data de início do trabalho, no formato YYYY-MM-DD.'),
+        target_end: DATE_FIELD.optional().describe('Data prevista para a conclusão do trabalho, no formato YYYY-MM-DD.'),
+        notes: z.string().max(2000).optional().describe('Observações internas sobre o contrato. Nunca são exibidas ao cliente.'),
         source_estimate_id: z
           .string()
           .uuid()
           .optional()
-          .describe('Id of the estimate this agreement came from, if it started as a quote.'),
+          .describe('ID da estimativa de origem deste contrato, caso ele tenha começado como uma proposta.'),
       }),
     },
     async ({
@@ -573,14 +582,14 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
       try {
         resolvedBusinessId = ctx.db.resolveBusinessId(business_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
       }
 
       let client
       try {
         client = await resolveClient(ctx, resolvedBusinessId, client_id, client_name)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve client.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar o cliente.')
       }
 
       const { data, error } = await ctx.db.svc.rpc('create_engagement_with_schedule', {
@@ -601,11 +610,11 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
         p_actor_key_id: ctx.keyId,
       })
 
-      if (error || !data) return errorResult(engagementError(error, 'Could not create that engagement.'))
+      if (error || !data) return errorResult(engagementError(error, 'Não foi possível criar esse contrato.'))
 
       const result = payloadResult(data, '')
       const ready = result.schedule.filter((entry) => entry.status === 'ready_to_bill').length
-      result.summary = `Recorded ${result.engagement.name} for ${client.name}: ${formatCurrency(result.engagement.total, result.engagement.currency)} across ${result.schedule.length} schedule ${result.schedule.length === 1 ? 'entry' : 'entries'} (${result.engagement.status}). ${ready} ready to bill now. Nothing was sent to the client.`
+      result.summary = `Contrato ${result.engagement.name} registrado para ${client.name}: ${formatCurrency(result.engagement.total, result.engagement.currency)} em ${result.schedule.length} ${result.schedule.length === 1 ? 'item' : 'itens'} do cronograma (${result.engagement.status}). ${ready} ${ready === 1 ? 'item pronto' : 'itens prontos'} para faturar agora. Nada foi enviado ao cliente.`
       return jsonResult(result)
     }
   )
@@ -613,16 +622,16 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'update_engagement',
     {
-      title: 'Update Engagement',
+      title: 'Atualizar contrato',
       description:
-        'Correct the details around an engagement: its name, the dates it runs between, or its internal notes. Fields left out are kept as they are. The agreed total, the currency, the billing mode and the schedule are deliberately not editable here, because changing an agreed number after work has been billed against it is a renegotiation rather than an edit. Nothing is sent to anyone.',
+        'Corrige os dados de um contrato: nome, datas de vigência ou observações internas. Os campos omitidos permanecem como estão. O valor total acordado, a moeda, a forma de cobrança e o cronograma não podem ser alterados aqui: mudar um valor acordado depois de já faturar parte do trabalho é uma renegociação, não uma edição. Nada é enviado a ninguém.',
       inputSchema: z.object({
-        request_id: z.uuid().describe('Stable request ID. Reuse with identical input on retries.'),
-        engagement_id: z.string().uuid().describe('Id of the engagement to update.'),
-        name: z.string().min(1).max(200).optional().describe('Corrected name for the engagement.'),
-        starts_on: DATE_FIELD.optional().describe('Corrected start date, YYYY-MM-DD.'),
-        target_end: DATE_FIELD.optional().describe('Corrected target end date, YYYY-MM-DD.'),
-        notes: z.string().max(2000).optional().describe('Corrected internal notes. Never shown to the client.'),
+        request_id: z.uuid().describe('ID estável da solicitação. Em novas tentativas, reutilize-o com os mesmos dados.'),
+        engagement_id: z.string().uuid().describe('ID do contrato a atualizar.'),
+        name: z.string().min(1).max(200).optional().describe('Nome corrigido do contrato.'),
+        starts_on: DATE_FIELD.optional().describe('Data de início corrigida, no formato YYYY-MM-DD.'),
+        target_end: DATE_FIELD.optional().describe('Data prevista de conclusão corrigida, no formato YYYY-MM-DD.'),
+        notes: z.string().max(2000).optional().describe('Observações internas corrigidas. Nunca são exibidas ao cliente.'),
       }),
     },
     async ({ request_id, engagement_id, name, starts_on, target_end, notes }) => {
@@ -632,7 +641,7 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
         target_end === undefined &&
         notes === undefined
       ) {
-        return errorResult('Pass at least one field to change.')
+        return errorResult('Informe pelo menos um campo para alterar.')
       }
 
       const { data, error } = await ctx.db.svc.rpc('update_engagement', {
@@ -645,10 +654,10 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
         p_actor_key_id: ctx.keyId,
       })
 
-      if (error || !data) return errorResult(engagementError(error, 'Could not update that engagement.'))
+      if (error || !data) return errorResult(engagementError(error, 'Não foi possível atualizar esse contrato.'))
 
       const result = payloadResult(data, '')
-      result.summary = `Updated ${result.engagement.name}. ${formatCurrency(result.engagement.amount_remaining, result.engagement.currency)} of ${formatCurrency(result.engagement.total, result.engagement.currency)} is still unbilled.`
+      result.summary = `${result.engagement.name} atualizado. Ainda faltam faturar ${formatCurrency(result.engagement.amount_remaining, result.engagement.currency)} de ${formatCurrency(result.engagement.total, result.engagement.currency)}.`
       return jsonResult(result)
     }
   )
@@ -656,15 +665,15 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'mark_milestone_complete',
     {
-      title: 'Mark Milestone Complete',
+      title: 'Marcar etapa como concluída',
       description:
-        'Record that a schedule entry has been delivered. An entry waiting on a milestone becomes ready to bill; an entry waiting on the start or the end of the engagement, or on a date, keeps its own rule and is simply stamped complete. Nothing is invoiced and nothing is sent: use list_ready_to_bill to see what this freed up, then raise an invoice for it.',
+        'Registra a entrega de um item do cronograma. Um item que aguardava uma etapa fica pronto para faturar; um item que aguardava o início ou a conclusão do contrato, ou uma data, mantém sua própria regra e apenas recebe a marca de concluído. Nada é faturado nem enviado: use list_ready_to_bill para consultar o que ficou liberado e então emita uma fatura.',
       inputSchema: z.object({
-        request_id: z.uuid().describe('Stable request ID. Reuse with identical input on retries.'),
+        request_id: z.uuid().describe('ID estável da solicitação. Em novas tentativas, reutilize-o com os mesmos dados.'),
         entry_id: z
           .string()
           .uuid()
-          .describe('Id of the schedule entry, from get_engagement or list_ready_to_bill.'),
+          .describe('ID do item do cronograma, obtido em get_engagement ou list_ready_to_bill.'),
       }),
     },
     async ({ request_id, entry_id }) => {
@@ -674,15 +683,15 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
         p_actor_key_id: ctx.keyId,
       })
 
-      if (error || !data) return errorResult(engagementError(error, 'Could not mark that entry complete.'))
+      if (error || !data) return errorResult(engagementError(error, 'Não foi possível marcar esse item como concluído.'))
 
       const payload = data as unknown as EngagementPayload
       const result = payloadResult(data, '')
       const entry = payload.entry
       const readyNote = payload.became_ready_to_bill
-        ? `${formatCurrency(entry?.amount ?? 0, result.engagement.currency)} is now ready to bill.`
-        : 'It is still waiting on its own due rule before it can be billed.'
-      result.summary = `Marked "${entry?.label ?? 'the entry'}" complete on ${result.engagement.name}. ${readyNote} Nothing was sent to the client.`
+        ? `${formatCurrency(entry?.amount ?? 0, result.engagement.currency)} está pronto para faturar.`
+        : 'O item ainda aguarda sua própria regra de vencimento para poder ser faturado.'
+      result.summary = `Item "${entry?.label ?? 'o item'}" marcado como concluído em ${result.engagement.name}. ${readyNote} Nada foi enviado ao cliente.`
       return jsonResult(result)
     }
   )
@@ -690,12 +699,12 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'complete_engagement',
     {
-      title: 'Complete Engagement',
+      title: 'Concluir contrato',
       description:
-        'Close out an engagement: the work is finished. Every schedule entry waiting on completion becomes ready to bill, and if any money is left unbilled the answer says how much, so nothing is quietly forgotten. Completing does not invoice anything and does not send anything. A completed engagement cannot be reopened, so do this when the work really is done.',
+        'Encerra um contrato quando o trabalho estiver concluído. Cada item do cronograma que aguardava a conclusão fica pronto para faturar; se ainda houver algum valor não faturado, a resposta informa quanto, para que nada seja esquecido. A conclusão não emite fatura nem envia nada. Um contrato concluído não pode ser reaberto, então faça isso somente quando o trabalho realmente terminar.',
       inputSchema: z.object({
-        request_id: z.uuid().describe('Stable request ID. Reuse with identical input on retries.'),
-        engagement_id: z.string().uuid().describe('Id of the engagement to complete.'),
+        request_id: z.uuid().describe('ID estável da solicitação. Em novas tentativas, reutilize-o com os mesmos dados.'),
+        engagement_id: z.string().uuid().describe('ID do contrato a concluir.'),
       }),
     },
     async ({ request_id, engagement_id }) => {
@@ -706,15 +715,15 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
         p_actor_key_id: ctx.keyId,
       })
 
-      if (error || !data) return errorResult(engagementError(error, 'Could not complete that engagement.'))
+      if (error || !data) return errorResult(engagementError(error, 'Não foi possível concluir esse contrato.'))
 
       const payload = data as unknown as EngagementPayload
       const result = payloadResult(data, '')
       const ready = result.schedule.filter((entry) => entry.status === 'ready_to_bill').length
       const warning = payload.warning
-        ? ` ${formatCurrency(result.engagement.amount_remaining, result.engagement.currency)} of the agreed ${formatCurrency(result.engagement.total, result.engagement.currency)} is still unbilled. Bill the remaining entries or waive them.`
+        ? ` Ainda faltam faturar ${formatCurrency(result.engagement.amount_remaining, result.engagement.currency)} do valor acordado de ${formatCurrency(result.engagement.total, result.engagement.currency)}. Fature ou abone os itens restantes.`
         : ''
-      result.summary = `Completed ${result.engagement.name}. ${ready} schedule ${ready === 1 ? 'entry is' : 'entries are'} ready to bill.${warning} Nothing was sent to the client.`
+      result.summary = `${result.engagement.name} concluído. ${ready} ${ready === 1 ? 'item do cronograma está' : 'itens do cronograma estão'} prontos para faturar.${warning} Nada foi enviado ao cliente.`
       return jsonResult({ ...result, warning: payload.warning ?? null })
     }
   )
@@ -722,39 +731,39 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'convert_estimate_to_engagement',
     {
-      title: 'Convert Estimate to Engagement',
+      title: 'Converter estimativa em contrato',
       description:
-        'Turn an accepted estimate into an engagement: the same client, the same total and the same currency, now with a payment schedule instead of a single bill. Use this when the quote was agreed but the work will be billed in parts, and convert_estimate_to_invoice when the whole amount is due at once. An estimate can become one or the other, never both, so this refuses a quote that already became an invoice or an engagement. The engagement is created as a draft and nothing is billed or sent: start it when the work begins, which is what makes any deposit ready to bill.',
+        'Converte uma estimativa aceita em contrato, mantendo cliente, valor total e moeda, mas substituindo a cobrança única por um cronograma de pagamentos. Use quando a proposta tiver sido aceita, mas o trabalho for faturado em parcelas; use convert_estimate_to_invoice quando o valor total vencer de uma só vez. Uma estimativa pode ser convertida em fatura ou contrato, nunca nos dois: esta ferramenta recusa propostas já convertidas. O contrato é criado como rascunho; nada é faturado ou enviado. Inicie-o quando o trabalho começar para deixar qualquer entrada pronta para faturar.',
       inputSchema: z.object({
-        request_id: z.uuid().describe('Stable request ID. Reuse with identical input on retries.'),
+        request_id: z.uuid().describe('ID estável da solicitação. Em novas tentativas, reutilize-o com os mesmos dados.'),
         estimate_id: z
           .string()
           .uuid()
-          .describe('Id of the accepted estimate to convert, from list_estimates or get_estimate.'),
+          .describe('ID da estimativa aceita a converter, obtido em list_estimates ou get_estimate.'),
         billing_mode: z
           .enum(BILLING_MODES)
           .describe(
-            'How the quoted total is split: "percent_split" (each entry carries a percent), "equal_installments" (n equal parts, set installments), "milestones" (each entry carries its own amount), or "manual" (amounts you state, each waiting for a person).'
+            'Como dividir o valor total da proposta: "percent_split" (cada item tem um percentual), "equal_installments" (n parcelas iguais; defina installments), "milestones" (cada item tem seu próprio valor) ou "manual" (valores informados por você, cada um aguardando decisão de uma pessoa).'
           ),
         entries: z
           .array(scheduleEntryInput)
           .max(MAX_ENTRIES)
           .optional()
-          .describe('The schedule. Required for percent_split, milestones and manual. Optional for equal_installments, where it only names the parts.'),
+          .describe('Cronograma. Obrigatório para percent_split, milestones e manual. Opcional para equal_installments, caso em que apenas dá nome às parcelas.'),
         installments: z
           .number()
           .int()
           .min(1)
           .max(MAX_ENTRIES)
           .optional()
-          .describe('How many equal parts to split the quoted total into. Only for billing_mode "equal_installments".'),
+          .describe('Número de parcelas iguais em que o valor da proposta será dividido. Usado somente com billing_mode "equal_installments".'),
       }),
     },
     async ({ request_id, estimate_id, billing_mode, entries, installments }) => {
-      // The estimate is scoped inside the RPC, which resolves the actor
-      // against the estimate's own business and refuses anything the key
-      // cannot reach, so an out of scope id answers "not found" like a missing
-      // one. The total and the currency are read there too, never sent here.
+      // A RPC limita a estimativa ao escopo e identifica o usuário
+      // com base na empresa da própria estimativa e recusa registros inacessíveis
+      // à chave. Assim, um ID fora do escopo recebe a mesma resposta "não encontrado"
+      // que um ID inexistente. O valor total e a moeda também são lidos na RPC, nunca enviados por esta ferramenta.
       const { data, error } = await ctx.db.svc.rpc('convert_estimate_to_engagement', {
         p_request_id: request_id,
         p_estimate_id: estimate_id,
@@ -765,11 +774,11 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
       })
 
       if (error || !data) {
-        return errorResult(engagementError(error, 'Could not turn that estimate into an engagement.'))
+        return errorResult(engagementError(error, 'Não foi possível converter essa estimativa em contrato.'))
       }
 
       const result = payloadResult(data, '')
-      result.summary = `Turned the estimate into ${result.engagement.name}: ${formatCurrency(result.engagement.total, result.engagement.currency)} across ${result.schedule.length} schedule ${result.schedule.length === 1 ? 'entry' : 'entries'}. It is a draft, so nothing is billable yet. Start it with the app or by setting the engagement going when the work begins. Nothing was sent to the client.`
+      result.summary = `Estimativa convertida em ${result.engagement.name}: ${formatCurrency(result.engagement.total, result.engagement.currency)} em ${result.schedule.length} ${result.schedule.length === 1 ? 'item' : 'itens'} do cronograma. O contrato está como rascunho, então nada pode ser faturado ainda. Inicie-o pelo app ou quando o trabalho começar. Nada foi enviado ao cliente.`
       return jsonResult(result)
     }
   )
@@ -777,17 +786,17 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'waive_engagement_entry',
     {
-      title: 'Waive Engagement Entry',
+      title: 'Abonar item do contrato',
       description:
-        'Write off a schedule entry that will not be charged, with a reason. The entry stays in the schedule so the agreement still reads the way it was agreed, but it stops counting towards what is left to bill. Use this when part of the work was dropped or absorbed. An entry that has already been invoiced cannot be waived: that is a credit note, and it belongs on the invoice. Nothing is sent to anyone.',
+        'Abona, com justificativa, um item do cronograma que não será cobrado. O item permanece no cronograma para preservar o que foi acordado, mas deixa de contar no valor a faturar. Use quando parte do trabalho for cancelada ou absorvida. Um item já faturado não pode ser abonado: nesse caso, emita uma nota de crédito na fatura. Nada é enviado a ninguém.',
       inputSchema: z.object({
-        request_id: z.uuid().describe('Stable request ID. Reuse with identical input on retries.'),
-        entry_id: z.string().uuid().describe('Id of the schedule entry to waive, from get_engagement.'),
+        request_id: z.uuid().describe('ID estável da solicitação. Em novas tentativas, reutilize-o com os mesmos dados.'),
+        entry_id: z.string().uuid().describe('ID do item do cronograma a abonar, obtido em get_engagement.'),
         reason: z
           .string()
           .min(1)
           .max(2000)
-          .describe('Why this money will not be charged. Kept on the entry and shown in the app.'),
+          .describe('Motivo pelo qual este valor não será cobrado. Fica registrado no item e é exibido no app.'),
       }),
     },
     async ({ request_id, entry_id, reason }) => {
@@ -798,11 +807,11 @@ export function registerEngagementTools(server: McpServer, ctx: McpCtx) {
         p_actor_key_id: ctx.keyId,
       })
 
-      if (error || !data) return errorResult(engagementError(error, 'Could not waive that entry.'))
+      if (error || !data) return errorResult(engagementError(error, 'Não foi possível abonar esse item.'))
 
       const payload = data as unknown as EngagementPayload
       const result = payloadResult(data, '')
-      result.summary = `Waived ${formatCurrency(payload.entry?.amount ?? 0, result.engagement.currency)} on ${result.engagement.name}. ${formatCurrency(result.engagement.amount_remaining, result.engagement.currency)} is still to be billed.`
+      result.summary = `${formatCurrency(payload.entry?.amount ?? 0, result.engagement.currency)} abonados em ${result.engagement.name}. Ainda faltam faturar ${formatCurrency(result.engagement.amount_remaining, result.engagement.currency)}.`
       return jsonResult(result)
     }
   )

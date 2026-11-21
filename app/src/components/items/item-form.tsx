@@ -26,9 +26,9 @@ import {
 import type { Item } from '@/types'
 
 const itemSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  name: z.string().min(1, 'O nome é obrigatório'),
   description: z.string().optional(),
-  rate: z.coerce.number().min(0, 'Rate must be positive'),
+  rate: z.coerce.number().min(0, 'O valor deve ser positivo'),
   unit: z.string().optional(),
 })
 
@@ -41,13 +41,13 @@ interface ItemFormProps {
 }
 
 const units = [
-  { value: 'hour', label: 'Hour' },
-  { value: 'day', label: 'Day' },
-  { value: 'week', label: 'Week' },
-  { value: 'month', label: 'Month' },
-  { value: 'project', label: 'Project' },
+  { value: 'hour', label: 'Hora' },
+  { value: 'day', label: 'Dia' },
+  { value: 'week', label: 'Semana' },
+  { value: 'month', label: 'Mês' },
+  { value: 'project', label: 'Projeto' },
   { value: 'item', label: 'Item' },
-  { value: 'unit', label: 'Unit' },
+  { value: 'unit', label: 'Unidade' },
 ]
 
 export function ItemForm({ item, onSubmit, onCancel }: ItemFormProps) {
@@ -76,9 +76,9 @@ export function ItemForm({ item, onSubmit, onCancel }: ItemFormProps) {
                 name="name"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel>Nome</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Website Design" {...field} />
+                      <Input placeholder="ex.: Desenvolvimento de site" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -90,16 +90,16 @@ export function ItemForm({ item, onSubmit, onCancel }: ItemFormProps) {
                 name="description"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>Descrição</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Describe this item..."
+                        placeholder="Descreva este item..."
                         rows={3}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      This will appear on invoices and estimates
+                      Isso aparecerá nas faturas e nos orçamentos
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -111,7 +111,7 @@ export function ItemForm({ item, onSubmit, onCancel }: ItemFormProps) {
                 name="rate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Rate</FormLabel>
+                    <FormLabel>Valor</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -137,14 +137,14 @@ export function ItemForm({ item, onSubmit, onCancel }: ItemFormProps) {
                 name="unit"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Unit</FormLabel>
+                    <FormLabel>Unidade</FormLabel>
                     <Select
                       value={field.value}
                       onValueChange={field.onChange}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select unit" />
+                          <SelectValue placeholder="Selecione uma unidade" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -156,7 +156,7 @@ export function ItemForm({ item, onSubmit, onCancel }: ItemFormProps) {
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      How this item is billed (optional)
+                      Como este item é cobrado (opcional)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -168,14 +168,14 @@ export function ItemForm({ item, onSubmit, onCancel }: ItemFormProps) {
 
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            Cancelar
           </Button>
           <Button type="submit" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting
-              ? 'Saving...'
+              ? 'Salvando...'
               : item
-              ? 'Update Item'
-              : 'Create Item'}
+              ? 'Atualizar item'
+              : 'Criar item'}
           </Button>
         </div>
       </form>

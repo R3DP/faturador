@@ -6,10 +6,10 @@ import type { Json } from '@/types/database'
 import type { Database } from '@/types/database'
 import { consumeEmailQuota } from '@/lib/email/quota'
 /**
- * The single chokepoint every outbound invoice/estimate email passes
- * through, from the web server actions and the MCP send tools alike. That is
- * why the daily send quota is enforced here rather than at either call site:
- * neither surface can grow a path around it.
+ * Único ponto de passagem de todos os e-mails de faturas e orçamentos,
+ * tanto pelas server actions quanto pelas ferramentas de envio do MCP. Por
+ * isso, a cota diária é aplicada aqui, e não em cada ponto de chamada:
+ * nenhuma das interfaces pode contornar essa verificação.
  */
 export async function prepareDelivery<T>(
   db: SupabaseClient<Database>,
@@ -32,12 +32,12 @@ export async function prepareDelivery<T>(
   const initial = await read()
   let row = initial.data
   const error = initial.error
-  if (error) throw new Error('Could not check email delivery')
+  if (error) throw new Error('Não foi possível verificar a entrega do e-mail')
   if (!row) {
-    // Spent once per NEW request id, and before the delivery row exists.
-    // Both halves matter: a retry of an in-flight send reuses its request id
-    // and so must not be charged twice, and a rejected send must leave no
-    // half-created delivery row behind for a later retry to trip over.
+    // Cobrada uma vez por novo ID de solicitação, antes de existir a linha de entrega.
+    // Os dois pontos importam: uma nova tentativa reutiliza o ID do envio em
+    // andamento e não deve ser cobrada novamente; um envio recusado não pode
+    // deixar uma linha parcial que atrapalhe outra tentativa.
     await consumeEmailQuota(businessId)
     const inserted = await db
       .from('email_deliveries')
@@ -52,11 +52,11 @@ export async function prepareDelivery<T>(
       .select('*')
       .single()
     if (inserted.error && inserted.error.code !== '23505')
-      throw new Error('Could not prepare email delivery')
+      throw new Error('Não foi possível preparar a entrega do e-mail')
     row = inserted.data
     if (!row) {
       const replay = await read()
-      if (replay.error) throw new Error('Could not check email delivery')
+      if (replay.error) throw new Error('Não foi possível verificar a entrega do e-mail')
       row = replay.data
     }
   }
@@ -67,7 +67,7 @@ export async function prepareDelivery<T>(
     row.input_hash !== hash
   )
     throw new Error(
-      'This request ID was used for different email content. Review and use a new request ID.'
+      'Este ID de solicitação já foi usado para outro conteúdo de e-mail. Revise e use um novo ID de solicitação.'
     )
   if (row.sent_at)
     return {
@@ -75,10 +75,10 @@ export async function prepareDelivery<T>(
       alreadySent: true,
       key: `billr:${businessId}:${requestId}`,
     }
-  // Resend retains idempotency keys for 24 hours. Never resend an unknown old outcome.
+  // O Resend mantém chaves de idempotência por 24 horas. Nunca reenvie sem verificar um resultado antigo desconhecido.
   if (Date.now() - Date.parse(row.created_at) > 23 * 3600000)
     throw new Error(
-      'Delivery outcome needs review in the email provider before sending again.'
+      'O resultado da entrega precisa ser verificado no provedor de e-mail antes de enviar novamente.'
     )
   return {
     payload: row.payload as T,
@@ -98,6 +98,6 @@ export async function finishDelivery(
     .eq('request_id', requestId)
   if (error)
     throw new Error(
-      'Email accepted, but delivery status could not be saved. Retry with the same request ID.'
+      'E-mail aceito, mas não foi possível salvar o status da entrega. Tente novamente usando o mesmo ID de solicitação.'
     )
 }

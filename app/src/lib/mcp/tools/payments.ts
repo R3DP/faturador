@@ -7,45 +7,45 @@ import { appUrl, errorResult, jsonResult, formatCurrency, publicUrl, isOverdue }
 
 const PAYMENT_HISTORY_LIMIT = 100
 
-const DATE_FIELD = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+const DATE_FIELD = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use o formato YYYY-MM-DD')
 
 /**
- * The methods a correction may set. "stripe" is deliberately absent: only the
- * verified Stripe webhook flow may write a card entry, and a
- * correction that tried would be refused by the database anyway.
+ * Métodos que uma correção pode definir. "stripe" foi omitido de propósito:
+ * somente o fluxo verificado de webhook do Stripe pode registrar um pagamento
+ * com cartão; de todo modo, o banco recusaria uma correção que tentasse fazê-lo.
  */
 const EDITABLE_PAYMENT_METHODS = ['cash', 'check', 'bank_transfer', 'credit_card', 'paypal', 'other'] as const
 
 /**
- * Maps the RPC's error codes onto sentences a calling agent
- * can act on. Anything unrecognised falls back to the generic message rather
- * than leaking a Postgres error to the user.
+ * Converte os códigos de erro da RPC em mensagens que o agente solicitante
+ * pode resolver. Códigos desconhecidos usam a mensagem genérica, sem expor
+ * erros do Postgres à pessoa usuária.
  */
 function correctionError(error: { message?: string } | null, fallback: string): string {
   const code = error?.message ?? ''
   if (code.includes('stripe_payment_locked')) {
-    return 'This payment was collected through Stripe, so it cannot be edited or voided here. Issue a refund in Stripe instead. The refund arrives back in Billr as its own ledger entry.'
+    return 'Este pagamento foi recebido pelo Stripe e não pode ser editado nem anulado aqui. Emita o reembolso no Stripe. Ele aparecerá no Faturador como um lançamento separado no histórico.'
   }
   if (code.includes('payment_already_voided')) {
-    return 'This payment has already been voided. There is nothing left to change.'
+    return 'Este pagamento já foi anulado. Não há mais nada a alterar.'
   }
   if (code.includes('amount_exceeds_invoice_total')) {
-    return 'That amount would take the invoice past its total once the other payments on it are counted. Lower the amount, or void a duplicate payment first.'
+    return 'Com esse valor, o total da fatura seria ultrapassado ao considerar os outros pagamentos. Reduza o valor ou anule primeiro um pagamento duplicado.'
   }
   if (code.includes('request_id_reused')) {
-    return 'That request_id was already used for a different correction on this payment. Use a new request_id.'
+    return 'Esse request_id já foi usado em outra correção deste pagamento. Use um novo request_id.'
   }
   if (code.includes('key_cannot_edit_payments')) {
-    return 'This API key does not have the payments permission, which is required to correct or void a payment.'
+    return 'Esta chave de API não tem a permissão payments, necessária para corrigir ou anular um pagamento.'
   }
   if (code.includes('void_reason_required')) {
-    return 'A reason is required to void a payment.'
+    return 'É necessário informar um motivo para anular o pagamento.'
   }
   if (code.includes('invalid_amount')) {
-    return 'The amount must be greater than zero.'
+    return 'O valor deve ser maior que zero.'
   }
   if (code.includes('payment_not_found')) {
-    return 'Payment not found'
+    return 'Pagamento não encontrado'
   }
   console.error('payment correction (rpc):', error)
   return fallback
@@ -68,15 +68,15 @@ interface CorrectionRpcResult {
   replayed: boolean
 }
 
-/** Shared result shape for both corrections, so an agent reads one format. */
-function correctionResult(data: unknown, verb: 'Updated' | 'Voided') {
+/** Formato de resultado compartilhado pelas duas correções. */
+function correctionResult(data: unknown, verb: 'Pagamento atualizado' | 'Pagamento anulado') {
   const result = data as CorrectionRpcResult
   const { payment, invoice } = result
   const amount = formatCurrency(payment.amount, invoice.currency)
   const balance = formatCurrency(invoice.balance_due, invoice.currency)
-  const replayNote = result.replayed ? ' This was a replay of an earlier identical request, so nothing changed twice.' : ''
+  const replayNote = result.replayed ? ' Esta solicitação repetiu uma solicitação anterior idêntica; nenhuma alteração foi aplicada novamente.' : ''
   return {
-    summary: `${verb} the ${amount} payment on ${invoice.invoice_number}. The invoice is now ${invoice.status} with ${balance} still due.${replayNote}`,
+    summary: `${verb} de ${amount} na fatura ${invoice.invoice_number}. O status da fatura agora é ${invoice.status}, com saldo de ${balance} a pagar.${replayNote}`,
     payment: {
       payment_id: payment.id,
       amount: payment.amount,
@@ -99,11 +99,11 @@ function correctionResult(data: unknown, verb: 'Updated' | 'Voided') {
 }
 
 /**
- * Card money is owned by the Stripe flow. Checked here so the refusal is a
- * sentence rather than an error code; the database refuses it again regardless.
+ * Os pagamentos com cartão são controlados pelo fluxo do Stripe. A verificação
+ * aqui gera uma mensagem clara; o banco também os recusa de qualquer forma.
  */
 const STRIPE_LOCKED =
-  'This payment was collected through Stripe, so it cannot be edited or voided here. Issue a refund in Stripe instead. The refund arrives back in Billr as its own ledger entry.'
+  'Este pagamento foi recebido pelo Stripe e não pode ser editado nem anulado aqui. Emita o reembolso no Stripe. Ele aparecerá no Faturador como um lançamento separado no histórico.'
 
 export interface PaymentLedgerRow {
   id: string
@@ -123,9 +123,9 @@ export interface PaymentReconciliation {
   ledger_total: number
   recorded_amount_paid: number
   /**
-   * True when the invoice's stored amount_paid does not match the sum of its
-   * payments ledger. Surfaced rather than silently preferring one number, so a
-   * caller reporting "you have been paid X" is never confidently wrong.
+   * Indica que amount_paid armazenado na fatura difere da soma do histórico
+   * de pagamentos. A divergência é exibida, em vez de escolher um valor em
+   * silêncio, para evitar informar com confiança um total incorreto.
    */
   mismatch: boolean
 }
@@ -135,8 +135,8 @@ function round2(n: number): number {
 }
 
 /**
- * Pure reconciliation between the payments ledger and the invoice's stored
- * amount_paid. Extracted so it can be unit-tested without a database.
+ * Conciliação pura entre o histórico de pagamentos e amount_paid armazenado
+ * na fatura. Extraída para permitir testes unitários sem banco de dados.
  */
 export function reconcilePayments(payments: Pick<PaymentLedgerRow, 'amount'>[], amountPaid: number): PaymentReconciliation {
   const ledgerTotal = round2(payments.reduce((sum, payment) => sum + payment.amount, 0))
@@ -149,26 +149,26 @@ export function reconcilePayments(payments: Pick<PaymentLedgerRow, 'amount'>[], 
 }
 
 /**
- * Registers get_payment_status, scoped to the businesses in ctx.db.scope.
+ * Registra get_payment_status, limitado às empresas em ctx.db.scope.
  *
- * LEDGER SOURCE: money lives in the `payments` table only.
+ * FONTE DO RAZÃO: os valores ficam somente na tabela `payments`.
  */
 export function registerPaymentTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'get_payment_status',
     {
-      title: 'Get Payment Status',
+      title: 'Consultar situação dos pagamentos',
       description:
-        'Report where one invoice stands on money: amount due, amount paid, each recorded payment with its payment_id, whether online card payment is switched on, and the link a client can pay from. Use it to answer "has X paid yet" or "what do they still owe". Voided payments are left out of the list and every total unless include_voided is true. Read-only: use record_payment to log a payment that came in outside Stripe, update_payment to correct one, and void_payment to undo one.',
+        'Informa a situação financeira de uma fatura: valores a pagar e pagos, cada pagamento registrado com seu payment_id, se o pagamento on-line com cartão está habilitado e o link de pagamento do cliente. Use para responder "se X já pagou" ou "quanto ainda falta pagar". Pagamentos anulados ficam fora da lista e dos totais, a menos que include_voided seja true. Somente leitura: use record_payment para registrar pagamentos recebidos fora do Stripe, update_payment para corrigi-los e void_payment para anulá-los.',
       inputSchema: z.object({
         invoice_id: z
           .string()
           .uuid()
-          .describe('Id of the invoice to check, from list_invoices, create_invoice, or get_invoice.'),
+          .describe('ID da fatura a consultar, obtido por list_invoices, create_invoice ou get_invoice.'),
         include_voided: z
           .boolean()
           .optional()
-          .describe('Include voided payments in the returned list. Defaults to false. Voided payments never count towards any total either way.'),
+          .describe('Inclui pagamentos anulados na lista retornada. O padrão é false. Pagamentos anulados nunca entram nos totais.'),
       }),
     },
     async ({ invoice_id, include_voided }) => {
@@ -176,7 +176,7 @@ export function registerPaymentTools(server: McpServer, ctx: McpCtx) {
       try {
         invoice = await ctx.db.assertInvoiceAccess(invoice_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access invoice.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar a fatura.')
       }
 
       const { data: payments, error: paymentsError } = await ctx.db.svc
@@ -189,23 +189,23 @@ export function registerPaymentTools(server: McpServer, ctx: McpCtx) {
 
       if (paymentsError) {
         console.error('get_payment_status (payments):', paymentsError)
-        return errorResult('Could not load the payment history for this invoice.')
+        return errorResult('Não foi possível carregar o histórico de pagamentos desta fatura.')
       }
 
       const allPayments = (payments ?? []) as PaymentLedgerRow[]
-      // A voided payment is not money. It never counts towards a total, and it
-      // stays out of the list unless the caller asks to see it.
+      // Um pagamento anulado não representa dinheiro recebido. Nunca entra em
+      // um total e fica fora da lista, a menos que a pessoa solicite sua exibição.
       const live = allPayments.filter((payment) => payment.voided_at === null)
       const listed = include_voided ? allPayments : live
       const history = listed.map((payment) => ({
-        /** Stable id. Pass it to update_payment or void_payment. */
+        /** ID estável. Informe-o em update_payment ou void_payment. */
         payment_id: payment.id,
         amount: payment.amount,
         payment_date: payment.payment_date,
         method: payment.payment_method,
         reference_number: payment.reference_number,
         notes: payment.notes,
-        /** "stripe" means it arrived through the online pay link, so it cannot be edited or voided. */
+        /** "stripe" indica recebimento pelo link de pagamento on-line; não pode ser editado nem anulado. */
         source: payment.source,
         voided_at: payment.voided_at,
         void_reason: payment.void_reason,
@@ -217,13 +217,13 @@ export function registerPaymentTools(server: McpServer, ctx: McpCtx) {
 
       const paidLabel = formatCurrency(invoice.amount_paid, invoice.currency)
       const dueLabel = formatCurrency(invoice.balance_due, invoice.currency)
-      const overdueNote = overdue ? `, overdue since ${invoice.due_date}` : ''
+      const overdueNote = overdue ? `, em atraso desde ${invoice.due_date}` : ''
       const mismatchNote = reconciliation.mismatch
-        ? ` Warning: the recorded payments add up to ${formatCurrency(reconciliation.ledger_total, invoice.currency)}, which does not match the invoice's stored paid amount of ${paidLabel}. Check the invoice in the app before quoting a figure.`
+        ? ` Atenção: os pagamentos registrados somam ${formatCurrency(reconciliation.ledger_total, invoice.currency)}, valor diferente do total pago armazenado na fatura (${paidLabel}). Confira a fatura no aplicativo antes de informar um valor.`
         : ''
 
       return jsonResult({
-        summary: `${invoice.invoice_number} is ${invoice.status}${overdueNote}: ${paidLabel} paid, ${dueLabel} still due.${mismatchNote}`,
+        summary: `A fatura ${invoice.invoice_number} está com status ${invoice.status}${overdueNote}: ${paidLabel} pagos e ${dueLabel} ainda a pagar.${mismatchNote}`,
         invoice: {
           id: invoice.id,
           invoice_number: invoice.invoice_number,
@@ -249,46 +249,46 @@ export function registerPaymentTools(server: McpServer, ctx: McpCtx) {
     }
   )
   // -------------------------------------------------------------------------
-  // Corrections
+  // Correções
   // -------------------------------------------------------------------------
-  // Both go through SECURITY DEFINER RPCs. The RPC,
-  // not this file, owns the rules: it verifies the key's authority over the
-  // payment's business, refuses Stripe-collected money, refuses an already
-  // voided row, is idempotent on (payment_id, request_id), writes the audit
-  // row with the before and after payment, and recomputes the invoice's
-  // amount_paid, balance_due and status from the surviving live payments.
+  // Ambas passam por RPCs SECURITY DEFINER. As regras pertencem à RPC,
+  // não a este arquivo: ela verifica a autoridade da chave sobre a empresa do
+  // pagamento, recusa valores recebidos pelo Stripe e pagamentos já anulados,
+  // é idempotente em (payment_id, request_id), grava a linha de auditoria com
+  // os dados do pagamento antes e depois e recalcula amount_paid, balance_due e
+  // status da fatura com base nos pagamentos ativos restantes.
   //
-  // The actor reaches the database exactly the way record_payment's does: the
-  // call runs on ScopedDb's service client and carries ctx.keyId, and the RPC
-  // resolves that key to its owner and checks the "payments" permission again
-  // in SQL. Scope is still established here first, through
-  // ctx.db.assertPaymentAccess, so an out-of-scope payment id never reaches
-  // the RPC at all.
+  // O ator chega ao banco exatamente como em record_payment: a chamada é
+  // executada pelo cliente de serviço de ScopedDb e leva ctx.keyId; a RPC
+  // resolve a chave para seu titular e verifica novamente a permissão
+  // "payments" no SQL. O escopo continua sendo estabelecido primeiro aqui,
+  // por ctx.db.assertPaymentAccess, para que um ID de pagamento fora do escopo
+  // nunca chegue à RPC.
   server.registerTool(
     'update_payment',
     {
-      title: 'Update Payment',
+      title: 'Corrigir pagamento',
       description:
-        'Correct a recorded payment: the date it landed, the method, the reference number, the notes, or the amount if a figure was keyed wrong. The invoice is recomputed from its live payments, so a smaller amount reopens a balance and moves a paid invoice back to partial. Use this to fix a payment whose date was recorded wrong, which otherwise puts the money in the wrong month of every revenue report. Payments collected through Stripe cannot be edited: a card payment is changed by issuing a refund in Stripe, which arrives back here as its own ledger entry. Fields left out are kept as they are.',
+        'Corrige um pagamento registrado: data de recebimento, método, número de referência, observações ou valor digitado incorretamente. A fatura é recalculada com os pagamentos ativos; um valor menor reabre o saldo e muda uma fatura paga para parcial. Use para corrigir a data de um pagamento, que poderia colocar o recebimento no mês errado nos relatórios de receita. Pagamentos recebidos pelo Stripe não podem ser editados: faça o reembolso no Stripe, que aparecerá aqui como um lançamento separado. Os campos omitidos permanecem inalterados.',
       inputSchema: z.object({
         request_id: z
           .string()
           .min(1)
           .max(200)
-          .describe('Stable correction ID. Reuse on retries with identical input and the same answer comes back without applying the change twice.'),
+          .describe('ID estável da correção. Reutilize nas tentativas com os mesmos dados para receber a mesma resposta sem aplicar a alteração novamente.'),
         payment_id: z
           .string()
           .uuid()
-          .describe('Id of the payment to correct, from the payments list in get_payment_status.'),
-        payment_date: DATE_FIELD.optional().describe('Corrected date the payment was received, YYYY-MM-DD.'),
-        method: z.enum(EDITABLE_PAYMENT_METHODS).optional().describe('Corrected payment method. "stripe" is not accepted here because only the verified Stripe flow may write card entries.'),
-        notes: z.string().max(2000).optional().describe('Corrected notes about the payment.'),
-        reference_number: z.string().max(100).optional().describe('Corrected reference, check or transaction number.'),
+          .describe('ID do pagamento a corrigir, obtido na lista de pagamentos de get_payment_status.'),
+        payment_date: DATE_FIELD.optional().describe('Data corrigida de recebimento do pagamento, no formato YYYY-MM-DD.'),
+        method: z.enum(EDITABLE_PAYMENT_METHODS).optional().describe('Método de pagamento corrigido. "stripe" não é aceito aqui, pois somente o fluxo verificado do Stripe pode registrar pagamentos com cartão.'),
+        notes: z.string().max(2000).optional().describe('Observações corrigidas sobre o pagamento.'),
+        reference_number: z.string().max(100).optional().describe('Número corrigido de referência, cheque ou transação.'),
         amount: z
           .number()
           .positive()
           .optional()
-          .describe('Corrected amount. Must be greater than zero and must not push the invoice past its total once the other live payments are counted.'),
+          .describe('Valor corrigido. Deve ser maior que zero e não pode ultrapassar o total da fatura ao considerar os outros pagamentos ativos.'),
       }),
     },
     async ({ request_id, payment_id, payment_date, method, notes, reference_number, amount }) => {
@@ -296,7 +296,7 @@ export function registerPaymentTools(server: McpServer, ctx: McpCtx) {
       try {
         payment = await ctx.db.assertPaymentAccess(payment_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access payment.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar o pagamento.')
       }
 
       if (payment.source === 'stripe') {
@@ -310,7 +310,7 @@ export function registerPaymentTools(server: McpServer, ctx: McpCtx) {
         reference_number === undefined &&
         amount === undefined
       ) {
-        return errorResult('Pass at least one field to change.')
+        return errorResult('Informe pelo menos um campo para alterar.')
       }
 
       const { data, error } = await ctx.db.svc.rpc('update_payment', {
@@ -325,34 +325,34 @@ export function registerPaymentTools(server: McpServer, ctx: McpCtx) {
       })
 
       if (error || !data) {
-        return errorResult(correctionError(error, 'Could not update that payment.'))
+        return errorResult(correctionError(error, 'Não foi possível corrigir esse pagamento.'))
       }
 
-      return jsonResult(correctionResult(data, 'Updated'))
+      return jsonResult(correctionResult(data, 'Pagamento atualizado'))
     }
   )
 
   server.registerTool(
     'void_payment',
     {
-      title: 'Void Payment',
+      title: 'Anular pagamento',
       description:
-        'Void a payment that should never have been recorded, with a reason. The row is kept and stays visible, struck through with its reason, but it stops counting as money: the invoice reopens for that amount and every total, report and list leaves it out. Use this for a payment entered twice, entered against the wrong invoice, or entered for money that never arrived. Payments collected through Stripe cannot be voided: refund the charge in Stripe instead, and the refund arrives back here as its own ledger entry.',
+        'Anula, com justificativa, um pagamento que nunca deveria ter sido registrado. O registro é mantido e continua visível, riscado e acompanhado do motivo, mas deixa de contar como valor recebido: a fatura reabre pelo mesmo valor, e totais, relatórios e listas o desconsideram. Use quando um pagamento foi registrado duas vezes, associado à fatura errada ou referente a um valor que não foi recebido. Pagamentos recebidos pelo Stripe não podem ser anulados: reembolse a cobrança no Stripe, e o reembolso aparecerá aqui como um lançamento separado.',
       inputSchema: z.object({
         request_id: z
           .string()
           .min(1)
           .max(200)
-          .describe('Stable void ID. Reuse on retries with the same reason and the same answer comes back without voiding twice.'),
+          .describe('ID estável da anulação. Reutilize nas tentativas com o mesmo motivo para receber a mesma resposta sem anular novamente.'),
         payment_id: z
           .string()
           .uuid()
-          .describe('Id of the payment to void, from the payments list in get_payment_status.'),
+          .describe('ID do pagamento a anular, obtido na lista de pagamentos de get_payment_status.'),
         reason: z
           .string()
           .min(1)
           .max(2000)
-          .describe('Why this payment is being voided. Kept on the payment and in the audit trail, and shown in the app.'),
+          .describe('Motivo da anulação. Fica registrado no pagamento e na auditoria e é exibido no aplicativo.'),
       }),
     },
     async ({ request_id, payment_id, reason }) => {
@@ -360,7 +360,7 @@ export function registerPaymentTools(server: McpServer, ctx: McpCtx) {
       try {
         payment = await ctx.db.assertPaymentAccess(payment_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access payment.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar o pagamento.')
       }
       if (payment.source === 'stripe') {
         return errorResult(STRIPE_LOCKED)
@@ -374,10 +374,10 @@ export function registerPaymentTools(server: McpServer, ctx: McpCtx) {
       })
 
       if (error || !data) {
-        return errorResult(correctionError(error, 'Could not void that payment.'))
+        return errorResult(correctionError(error, 'Não foi possível anular esse pagamento.'))
       }
 
-      return jsonResult(correctionResult(data, 'Voided'))
+      return jsonResult(correctionResult(data, 'Pagamento anulado'))
     }
   )
 }

@@ -89,10 +89,10 @@ export default function EstimatesPage() {
     try {
       const { convertEstimateAction } = await import('@/lib/actions/estimates')
       const invoice = await convertEstimateAction(estimate.id)
-      toast.success('Estimate converted to invoice')
+      toast.success('Orçamento convertido em fatura')
       router.push(`/invoices/${invoice.id}`)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to convert estimate')
+      toast.error(error instanceof Error ? error.message : 'Não foi possível converter o orçamento')
     }
   }
 
@@ -101,23 +101,23 @@ export default function EstimatesPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Estimates"
-        description="Create and manage project estimates"
+        title="Orçamentos"
+        description="Crie e gerencie orçamentos de projetos"
       >
         <Button asChild>
           <Link href="/estimates/new">
             <Plus className="mr-2 h-4 w-4" />
-            New Estimate
+            Novo orçamento
           </Link>
         </Button>
       </PageHeader>
 
-      {/* Filters */}
+      {/* Filtros */}
       <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1 sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search estimates..."
+            placeholder="Buscar orçamentos..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -125,21 +125,21 @@ export default function EstimatesPage() {
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
+            <SelectValue placeholder="Filtrar por status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="sent">Sent</SelectItem>
-            <SelectItem value="viewed">Viewed</SelectItem>
-            <SelectItem value="accepted">Accepted</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-            <SelectItem value="expired">Expired</SelectItem>
+            <SelectItem value="all">Todos os status</SelectItem>
+            <SelectItem value="draft">Rascunho</SelectItem>
+            <SelectItem value="sent">Enviada</SelectItem>
+            <SelectItem value="viewed">Visualizada</SelectItem>
+            <SelectItem value="accepted">Aceito</SelectItem>
+            <SelectItem value="rejected">Recusado</SelectItem>
+            <SelectItem value="expired">Expirado</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Estimates List */}
+      {/* Lista de orçamentos */}
       <div className="mt-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -150,15 +150,15 @@ export default function EstimatesPage() {
             <CardContent className="py-12">
               <EmptyState
                 icon={FileText}
-                title={searchQuery || statusFilter !== 'all' ? 'No estimates found' : 'No estimates yet'}
+                title={searchQuery || statusFilter !== 'all' ? 'Nenhum orçamento encontrado' : 'Nenhum orçamento cadastrado'}
                 description={
                   searchQuery || statusFilter !== 'all'
-                    ? 'Try adjusting your search or filter'
-                    : 'Create estimates to send quotes to your clients'
+                    ? 'Ajuste a busca ou o filtro'
+                    : 'Crie orçamentos para enviar propostas aos seus clientes'
                 }
                 action={
                   !searchQuery && statusFilter === 'all'
-                    ? { label: 'Create Estimate', href: '/estimates/new' }
+                    ? { label: 'Criar orçamento', href: '/estimates/new' }
                     : undefined
                 }
               />
@@ -170,11 +170,11 @@ export default function EstimatesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Estimate</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Expires</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Orçamento</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Situação</TableHead>
+                    <TableHead>Validade</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -214,26 +214,30 @@ export default function EstimatesPage() {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={'Ações do orçamento ' + estimate.estimate_number}
+                            >
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
                               <Link href={`/estimates/${estimate.id}`}>
-                                View
+                                Ver
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                               <Link href={`/estimates/${estimate.id}/edit`}>
-                                Edit
+                                Editar
                               </Link>
                             </DropdownMenuItem>
                             {estimate.status === 'accepted' && !estimate.converted_invoice_id && (
                               <DropdownMenuItem
                                 onClick={() => handleConvertToInvoice(estimate)}
                               >
-                                Convert to Invoice
+                                Converter em fatura
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuItem asChild>
@@ -241,7 +245,7 @@ export default function EstimatesPage() {
                                 href={`/e/${estimate.public_id}`}
                                 target="_blank"
                               >
-                                View public link
+                                Ver link público
                               </Link>
                             </DropdownMenuItem>
                           </DropdownMenuContent>

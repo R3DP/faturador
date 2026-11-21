@@ -40,8 +40,8 @@ export default function NewItemPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="New Item"
-        description="Add a new product or service to your catalog"
+        title="Novo item"
+        description="Adicione um novo produto ou serviço ao seu catálogo"
       />
 
       <div className="mt-6 max-w-2xl">

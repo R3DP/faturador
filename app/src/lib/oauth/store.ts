@@ -1,16 +1,16 @@
-// SERVICE-ROLE MODULE. Bypasses RLS.
+// MÓDULO COM FUNÇÃO DE SERVIÇO. Ignora o RLS.
 //
-// One of the few sanctioned service-role importers, alongside src/lib/api-keys/resolver.ts,
-// /api/v1/me and src/lib/mcp/scoped-db.ts. The OAuth endpoints run with no
-// session at all by construction: /api/oauth/register and /api/oauth/token are
-// called by an agent process that has not signed in to anything, and the rows
-// they touch (oauth_clients, oauth_authorization_codes, oauth_refresh_tokens)
-// carry credential material that RLS deliberately exposes to nobody. Keeping
-// every one of those queries in this one module means the service client has
-// exactly one new door, and it only opens onto the three OAuth tables plus the
-// api_keys row a token grant mints. Anything a signed-in user does with their
-// connections goes through ./connections.ts on their own RLS-checked client.
-// Do not add service-role callers elsewhere without a review that says why.
+// Um dos poucos módulos autorizados a importar a função de serviço, junto de src/lib/api-keys/resolver.ts,
+// /api/v1/me e src/lib/mcp/scoped-db.ts. Os endpoints OAuth não têm
+// sessão por definição: /api/oauth/register e /api/oauth/token são
+// chamados por um processo de agente que não iniciou sessão em nenhum serviço, e as linhas
+// que acessam (oauth_clients, oauth_authorization_codes, oauth_refresh_tokens)
+// contêm credenciais que o RLS deliberadamente não expõe a ninguém. Manter
+// todas essas consultas neste módulo significa que o cliente de serviço tem
+// apenas uma nova porta de entrada, que alcança somente as três tabelas OAuth e a
+// linha api_keys criada por uma concessão de token. Qualquer ação de uma pessoa autenticada sobre suas
+// conexões passa por ./connections.ts, usando o próprio cliente verificado pelo RLS.
+// Não adicione outros pontos de chamada com função de serviço sem uma revisão que justifique o motivo.
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { generateAccessToken } from '@/lib/api-keys/crypto'
@@ -22,9 +22,9 @@ type ServiceClient = ReturnType<typeof createServiceClient>
 let clientFactory: (() => ServiceClient) | null = null
 
 /**
- * Test seam, mirroring src/lib/rate-limit.ts. Lets the code/refresh/token flows
- * be exercised against a fake query builder instead of a database. Production
- * never calls this.
+ * Ponto de substituição para testes, semelhante a src/lib/rate-limit.ts. Permite exercitar os fluxos de código/renovação/token
+ * com um construtor de consultas falso em vez de um banco de dados. Em produção,
+ * nunca é chamado.
  */
 export function _setOauthServiceClient(factory: (() => ServiceClient) | null): void {
   clientFactory = factory
@@ -75,7 +75,7 @@ export interface RefreshTokenRecord {
 }
 
 // ---------------------------------------------------------------------------
-// Clients
+// Clientes
 // ---------------------------------------------------------------------------
 
 export async function registerClient(input: {
@@ -92,7 +92,7 @@ export async function registerClient(input: {
     .select('id, client_id, client_name, redirect_uris, created_at')
     .maybeSingle()
   if (error || !data) {
-    console.error('oauth: registerClient failed', error?.message)
+    console.error('oauth: registerClient falhou', error?.message)
     return null
   }
   return data as OauthClientRecord
@@ -109,7 +109,7 @@ export async function findClientByClientId(clientId: string): Promise<OauthClien
 }
 
 // ---------------------------------------------------------------------------
-// Authorization codes
+// Códigos de autorização
 // ---------------------------------------------------------------------------
 
 export async function issueAuthorizationCode(input: {
@@ -137,7 +137,7 @@ export async function issueAuthorizationCode(input: {
       expires_at: new Date(Date.now() + CODE_TTL_MS).toISOString(),
     })
   if (error) {
-    console.error('oauth: issueAuthorizationCode failed', error.message)
+    console.error('oauth: issueAuthorizationCode falhou', error.message)
     return null
   }
   return code
@@ -152,13 +152,13 @@ const CODE_COLUMNS =
   'id, oauth_client_id, user_id, business_id, redirect_uri, code_challenge, permissions, resource, expires_at'
 
 /**
- * Redeems a code exactly once.
+ * Resgata um código exatamente uma vez.
  *
- * The claim is an UPDATE ... WHERE used_at IS NULL, so two simultaneous
- * redemptions serialise on the row and only one comes back with a row. When the
- * claim misses we look the code up again: a code that exists but is already
- * spent is a replay, and the caller revokes everything that code ever issued
- * (OAuth 2.1 section 4.1.3) rather than merely refusing this one request.
+ * A reivindicação é um UPDATE ... WHERE used_at IS NULL, então duas tentativas simultâneas
+ * de resgate são serializadas na linha e somente uma retorna com uma linha. Quando a
+ * reivindicação não encontra nada, buscamos o código novamente: se ele existe, mas já foi
+ * usado, é uma repetição, e quem chamou revoga tudo o que aquele código emitiu
+ * (OAuth 2.1 seção 4.1.3), em vez de apenas recusar esta requisição.
  */
 export async function consumeAuthorizationCode(code: string): Promise<CodeLookup> {
   const hash = hashSecret(code)
@@ -182,7 +182,7 @@ export async function consumeAuthorizationCode(code: string): Promise<CodeLookup
   return { status: 'reused', record: spent as AuthorizationCodeRecord }
 }
 
-/** Best-effort housekeeping; never blocks a token request. */
+/** Limpeza de melhor esforço; nunca bloqueia uma requisição de token. */
 export function pruneExpiredCodes(): void {
   const cutoff = new Date(Date.now() - 86_400_000).toISOString()
   void svc()
@@ -196,7 +196,7 @@ export function pruneExpiredCodes(): void {
 }
 
 // ---------------------------------------------------------------------------
-// Access tokens (api_keys rows, so resolveApiKey stays the only gate)
+// Tokens de acesso (linhas api_keys; resolveApiKey continua sendo a única barreira)
 // ---------------------------------------------------------------------------
 
 export async function issueAccessToken(input: {
@@ -224,7 +224,7 @@ export async function issueAccessToken(input: {
     .select('id')
     .maybeSingle()
   if (error || !data) {
-    console.error('oauth: issueAccessToken failed', error?.message)
+    console.error('oauth: issueAccessToken falhou', error?.message)
     return null
   }
   return { secret, keyId: (data as { id: string }).id, expiresAt }
@@ -237,11 +237,11 @@ export async function revokeApiKeyById(keyId: string | null): Promise<void> {
     .update({ revoked_at: new Date().toISOString() })
     .eq('id', keyId)
     .is('revoked_at', null)
-  if (error) console.error('oauth: revokeApiKeyById failed', error.message)
+  if (error) console.error('oauth: revokeApiKeyById falhou', error.message)
 }
 
 // ---------------------------------------------------------------------------
-// Refresh tokens
+// Tokens de renovação
 // ---------------------------------------------------------------------------
 
 const REFRESH_COLUMNS =
@@ -271,7 +271,7 @@ export async function issueRefreshToken(input: {
       expires_at: new Date(Date.now() + REFRESH_TOKEN_TTL_MS).toISOString(),
     })
   if (error) {
-    console.error('oauth: issueRefreshToken failed', error.message)
+    console.error('oauth: issueRefreshToken falhou', error.message)
     return null
   }
   return token
@@ -288,8 +288,8 @@ export async function findRefreshToken(token: string): Promise<RefreshTokenRecor
 }
 
 /**
- * Claims a refresh token for rotation. Same single-use UPDATE as the code path,
- * so two clients racing with the same token cannot both be handed a new one.
+ * Reivindica um token de renovação para rotação. Usa o mesmo UPDATE de uso único do fluxo de código,
+ * impedindo que dois clientes concorrentes com o mesmo token recebam um novo token.
  */
 export async function claimRefreshToken(tokenId: string): Promise<boolean> {
   const { data } = await svc()
@@ -304,10 +304,10 @@ export async function claimRefreshToken(tokenId: string): Promise<boolean> {
 }
 
 /**
- * Burns down a whole rotation family: every refresh token in it and every
- * access key those tokens minted. Called when a rotated refresh token or a
- * spent authorization code is presented again, which means the material leaked
- * and we cannot tell the thief from the client.
+ * Invalida toda uma família de rotação: cada token de renovação nela e cada
+ * chave de acesso criada por esses tokens. É chamada quando um token de renovação já rotacionado ou um
+ * código de autorização já usado é apresentado novamente, indicando que as credenciais vazaram
+ * e que não podemos distinguir quem roubou do cliente legítimo.
  */
 export async function revokeRefreshFamily(familyId: string): Promise<void> {
   const client = svc()
@@ -327,7 +327,7 @@ export async function revokeRefreshFamily(familyId: string): Promise<void> {
       .update({ revoked_at: now })
       .in('id', keyIds)
       .is('revoked_at', null)
-    if (error) console.error('oauth: revokeRefreshFamily keys failed', error.message)
+    if (error) console.error('oauth: revokeRefreshFamily keys falhou', error.message)
   }
 
   const { error } = await client
@@ -335,20 +335,20 @@ export async function revokeRefreshFamily(familyId: string): Promise<void> {
     .update({ revoked_at: now })
     .eq('family_id', familyId)
     .is('revoked_at', null)
-  if (error) console.error('oauth: revokeRefreshFamily tokens failed', error.message)
+  if (error) console.error('oauth: revokeRefreshFamily tokens falhou', error.message)
 }
 
 /**
- * Burns down every rotation family that can mint a replacement for one access
- * key. This is what a human clicking Revoke in the Agents UI needs: clearing
- * `api_keys.revoked_at` alone stops the current token but leaves the client
- * holding a refresh token, so the next silent rotation would hand it a fresh
- * 30-day key and the connection would come back on its own.
+ * Invalida todas as famílias de rotação que possam criar uma substituta para uma
+ * chave de acesso. É o que precisa acontecer quando alguém clica em Revogar na interface Agents: limpar
+ * apenas `api_keys.revoked_at` interrompe o token atual, mas deixa o cliente
+ * com um token de renovação, então a próxima rotação silenciosa lhe entregaria uma nova
+ * chave válida por 30 dias e a conexão voltaria a funcionar sozinha.
  *
- * It runs here rather than in ./connections.ts because oauth_refresh_tokens is
- * RLS-locked with no policies: no browser session can read or write it, so the
- * query has to use this module's service client. The caller has already proved
- * the key is theirs through their own RLS-checked UPDATE.
+ * Ela é executada aqui, e não em ./connections.ts, porque oauth_refresh_tokens está
+ * bloqueada pelo RLS e não tem políticas: nenhuma sessão de navegador pode lê-la ou alterá-la, então a
+ * consulta precisa usar o cliente de serviço deste módulo. Quem chamou já comprovou
+ * que a chave lhe pertence por meio do próprio UPDATE verificado pelo RLS.
  */
 export async function revokeRefreshTokensForApiKey(keyId: string): Promise<void> {
   const { data, error } = await svc()
@@ -356,7 +356,7 @@ export async function revokeRefreshTokensForApiKey(keyId: string): Promise<void>
     .select('family_id')
     .eq('api_key_id', keyId)
   if (error) {
-    console.error('oauth: revokeRefreshTokensForApiKey lookup failed', error.message)
+    console.error('oauth: consulta revokeRefreshTokensForApiKey falhou', error.message)
     return
   }
 
@@ -368,7 +368,7 @@ export async function revokeRefreshTokensForApiKey(keyId: string): Promise<void>
     ),
   ]
 
-  // Family-wide, not token-wide: a rotated family shares one lineage, so a
-  // sibling token issued before this key would otherwise survive the revoke.
+  // Abrange a família toda, não apenas o token: tokens rotacionados compartilham a linhagem; caso contrário, um
+  // token irmão emitido antes desta chave sobreviveria à revogação.
   for (const familyId of families) await revokeRefreshFamily(familyId)
 }

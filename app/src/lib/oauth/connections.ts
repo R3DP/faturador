@@ -3,28 +3,28 @@ import { createClient } from '@/lib/supabase/server'
 import { revokeRefreshTokensForApiKey } from './store'
 
 /**
- * Connections a person granted through the OAuth consent screen.
+ * Conexões que uma pessoa autorizou pela tela de consentimento OAuth.
  *
- * These go through the caller's OWN Supabase client, not the service role:
- * api_keys already carries owner RLS, so the database
- * enforces "your keys only" without this module having to be trusted to add the
- * filter. The 1b Agents UI renders these next to manual keys.
+ * Elas usam o próprio cliente Supabase de quem chamou, não a função de serviço:
+ * api_keys já tem RLS por proprietário, então o banco de dados
+ * impõe "somente suas chaves" sem que este módulo precise ser confiável para adicionar o
+ * filtro. A interface 1b Agents as exibe junto às chaves manuais.
  *
- * The listing reads ONE table. It used to embed `oauth_clients(client_name)`,
- * which no signed-in caller may read: the schema states
- * `REVOKE ALL ON oauth_clients FROM PUBLIC, anon, authenticated`, and PostgREST
- * resource embedding needs SELECT on the embedded table for the QUERYING role.
- * So every real request failed, the error was swallowed, and the Connected apps
- * panel showed its empty state no matter how many apps were connected. The name
- * is already on the row we are allowed to read: the token endpoint writes
- * `label: client.client_name` when it mints the key (src/lib/oauth/store.ts,
- * issueAccessToken). Widening oauth_clients to client roles to re-enable the
- * join would hand every signed-in user the whole registration table, which is
- * the opposite trade.
+ * A listagem consulta UMA tabela. Antes, incluía `oauth_clients(client_name)`,
+ * que nenhuma pessoa autenticada pode ler: o schema declara
+ * `REVOKE ALL ON oauth_clients FROM PUBLIC, anon, authenticated`, e o PostgREST
+ * exige SELECT na tabela incluída para a função que faz a CONSULTA.
+ * Assim, toda requisição real falhava, o erro era ignorado e o painel de aplicativos
+ * conectados mostrava o estado vazio, independentemente de quantos apps estivessem conectados. O nome
+ * já está na linha que podemos ler: o endpoint de token grava
+ * `label: client.client_name` ao criar a chave (src/lib/oauth/store.ts,
+ * issueAccessToken). Conceder acesso a oauth_clients às funções de cliente para reativar a
+ * junção daria a cada pessoa autenticada acesso a toda a tabela de registros, o que é
+ * justamente o oposto do objetivo.
  *
- * The one thing RLS cannot do for us is the refresh side: oauth_refresh_tokens
- * has no policies at all, so revoking borrows ./store.ts's service client for
- * that single step, after the user's own client has proved the key is theirs.
+ * A única parte que o RLS não pode resolver é a renovação: oauth_refresh_tokens
+ * não tem políticas, então a revogação usa o cliente de serviço de ./store.ts para
+ * essa etapa, depois que o próprio cliente da pessoa comprova que a chave é dela.
  */
 
 export interface OauthConnection {
@@ -62,7 +62,7 @@ export async function listOauthConnections(userId: string): Promise<OauthConnect
     .order('created_at', { ascending: false })
 
   if (error || !data) {
-    if (error) console.error('oauth: listOauthConnections failed', error.message)
+    if (error) console.error('oauth: listOauthConnections falhou', error.message)
     return []
   }
 
@@ -75,21 +75,21 @@ export async function listOauthConnections(userId: string): Promise<OauthConnect
     lastUsedAt: row.last_used_at,
     expiresAt: row.expires_at,
     revokedAt: row.revoked_at,
-    // The granting application's name, as recorded on the key when it was
-    // minted. Not a join: see the module comment.
+    // Nome do aplicativo que concedeu acesso, registrado na chave quando ela foi
+    // criada. Não é uma junção: consulte o comentário do módulo.
     clientName: row.label,
   }))
 }
 
 /**
- * Revokes one connection, refresh tokens and all.
+ * Revoga uma conexão, incluindo todos os tokens de renovação.
  *
- * The `user_id` filter is belt to RLS's braces, and the `revoked_at IS NULL`
- * filter makes a double revoke report honestly rather than silently moving the
- * timestamp. Order matters: the RLS-checked UPDATE is the authorization check,
- * so the service-role refresh sweep only ever runs for a key the caller just
- * proved they own. Without that sweep a revoke is cosmetic, because the client
- * still holds a refresh token and the next rotation mints a new access key.
+ * O filtro `user_id` complementa o RLS, e o filtro `revoked_at IS NULL`
+ * faz com que uma segunda revogação seja informada corretamente, sem alterar silenciosamente o
+ * horário. A ordem importa: o UPDATE verificado pelo RLS é a checagem de autorização,
+ * então a busca de tokens de renovação com a função de serviço só ocorre para uma chave que a pessoa acabou de
+ * comprovar que possui. Sem essa busca, a revogação é apenas cosmética, pois o cliente
+ * ainda mantém um token de renovação e a próxima rotação cria uma nova chave de acesso.
  */
 export async function revokeOauthConnection(
   userId: string,
@@ -106,10 +106,10 @@ export async function revokeOauthConnection(
     .select('id')
 
   if (error) {
-    console.error('oauth: revokeOauthConnection failed', error.message)
-    return { success: false, error: 'Could not revoke this connection' }
+    console.error('oauth: revokeOauthConnection falhou', error.message)
+    return { success: false, error: 'Não foi possível revogar esta conexão' }
   }
-  if (!data?.length) return { success: false, error: 'Connection not found or already revoked' }
+  if (!data?.length) return { success: false, error: 'Conexão não encontrada ou já revogada' }
 
   await revokeRefreshTokensForApiKey(keyId)
   return { success: true }

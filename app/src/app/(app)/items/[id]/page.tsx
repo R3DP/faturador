@@ -66,9 +66,9 @@ export default function EditItemPage() {
       <div className="p-6 lg:p-8">
         <EmptyState
           icon={Package}
-          title="Item not found"
-          description="The item you're looking for doesn't exist."
-          action={{ label: 'Back to Items', href: '/items' }}
+          title="Item não encontrado"
+          description="O item que você procura não existe."
+          action={{ label: 'Voltar para itens', href: '/items' }}
         />
       </div>
     )
@@ -77,8 +77,8 @@ export default function EditItemPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Edit Item"
-        description={`Update ${item.name}`}
+        title="Editar item"
+        description={`Atualizar ${item.name}`}
       />
 
       <div className="mt-6 max-w-2xl">

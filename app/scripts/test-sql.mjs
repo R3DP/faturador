@@ -1,8 +1,8 @@
-// Runs every supabase/tests/*.sql file against a running local Supabase stack,
-// inside its database container, so no host psql is needed. Each file opens
-// and rolls back its own transaction.
+// Executa todos os arquivos supabase/tests/*.sql em uma pilha local do Supabase em execução,
+// dentro do contêiner do banco de dados, sem precisar do psql do host. Cada arquivo inicia
+// e reverte sua própria transação.
 //
-//   supabase start          # from app/, the checked-in test stack
+//   supabase start          # a partir de app/, a pilha de testes versionada
 //   npm run test:sql
 //   npm run test:sql -- --workdir .self-host/billr-local-56421
 import { execFileSync } from 'node:child_process'
@@ -14,7 +14,7 @@ const app = fileURLToPath(new URL('../', import.meta.url))
 
 export function projectId(configToml) {
   const match = configToml.match(/^project_id\s*=\s*"([^"]+)"/m)
-  if (!match) throw Error('supabase/config.toml has no project_id')
+  if (!match) throw Error('supabase/config.toml não contém project_id')
   return match[1]
 }
 

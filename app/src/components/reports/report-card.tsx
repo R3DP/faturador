@@ -1,13 +1,12 @@
 'use client'
 
 /**
- * The shell every report section sits in: title, one-line explanation, a CSV
- * export, and - where a section draws a chart - a table view of the same
- * numbers.
+ * Estrutura comum de cada seção de relatório: título, explicação breve, opção de exportar
+ * em CSV e, quando a seção mostra um gráfico, uma tabela com os mesmos valores.
  *
- * The table view is not a nicety. It is how a value stays reachable without
- * hovering, how a screen reader gets the data, and how a colour-blind or
- * forced-colours reader checks a mark they cannot separate by hue.
+ * A tabela não é um mero detalhe. Ela permite consultar os valores sem
+ * passar o cursor, oferece os dados a leitores de tela e ajuda pessoas com daltonismo ou
+ * modo de alto contraste a identificar elementos que não conseguem distinguir pela cor.
  */
 
 import { useId, useState } from 'react'
@@ -22,7 +21,7 @@ export interface CsvExport {
   build: () => string
 }
 
-/** Triggers a client-side download. Kept out of lib/reports so that stays pure. */
+/** Inicia o download no navegador. Fica fora de lib/reports para manter esse módulo puro. */
 function downloadCsv(exportSpec: CsvExport) {
   const blob = new Blob([exportSpec.build()], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
@@ -48,9 +47,9 @@ export function ReportCard({
   title: string
   description?: string
   csv?: CsvExport
-  /** Controls that belong to this section only, e.g. the P&L basis switch. */
+  /** Controles exclusivos desta seção, como a seleção do regime contábil. */
   headerExtra?: ReactNode
-  /** The same figures as a table. When present, a chart/table switch appears. */
+  /** Os mesmos dados em formato de tabela. Quando fornecida, exibe-se um controle para alternar entre gráfico e tabela. */
   table?: ReactNode
   children: ReactNode
   className?: string
@@ -74,20 +73,20 @@ export function ReportCard({
             {table ? (
               <div
                 role="group"
-                aria-label={`${title} view`}
+                aria-label={`${title}: opções de visualização`}
                 className="flex items-center rounded-md border border-border p-0.5"
               >
                 <ViewToggle
                   active={view === 'chart'}
                   onClick={() => setView('chart')}
-                  label="Chart"
+                  label="Gráfico"
                   controls={panelId}
                   icon={<BarChart3 className="h-3.5 w-3.5" aria-hidden />}
                 />
                 <ViewToggle
                   active={view === 'table'}
                   onClick={() => setView('table')}
-                  label="Table"
+                  label="Tabela"
                   controls={panelId}
                   icon={<TableIcon className="h-3.5 w-3.5" aria-hidden />}
                 />
@@ -98,7 +97,7 @@ export function ReportCard({
                 variant="outline"
                 size="sm"
                 onClick={() => downloadCsv(csv)}
-                aria-label={`Download ${title} as CSV`}
+                aria-label={`Baixar ${title} em CSV`}
               >
                 <Download className="h-3.5 w-3.5" aria-hidden />
                 CSV
@@ -148,7 +147,7 @@ function ViewToggle({
   )
 }
 
-/** A compact, consistently styled table for the table views. */
+/** Tabela compacta e padronizada para as visualizações em tabela. */
 export function ReportTable({
   columns,
   children,

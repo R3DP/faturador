@@ -1,25 +1,25 @@
 /**
- * Schedule expansion: the one definition of how an agreed total becomes a list
- * of concrete billing entries.
+ * Expansão do cronograma: a definição única de como um valor total acordado
+ * se transforma em uma lista concreta de itens de faturamento.
  *
- * This is deliberately a pure module with no database and no React in it,
- * because the same expansion exists twice and the two copies must agree to the
- * cent:
+ * Este módulo é intencionalmente puro, sem banco de dados nem React, porque a
+ * mesma expansão existe em dois lugares e as duas versões precisam coincidir
+ * até o centavo:
  *
- *   * here, so /engagements/new can preview the schedule before anything is
- *     written, and
- *   * in SQL, as expand_engagement_schedule(), which is what
- *     actually writes the rows, so a hand-written PostgREST call or an agent
- *     cannot smuggle in a schedule that does not add up.
+ *   * aqui, para que /engagements/new possa pré-visualizar o cronograma antes
+ *     de qualquer gravação; e
+ *   * em SQL, como expand_engagement_schedule(), que grava as linhas de fato,
+ *     impedindo que uma chamada PostgREST escrita à mão ou um agente envie um
+ *     cronograma cuja soma esteja incorreta.
  *
- * schedule.test.ts and supabase/tests/engagements.sql run the SAME cases
- * against the two implementations. Change the rules here and you must change
- * them there, or one of those two files fails.
+ * schedule.test.ts e supabase/tests/engagements.sql executam os MESMOS casos
+ * nas duas implementações. Se as regras mudarem aqui, elas também precisam
+ * mudar lá; caso contrário, um dos arquivos de teste vai falhar.
  *
- * Rounding rule, everywhere: every entry but the last is rounded to the cent,
- * and the LAST entry absorbs whatever remainder is left, so the entries always
- * sum to exactly the total. Splitting 100 three ways gives 33.33, 33.33, 33.34
- * and never 99.99.
+ * Regra de arredondamento, em todos os lugares: todos os itens, menos o último,
+ * são arredondados para centavos, e o ÚLTIMO absorve o saldo restante para que
+ * a soma dos itens seja sempre exatamente igual ao total. Dividir 100 em três
+ * resulta em 33.33, 33.33, 33.34, nunca em 99.99.
  */
 
 export const BILLING_MODES = [
@@ -44,7 +44,7 @@ export const ENGAGEMENT_STATUSES = [
 ] as const
 export type EngagementStatus = (typeof ENGAGEMENT_STATUSES)[number]
 
-/** Largest schedule anyone has a use for, and the cap SQL enforces too. */
+/** Limite máximo útil para um cronograma, também imposto pelo SQL. */
 export const MAX_ENTRIES = 100
 
 interface ScheduleEntryInput {
@@ -68,14 +68,14 @@ export interface ExpandInput {
   billing_mode: BillingMode
   total: number
   entries?: ScheduleEntryInput[] | null
-  /** Only for equal_installments, and only when entries are not spelled out. */
+  /** Usado apenas em equal_installments, quando os itens não são especificados. */
   installments?: number | null
 }
 
 /**
- * Every refusal carries a stable code, spelled identically in SQL, so the tool
- * layer and the UI can map one vocabulary onto sentences rather than parsing
- * two different error texts.
+ * Cada recusa traz um código estável, escrito da mesma forma no SQL, para que
+ * a camada de ferramentas e a interface convertam um vocabulário único em
+ * frases, sem precisar interpretar dois textos de erro diferentes.
  */
 export type ScheduleErrorCode =
   | 'invalid_billing_mode'
@@ -100,20 +100,20 @@ export class ScheduleError extends Error {
   }
 }
 
-/** One sentence per refusal, shared by the UI preview and the tool layer. */
+/** Uma frase por recusa, compartilhada pela prévia da interface e pela camada de ferramentas. */
 const SCHEDULE_ERROR_MESSAGES: Record<ScheduleErrorCode, string> = {
-  invalid_billing_mode: 'Pick a billing mode: percent_split, equal_installments, milestones, or manual.',
-  invalid_total: 'The engagement total must be greater than zero.',
-  entries_required: 'This billing mode needs at least one schedule entry.',
-  too_many_entries: `A schedule can hold at most ${MAX_ENTRIES} entries.`,
-  invalid_percent: 'Every entry in a percent split needs a percent above 0 and at most 100.',
-  percent_must_total_100: 'The percentages in a percent split must add up to exactly 100.',
-  entry_amount_required: 'Every entry needs an amount in this billing mode.',
-  invalid_entry_amount: 'Every entry amount must be greater than zero.',
-  entries_must_total_engagement: 'The entry amounts must add up to exactly the engagement total.',
-  invalid_installments: `Choose between 1 and ${MAX_ENTRIES} installments.`,
-  invalid_due_rule: 'Pick a due rule: on_start, on_complete, on_milestone, on_date, or manual.',
-  due_on_required: 'An entry due on a date needs that date.',
+  invalid_billing_mode: 'Escolha uma forma de faturamento: percent_split, equal_installments, milestones ou manual.',
+  invalid_total: 'O valor total do contrato deve ser maior que zero.',
+  entries_required: 'Esta forma de faturamento exige pelo menos um item no cronograma.',
+  too_many_entries: `Um cronograma pode ter no máximo ${MAX_ENTRIES} itens.`,
+  invalid_percent: 'Cada item de uma divisão percentual precisa ter um percentual maior que 0 e menor ou igual a 100.',
+  percent_must_total_100: 'Os percentuais da divisão devem somar exatamente 100.',
+  entry_amount_required: 'Cada item precisa ter um valor nesta forma de faturamento.',
+  invalid_entry_amount: 'O valor de cada item deve ser maior que zero.',
+  entries_must_total_engagement: 'Os valores dos itens devem somar exatamente o valor total do contrato.',
+  invalid_installments: `Escolha entre 1 e ${MAX_ENTRIES} parcelas.`,
+  invalid_due_rule: 'Escolha uma regra de vencimento: on_start, on_complete, on_milestone, on_date ou manual.',
+  due_on_required: 'Informe a data de vencimento do item.',
 }
 
 export function scheduleErrorMessage(code: string): string | null {
@@ -124,7 +124,7 @@ function fail(code: ScheduleErrorCode): never {
   throw new ScheduleError(code, SCHEDULE_ERROR_MESSAGES[code])
 }
 
-/** Cents, with float drift pulled back before the rounding decision. */
+/** Centavos, com a imprecisão de ponto flutuante corrigida antes do arredondamento. */
 function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100
 }
@@ -132,10 +132,10 @@ function round2(value: number): number {
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
 /**
- * Default due rule when the caller does not name one. The shape of a payment
- * plan is nearly always "something at the start, something at the end, and
- * milestones in between", so that is what an unannotated schedule becomes.
- * A manual engagement stays manual: every entry waits for a person.
+ * Regra de vencimento padrão quando quem chamou não informa uma. Um plano de
+ * pagamento quase sempre tem "algo no início, algo no fim e etapas entre eles",
+ * então esse é o formato aplicado a um cronograma sem anotações. Um contrato
+ * manual continua manual: cada item aguarda a ação de uma pessoa.
  */
 function defaultDueRule(mode: BillingMode, index: number, count: number): DueRule {
   if (mode === 'manual') return 'manual'
@@ -147,8 +147,8 @@ function defaultDueRule(mode: BillingMode, index: number, count: number): DueRul
 
 function defaultLabel(mode: BillingMode, index: number, count: number): string {
   return mode === 'equal_installments'
-    ? `Installment ${index + 1} of ${count}`
-    : `Payment ${index + 1} of ${count}`
+    ? `Parcela ${index + 1} de ${count}`
+    : `Pagamento ${index + 1} de ${count}`
 }
 
 function normalizeEntry(
@@ -173,16 +173,16 @@ function normalizeEntry(
     amount,
     percent,
     due_rule: rule,
-    // A date only means something for an on_date entry. Anything else keeps
-    // null, so a stale date cannot make the sweep fire an entry early.
+    // A data só tem significado para um item on_date. Nos demais casos, mantém
+    // null para que uma data desatualizada não faça a rotina liberar o item antes.
     due_on: rule === 'on_date' ? dueOn : null,
   }
 }
 
 /**
- * Splits `total` across `count` entries, each rounded to the cent, with the
- * last entry absorbing the remainder so the parts sum to exactly the total.
- * `weights` are percentages when supplied, equal shares when not.
+ * Divide `total` entre `count` itens, arredondando cada um para centavos; o
+ * último absorve o saldo para que as partes somem exatamente o total.
+ * `weights` representa percentuais quando informado; caso contrário, as partes são iguais.
  */
 function splitTotal(total: number, count: number, weights: number[] | null): number[] {
   const amounts: number[] = []
@@ -197,9 +197,9 @@ function splitTotal(total: number, count: number, weights: number[] | null): num
 }
 
 /**
- * Turns a billing mode plus the caller's rough intent into the concrete rows
- * an engagement is billed from. Throws ScheduleError; never returns a schedule
- * that does not add up to the total.
+ * Converte a forma de faturamento e a intenção geral de quem chamou nas linhas
+ * concretas usadas para faturar um contrato. Lança ScheduleError; nunca retorna
+ * um cronograma cuja soma não corresponda ao total.
  */
 export function expandSchedule(input: ExpandInput): ScheduleEntry[] {
   const mode = input.billing_mode
@@ -242,8 +242,8 @@ export function expandSchedule(input: ExpandInput): ScheduleEntry[] {
     })
   }
 
-  // milestones and manual: the caller states every amount, and the amounts
-  // must already add up. Nothing is redistributed behind their back.
+  // Em milestones e manual, quem chamou informa cada valor e a soma já precisa
+  // estar correta. Nenhum valor é redistribuído sem aviso.
   const amounts = given.map((entry) => {
     if (entry.amount === null || entry.amount === undefined) fail('entry_amount_required')
     const amount = round2(entry.amount)
@@ -260,10 +260,10 @@ export function expandSchedule(input: ExpandInput): ScheduleEntry[] {
 }
 
 /**
- * Business-level schedule templates, seeded onto businesses.schedule_templates
- * by the database. Kept here as well so a business row that predates the
- * column still has something to pick from, and so the
- * SQL test can assert the seed matches what the app believes it seeded.
+ * Modelos de cronograma da empresa, inseridos pelo banco em
+ * businesses.schedule_templates. Também ficam aqui para que uma empresa
+ * criada antes da coluna ainda tenha opções disponíveis e para que o teste
+ * SQL possa confirmar que os dados iniciais correspondem aos do app.
  */
 export interface ScheduleTemplate {
   key: string
@@ -279,8 +279,8 @@ export const DEFAULT_SCHEDULE_TEMPLATES: ScheduleTemplate[] = [
     name: '50/50',
     billing_mode: 'percent_split',
     entries: [
-      { label: 'Deposit', percent: 50, due_rule: 'on_start' },
-      { label: 'On completion', percent: 50, due_rule: 'on_complete' },
+      { label: 'Entrada', percent: 50, due_rule: 'on_start' },
+      { label: 'Na conclusão', percent: 50, due_rule: 'on_complete' },
     ],
   },
   {
@@ -288,30 +288,30 @@ export const DEFAULT_SCHEDULE_TEMPLATES: ScheduleTemplate[] = [
     name: '30/70',
     billing_mode: 'percent_split',
     entries: [
-      { label: 'Deposit', percent: 30, due_rule: 'on_start' },
-      { label: 'On completion', percent: 70, due_rule: 'on_complete' },
+      { label: 'Entrada', percent: 30, due_rule: 'on_start' },
+      { label: 'Na conclusão', percent: 70, due_rule: 'on_complete' },
     ],
   },
   {
     key: 'design_build_launch',
-    name: 'Design / Build / Launch',
+    name: 'Design / Desenvolvimento / Lançamento',
     billing_mode: 'equal_installments',
     installments: 3,
     entries: [
       { label: 'Design', due_rule: 'on_start' },
-      { label: 'Build', due_rule: 'on_milestone' },
-      { label: 'Launch', due_rule: 'on_complete' },
+      { label: 'Desenvolvimento', due_rule: 'on_milestone' },
+      { label: 'Lançamento', due_rule: 'on_complete' },
     ],
   },
   {
     key: '10_equal',
-    name: '10 equal installments',
+    name: '10 parcelas iguais',
     billing_mode: 'equal_installments',
     installments: 10,
   },
 ]
 
-/** Preview for the UI: the schedule a template would produce for a total. */
+/** Prévia da interface: cronograma que um modelo geraria para determinado total. */
 export function expandTemplate(template: ScheduleTemplate, total: number): ScheduleEntry[] {
   return expandSchedule({
     billing_mode: template.billing_mode,

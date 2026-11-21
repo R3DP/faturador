@@ -1,10 +1,11 @@
 /**
- * CSV serialisation for report exports. Pure - builds strings only; the
- * browser download itself lives in the component layer.
+ * Serialização CSV para exportação de relatórios. Pura: cria apenas strings;
+ * o download no navegador fica na camada de componentes.
  *
- * Escaping matters here beyond tidiness: a client name beginning with =, +, -
- * or @ is executed as a formula by Excel and Google Sheets when the file is
- * opened. Those values are prefixed so an exported report cannot run anything.
+ * O escape é importante não só por organização: nomes de clientes iniciados
+ * por =, +, - ou @ são executados como fórmulas pelo Excel e pelo Google Sheets
+ * quando o arquivo é aberto. Esses valores recebem um prefixo para impedir que
+ * um relatório exportado execute qualquer conteúdo.
  */
 
 import { formatRangeLabel, type ReportRange } from '@/lib/reports/date-ranges'
@@ -31,9 +32,9 @@ export function toCsv<T>(rows: readonly T[], columns: readonly CsvColumn<T>[]): 
 }
 
 /**
- * Prepends a comment-free context line so an exported file still says what it
- * covers once it is detached from the app. Kept as plain first-row cells
- * rather than a `#` comment, which spreadsheets do not understand.
+ * Acrescenta uma linha de contexto sem comentários para que o arquivo exportado
+ * continue indicando seu conteúdo mesmo fora do aplicativo. Ela usa células
+ * simples na primeira linha, em vez de um comentário `#`, que planilhas não entendem.
  */
 export function withReportContext(
   csv: string,
@@ -42,13 +43,13 @@ export function withReportContext(
   const header = [
     escapeCsvValue(meta.title),
     escapeCsvValue(formatRangeLabel(meta.range)),
-    escapeCsvValue(`Amounts in ${meta.currency}`),
+    escapeCsvValue(`Valores em ${meta.currency}`),
     ...(meta.note ? [escapeCsvValue(meta.note)] : []),
   ].join(',')
   return `${header}\n\n${csv}\n`
 }
 
-/** Filesystem-safe export name, e.g. billr-ar-aging-2026-01-01-to-2026-03-31.csv */
+/** Nome de exportação seguro para o sistema de arquivos, por exemplo billr-ar-aging-2026-01-01-to-2026-03-31.csv. */
 export function csvFilename(slug: string, range: ReportRange): string {
   const clean = slug.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
   return `billr-${clean}-${range.start}-to-${range.end}.csv`

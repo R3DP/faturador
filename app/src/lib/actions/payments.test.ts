@@ -4,9 +4,9 @@ import { STRIPE_LOCKED_MESSAGE } from '@/lib/payments/messages'
 import { BUSINESS_ID, ROW_ID } from './action-fixture'
 
 /**
- * Recording, correcting and voiding a payment: each write reaches its RPC with
- * the caller's request id intact, and input the form could not have produced
- * never reaches the database.
+ * Registro, correção e anulação de pagamentos: cada gravação chega à RPC com
+ * o request id original, e dados que o formulário não poderia produzir nunca
+ * chegam ao banco.
  */
 
 const { createClientMock } = vi.hoisted(() => ({ createClientMock: vi.fn() }))
@@ -17,7 +17,7 @@ import { recordPaymentAction, updatePaymentAction, voidPaymentAction } from './p
 
 const INVOICE_ID = '60000000-0000-4000-8000-000000000001'
 const REQUEST_ID = '50000000-0000-4000-8000-000000000001'
-/** The corrections take a TEXT request id, not a uuid. */
+/** As correções recebem um request id TEXT, não um uuid. */
 const CORRECTION_REQUEST = 'fix-1'
 
 const recordInput = {
@@ -54,7 +54,7 @@ beforeEach(() => {
 })
 
 describe('recordPaymentAction', () => {
-  it('records, replaying one request id', async () => {
+  it('registra o pagamento reutilizando um request id', async () => {
     const result = await recordPaymentAction(BUSINESS_ID, recordInput, REQUEST_ID)
 
     expect(result).toEqual({ ok: true })
@@ -71,7 +71,7 @@ describe('recordPaymentAction', () => {
     })
   })
 
-  it('rejects an amount the form could not have produced', async () => {
+  it('recusa um valor que o formulário não poderia produzir', async () => {
     const result = await recordPaymentAction(BUSINESS_ID, { ...recordInput, amount: 0 }, REQUEST_ID)
 
     expect('error' in result).toBe(true)
@@ -80,7 +80,7 @@ describe('recordPaymentAction', () => {
 })
 
 describe('updatePaymentAction', () => {
-  it('corrects, keeping the dialog request id', async () => {
+  it('corrige o pagamento mantendo o request id do diálogo', async () => {
     const result = await updatePaymentAction(ROW_ID, updateInput, CORRECTION_REQUEST)
 
     expect(result).toEqual({ ok: true })
@@ -96,7 +96,7 @@ describe('updatePaymentAction', () => {
     })
   })
 
-  it('turns a refusal from the RPC into a sentence a person can act on', async () => {
+  it('converte uma recusa da RPC em uma mensagem compreensível', async () => {
     db = createFakeSupabase({
         'rpc.update_payment': { data: null, error: { message: 'stripe_payment_locked' } },
     })
@@ -109,7 +109,7 @@ describe('updatePaymentAction', () => {
 })
 
 describe('voidPaymentAction', () => {
-  it('voids with the reason and request id', async () => {
+  it('anula usando o motivo e o request id', async () => {
     const result = await voidPaymentAction(ROW_ID, '  Recorded twice  ', CORRECTION_REQUEST)
 
     expect(result).toEqual({ ok: true })
@@ -122,10 +122,10 @@ describe('voidPaymentAction', () => {
     })
   })
 
-  it('will not void without a reason', async () => {
+  it('não anula sem um motivo', async () => {
     const result = await voidPaymentAction(ROW_ID, '   ', CORRECTION_REQUEST)
 
-    expect(result).toEqual({ error: 'Enter a reason for voiding this payment.' })
+    expect(result).toEqual({ error: 'Informe um motivo para anular este pagamento.' })
     expect(db.calls.some((call) => call.op === 'rpc')).toBe(false)
   })
 })

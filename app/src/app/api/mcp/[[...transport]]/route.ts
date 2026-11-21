@@ -21,20 +21,20 @@ import { registerBillrWidgets } from '@/lib/mcp/widgets'
 export const runtime = 'nodejs'
 
 /**
- * MCP server route. Stateless: a fresh McpServer is created per request and
- * closes over the authenticated/scoped ctx resolved for that request, so
- * every tool handler runs with { userId, businessIds, db } already scoped
- * to the caller's API key. See src/lib/mcp/context.ts.
+ * Rota do servidor MCP. Sem estado: um novo McpServer é criado a cada requisição e
+ * captura o contexto autenticado/com escopo resolvido para aquela requisição, para que
+ * cada manipulador de ferramenta execute com { userId, businessIds, db } já limitado
+ * à chave de API do chamador. Consulte src/lib/mcp/context.ts.
  *
- * The tool registration pattern and the "every handler must scope via
- * ctx.db" contract live as a comment in src/lib/mcp/shared.ts (next to
- * serverInfo) rather than here, so it travels with the shared helpers new
- * tool files import.
+ * O padrão de registro de ferramentas e o contrato "cada manipulador deve limitar o acesso via
+ * ctx.db" estão documentados em src/lib/mcp/shared.ts (ao lado de
+ * serverInfo), e não aqui, para acompanhar os auxiliares compartilhados que novos
+ * arquivos de ferramentas importam.
  */
 /**
- * The protected-resource document must be served before a client has a token,
- * so a probe that appends the well-known path to the resource URL (rather than
- * using RFC 9728's path-suffix form) is answered here instead of with a 401.
+ * O documento do recurso protegido precisa ser servido antes de o cliente ter um token,
+ * para que uma consulta que acrescente o caminho well-known à URL do recurso (em vez de
+ * usar o formato de sufixo de caminho da RFC 9728) seja atendida aqui, em vez de receber 401.
  */
 function isProtectedResourceProbe(req: Request): boolean {
   const { pathname } = new URL(req.url)
@@ -63,11 +63,11 @@ async function handleRequest(req: Request): Promise<Response> {
       registerExpenseTools(server, ctx)
       registerPaymentTools(server, ctx)
       registerEngagementTools(server, ctx)
-      // The cards some tools render in ChatGPT and Codex. Static HTML, no data.
+      // Os cartões que algumas ferramentas exibem no ChatGPT e no Codex. HTML estático, sem dados.
       registerBillrWidgets(server)
     },
-    // Billr's MCP server is stateless; refusing resource subscriptions
-    // outright keeps per-request state at zero.
+    // O servidor MCP do Faturador não mantém estado; recusar assinaturas de recursos
+    // mantém o estado por requisição zerado.
     { serverInfo, maxSubscriptions: 0 }
   )
 

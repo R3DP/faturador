@@ -12,15 +12,15 @@ export async function GET(req: NextRequest) {
   if ('error' in resolved) {
     if (resolved.error === 'rate_limited') {
       return NextResponse.json(
-        { error: 'Rate limit exceeded' },
+        { error: 'Limite de solicitações excedido.' },
         { status: 429, headers: { 'Retry-After': '60' } }
       )
     }
-    return NextResponse.json({ error: 'Invalid API key' }, { status: 401 })
+    return NextResponse.json({ error: 'Chave de API inválida.' }, { status: 401 })
   }
 
-  // Read-only lookup of the businesses this key is scoped to, through the
-  // scoped data layer rather than a raw service client.
+  // Consulta somente leitura das empresas às quais esta chave tem acesso, usando a
+  // camada de dados com escopo, em vez de um cliente de serviço sem restrições.
   const db = createScopedDb({ userId: resolved.userId, businessIds: resolved.businessIds })
   const { data: businesses, error } = await db.svc
     .from('businesses')
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
   if (error) {
     console.error('api/v1/me businesses lookup:', error)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro interno.' }, { status: 500 })
   }
 
   return NextResponse.json({ user_id: resolved.userId, businesses: businesses ?? [] })

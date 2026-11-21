@@ -10,9 +10,9 @@ const BUSINESS = '22222222-2222-2222-2222-222222222222'
 let db: FakeDb
 let user: { id: string; created_at: string; user_metadata: Record<string, unknown> } | null
 
-// The consent page and its actions read the SIGNED-IN user's own client, so RLS
-// decides what they can see. Here that client is the same fake row store, with
-// an auth shim on top.
+// A tela de consentimento e suas ações consultam o próprio cliente do usuário AUTENTICADO, então o RLS
+// decide o que ele pode ver. Aqui, esse cliente usa o mesmo armazenamento de linhas fictícias, com
+// uma camada simulada de autenticação.
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     ...db.client,
@@ -52,7 +52,7 @@ function render(params: Record<string, string>) {
   return AuthorizePage({ searchParams: Promise.resolve(params) })
 }
 
-/** next/navigation's redirect() throws; the target is in the digest. */
+/** redirect() de next/navigation lança uma exceção; o destino fica no digest. */
 async function redirectTarget(promise: Promise<unknown>): Promise<string> {
   try {
     await promise
@@ -69,11 +69,11 @@ function problemTitle(element: unknown): string {
   return (element as { props: { title: string } }).props.title
 }
 
-describe('authorize request validation', () => {
+describe('validação da solicitação de autorização', () => {
   const verifier = generateSecret(48)
   const challenge = challengeFromVerifier(verifier)
 
-  it('refuses an unknown client without redirecting anywhere', async () => {
+  it('recusa um cliente desconhecido sem redirecionar para lugar algum', async () => {
     const element = await render({
       client_id: 'billr_client_unknown',
       redirect_uri: REDIRECT,
@@ -81,10 +81,10 @@ describe('authorize request validation', () => {
       code_challenge: challenge,
       code_challenge_method: 'S256',
     })
-    expect(problemTitle(element)).toBe('Unknown application')
+    expect(problemTitle(element)).toBe('Aplicativo desconhecido')
   })
 
-  it('refuses a redirect URI the client never registered, and does not redirect to it', async () => {
+  it('recusa uma URI de redirecionamento nunca registrada pelo cliente e não redireciona para ela', async () => {
     const client = await seedClient()
     const element = await render({
       client_id: client.client_id,
@@ -93,14 +93,14 @@ describe('authorize request validation', () => {
       code_challenge: challenge,
       code_challenge_method: 'S256',
     })
-    expect(problemTitle(element)).toBe('Return address does not match')
+    expect(problemTitle(element)).toBe('O endereço de retorno não corresponde')
   })
 
-  it('refuses a request with no client id or return address', async () => {
-    expect(problemTitle(await render({}))).toBe('Incomplete request')
+  it('recusa uma solicitação sem ID de cliente ou endereço de retorno', async () => {
+    expect(problemTitle(await render({}))).toBe('Solicitação incompleta')
   })
 
-  it('sends protocol errors back to a registered redirect URI', async () => {
+  it('envia erros do protocolo de volta a uma URI de redirecionamento registrada', async () => {
     const client = await seedClient()
     const base = {
       client_id: client.client_id,
@@ -133,7 +133,7 @@ describe('authorize request validation', () => {
     expect(wrongAudience.searchParams.get('error')).toBe('invalid_target')
   })
 
-  it('sends an unauthenticated visitor to sign in and back to this exact request', async () => {
+  it('direciona um visitante não autenticado à página de entrada e depois de volta a esta solicitação exata', async () => {
     const client = await seedClient()
     user = null
     const target = await redirectTarget(
@@ -153,7 +153,7 @@ describe('authorize request validation', () => {
     expect(back).toContain(`client_id=${client.client_id}`)
   })
 
-  it('renders the consent screen with the requested scopes pre-selected', async () => {
+  it('exibe a tela de consentimento com os escopos solicitados pré-selecionados', async () => {
     const client = await seedClient()
     const element = (await render({
       client_id: client.client_id,
@@ -170,11 +170,11 @@ describe('authorize request validation', () => {
   })
 })
 
-describe('consent decisions', () => {
+describe('decisões de consentimento', () => {
   const verifier = generateSecret(48)
   const challenge = challengeFromVerifier(verifier)
 
-  it('issues a single-use code bound to the client, business and PKCE challenge', async () => {
+  it('emite um código de uso único vinculado ao cliente, à empresa e ao desafio PKCE', async () => {
     const client = await seedClient()
     const result = await approveAuthorizationAction({
       clientId: client.client_id,
@@ -204,13 +204,13 @@ describe('consent decisions', () => {
       permissions: ['read', 'write', 'send'],
     })
     expect(stored.used_at ?? null).toBeNull()
-    // Ten minute lifetime.
+    // Validade de dez minutos.
     const ttl = Date.parse(stored.expires_at as string) - Date.now()
     expect(ttl).toBeGreaterThan(9 * 60_000)
     expect(ttl).toBeLessThanOrEqual(10 * 60_000)
   })
 
-  it('grants only what the person left ticked, never what was asked for', async () => {
+  it('concede somente as permissões selecionadas pela pessoa, nunca todas as solicitadas', async () => {
     const client = await seedClient()
     await approveAuthorizationAction({
       clientId: client.client_id,
@@ -222,7 +222,7 @@ describe('consent decisions', () => {
     expect(db.tables.oauth_authorization_codes[0].permissions).toEqual(['read', 'write'])
   })
 
-  it('refuses a business the signed-in user does not belong to', async () => {
+  it('recusa uma empresa à qual a pessoa conectada não pertence', async () => {
     const client = await seedClient()
     const result = await approveAuthorizationAction({
       clientId: client.client_id,
@@ -231,11 +231,11 @@ describe('consent decisions', () => {
       businessId: '33333333-3333-3333-3333-333333333333',
       permissions: ['read'],
     })
-    expect(result).toEqual({ error: 'Choose a business you have access to.' })
+    expect(result).toEqual({ error: 'Escolha uma empresa à qual você tenha acesso.' })
     expect(db.tables.oauth_authorization_codes ?? []).toHaveLength(0)
   })
 
-  it('re-checks the redirect URI and the PKCE challenge in the action itself', async () => {
+  it('verifica novamente a URI de redirecionamento e o desafio PKCE na própria ação', async () => {
     const client = await seedClient()
     const forged = await approveAuthorizationAction({
       clientId: client.client_id,
@@ -257,7 +257,7 @@ describe('consent decisions', () => {
     expect(db.tables.oauth_authorization_codes ?? []).toHaveLength(0)
   })
 
-  it('refuses to issue a code without a session', async () => {
+  it('recusa emitir um código sem uma sessão', async () => {
     const client = await seedClient()
     user = null
     const result = await approveAuthorizationAction({
@@ -270,7 +270,7 @@ describe('consent decisions', () => {
     expect('error' in result).toBe(true)
   })
 
-  it('sends access_denied back to the client when the person declines', async () => {
+  it('envia access_denied de volta ao cliente quando a pessoa recusa', async () => {
     const client = await seedClient()
     const result = await denyAuthorizationAction({
       clientId: client.client_id,
@@ -283,7 +283,7 @@ describe('consent decisions', () => {
     expect(db.tables.oauth_authorization_codes ?? []).toHaveLength(0)
   })
 
-  it('will not bounce a denial to an unregistered address', async () => {
+  it('não redireciona uma recusa para um endereço não registrado', async () => {
     const client = await seedClient()
     const result = await denyAuthorizationAction({
       clientId: client.client_id,

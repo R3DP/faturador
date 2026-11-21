@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { requestPasswordResetAction } from '@/lib/auth/actions'
 
 const forgotPasswordSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  email: z.string().email('Informe um endereço de e-mail válido'),
 })
 
 type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>
@@ -31,13 +31,13 @@ export default function ForgotPasswordPage() {
 
   async function onSubmit(data: ForgotPasswordForm) {
     setError(null)
-    // Server action so the reset-email endpoint cannot be used as an
-    // unmetered mail cannon, and so the response never reveals whether an
-    // account exists (src/lib/auth/actions.ts).
+    // A ação de servidor impede que o endpoint de redefinição de senha seja usado como
+    // um disparador de e-mails sem limite e garante que a resposta nunca revele se uma
+    // conta existe (src/lib/auth/actions.ts).
     const result = await requestPasswordResetAction({ email: data.email })
 
     if (!result.success) {
-      setError(result.error ?? 'Could not send the reset email. Please try again.')
+      setError(result.error ?? 'Não foi possível enviar o e-mail de redefinição. Tente novamente.')
       return
     }
 
@@ -63,13 +63,13 @@ export default function ForgotPasswordPage() {
           </svg>
         </div>
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-          Check your email
+          Confira seu e-mail
         </h1>
         <p className="mt-2 text-muted-foreground">
-          We&apos;ve sent you a password reset link. Please check your email.
+          Enviamos um link para redefinir sua senha. Confira seu e-mail.
         </p>
         <Button className="mt-6" variant="outline" asChild>
-          <Link href="/login">Back to sign in</Link>
+          <Link href="/login">Voltar para entrar</Link>
         </Button>
       </div>
     )
@@ -82,15 +82,15 @@ export default function ForgotPasswordPage() {
         className="mb-6 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to sign in
+        Voltar para entrar
       </Link>
 
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          Reset your password
+          Redefinir sua senha
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Enter your email address and we&apos;ll send you a link to reset your password.
+          Informe seu endereço de e-mail e enviaremos um link para redefinir sua senha.
         </p>
       </div>
 
@@ -102,7 +102,7 @@ export default function ForgotPasswordPage() {
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">E-mail</Label>
           <Input
             id="email"
             type="email"
@@ -117,7 +117,7 @@ export default function ForgotPasswordPage() {
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Send reset link
+          Enviar link de redefinição
         </Button>
       </form>
     </div>

@@ -49,17 +49,17 @@ export function deriveChecklist(facts: ChecklistFacts): ChecklistStep[] {
   const agentDone = facts.usedApiKeyCount > 0
   const agentHint =
     !agentDone && facts.apiKeyCount > 0 && facts.usedApiKeyCount === 0
-      ? 'Key created. Connect your agent to finish.'
+      ? 'Chave criada. Conecte seu agente para concluir.'
       : undefined
 
   const steps: ChecklistStep[] = [
-    { id: 'business', label: 'Add your business details', href: '/settings/business', done: businessDone },
-    { id: 'branding', label: 'Add your logo and color', href: '/settings/branding', done: brandingDone },
-    { id: 'stripe', label: 'Add your Stripe keys', href: '/agents?tab=payments', done: stripeDone },
-    { id: 'client', label: 'Add your first client', href: '/clients/new', done: clientDone },
-    { id: 'invoice', label: 'Create your first invoice', href: '/invoices/new', done: invoiceDone },
-    { id: 'send', label: 'Send an invoice', href: '/invoices', done: sendDone },
-    { id: 'agent', label: 'Connect your agent', href: '/agents?tab=connect', done: agentDone, ...(agentHint ? { hint: agentHint } : {}) },
+    { id: 'business', label: 'Adicione os dados da sua empresa', href: '/settings/business', done: businessDone },
+    { id: 'branding', label: 'Adicione seu logotipo e sua cor', href: '/settings/branding', done: brandingDone },
+    { id: 'stripe', label: 'Adicione suas chaves do Stripe', href: '/agents?tab=payments', done: stripeDone },
+    { id: 'client', label: 'Adicione seu primeiro cliente', href: '/clients/new', done: clientDone },
+    { id: 'invoice', label: 'Crie sua primeira fatura', href: '/invoices/new', done: invoiceDone },
+    { id: 'send', label: 'Envie uma fatura', href: '/invoices', done: sendDone },
+    { id: 'agent', label: 'Conecte seu agente', href: '/agents?tab=connect', done: agentDone, ...(agentHint ? { hint: agentHint } : {}) },
   ]
 
   return steps

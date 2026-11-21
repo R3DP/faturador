@@ -71,8 +71,8 @@ export default function EngagementDetailPage() {
     const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
-    // Same read path sweep as the list page: an entry whose date has passed
-    // becomes billable when somebody looks.
+    // A mesma verificação durante a consulta da página de lista: um lançamento cuja data já passou
+    // fica pronto para faturamento quando alguém acessa a página.
     await supabase.rpc('promote_due_entries', { p_business_id: currentBusiness.id })
 
     const [{ data: row }, { data: summaryRow }, { data: entryRows }] = await Promise.all([
@@ -149,7 +149,7 @@ export default function EngagementDetailPage() {
       toast.error(result.error)
       return
     }
-    toast.success(`Marked "${entry.label}" complete`)
+    toast.success(`Lançamento "${entry.label}" concluído`)
     await load()
   }
 
@@ -166,7 +166,7 @@ export default function EngagementDetailPage() {
     }
     setWaiving(null)
     setWaiveReason('')
-    toast.success('Entry waived')
+    toast.success('Lançamento dispensado')
     await load()
   }
 
@@ -181,10 +181,10 @@ export default function EngagementDetailPage() {
   if (!engagement) {
     return (
       <div className="p-6 lg:p-8">
-        <PageHeader title="Engagement not found" description="It may have been deleted." />
+        <PageHeader title="Contrato não encontrado" description="Ele pode ter sido excluído." />
         <Button className="mt-6" variant="outline" onClick={() => router.push('/engagements')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to engagements
+          Voltar para contratos
         </Button>
       </div>
     )
@@ -192,14 +192,14 @@ export default function EngagementDetailPage() {
 
   const isClosed = engagement.status === 'completed' || engagement.status === 'cancelled'
   const readyEntries = entries.filter((entry) => entry.status === 'ready_to_bill')
-  // A draft or cancelled engagement cannot be billed at all,
-  // so the button is not offered rather than offered and refused.
+  // Um contrato em rascunho ou cancelado não pode ser faturado,
+  // por isso o botão nem é exibido, em vez de ser exibido e depois recusado.
   const canDraftInvoice =
     readyEntries.length > 0 &&
     engagement.status !== 'draft' &&
     engagement.status !== 'cancelled'
-  // Pre-selects exactly the entries that are ready, on the real invoice form,
-  // so the person still sees and approves what is about to be billed.
+  // Pré-seleciona exatamente os lançamentos prontos no formulário real da fatura,
+  // para que a pessoa veja e aprove o que será faturado.
   const draftInvoiceHref = `/invoices/new?client=${engagement.client_id}&engagement_entries=${readyEntries
     .map((entry) => entry.id)
     .join(',')}`
@@ -211,26 +211,26 @@ export default function EngagementDetailPage() {
         className="mb-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Engagements
+        Contratos
       </Link>
 
       <PageHeader
         title={engagement.name}
-        description={`${clientName ?? 'Unknown client'} · ${BILLING_MODE_LABELS[engagement.billing_mode]}`}
+        description={`${clientName ?? 'Cliente desconhecido'} · ${BILLING_MODE_LABELS[engagement.billing_mode]}`}
       >
         <Badge className={ENGAGEMENT_STATUS_COLORS[engagement.status]}>{engagement.status}</Badge>
         {canDraftInvoice && (
           <Button size="sm" asChild>
             <Link href={draftInvoiceHref}>
               <FileText className="mr-2 h-4 w-4" />
-              Draft invoice from ready entries
+              Criar fatura com lançamentos prontos
             </Link>
           </Button>
         )}
         {(engagement.status === 'draft' || engagement.status === 'paused') && (
-          <Button size="sm" disabled={isBusy} onClick={() => changeStatus('active', 'Engagement started')}>
+          <Button size="sm" disabled={isBusy} onClick={() => changeStatus('active', 'Contrato iniciado')}>
             <Play className="mr-2 h-4 w-4" />
-            Start
+            Iniciar
           </Button>
         )}
         {engagement.status === 'active' && (
@@ -238,10 +238,10 @@ export default function EngagementDetailPage() {
             size="sm"
             variant="outline"
             disabled={isBusy}
-            onClick={() => changeStatus('paused', 'Engagement paused')}
+            onClick={() => changeStatus('paused', 'Contrato pausado')}
           >
             <Pause className="mr-2 h-4 w-4" />
-            Pause
+            Pausar
           </Button>
         )}
         {!isClosed && (
@@ -249,10 +249,10 @@ export default function EngagementDetailPage() {
             size="sm"
             variant="outline"
             disabled={isBusy}
-            onClick={() => changeStatus('completed', 'Engagement completed')}
+            onClick={() => changeStatus('completed', 'Contrato concluído')}
           >
             <Check className="mr-2 h-4 w-4" />
-            Complete
+            Concluir
           </Button>
         )}
         {!isClosed && (
@@ -260,21 +260,21 @@ export default function EngagementDetailPage() {
             size="sm"
             variant="ghost"
             disabled={isBusy}
-            onClick={() => changeStatus('cancelled', 'Engagement cancelled')}
+            onClick={() => changeStatus('cancelled', 'Contrato cancelado')}
           >
             <Ban className="mr-2 h-4 w-4" />
-            Cancel
+            Cancelar
           </Button>
         )}
       </PageHeader>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-4">
         {[
-          { label: 'Agreed total', value: money(engagement.total) },
-          { label: 'Billed', value: money(summary?.amount_billed) },
-          { label: 'Remaining', value: money(summary?.amount_remaining) },
+          { label: 'Total acordado', value: money(engagement.total) },
+          { label: 'Faturado', value: money(summary?.amount_billed) },
+          { label: 'Restante', value: money(summary?.amount_remaining) },
           {
-            label: 'Ready to bill',
+            label: 'Pronto para faturar',
             value: `${summary?.ready_count ?? 0} · ${money(summary?.ready_amount)}`,
           },
         ].map((stat) => (
@@ -289,18 +289,18 @@ export default function EngagementDetailPage() {
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>Schedule</CardTitle>
+          <CardTitle>Cronograma</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Entry</TableHead>
-                <TableHead>Becomes billable</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Invoice</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Lançamento</TableHead>
+                <TableHead>Fica faturável</TableHead>
+                <TableHead className="text-right">Valor</TableHead>
+                <TableHead>Situação</TableHead>
+                <TableHead>Fatura</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -339,7 +339,7 @@ export default function EngagementDetailPage() {
                           {invoice.invoice_number}
                         </Link>
                       ) : (
-                        <span className="text-muted-foreground">Not billed</span>
+                        <span className="text-muted-foreground">Não faturado</span>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -352,7 +352,7 @@ export default function EngagementDetailPage() {
                             onClick={() => markComplete(entry)}
                           >
                             <Check className="mr-1 h-3.5 w-3.5" />
-                            Mark complete
+                            Marcar como concluído
                           </Button>
                           <Button
                             size="sm"
@@ -364,7 +364,7 @@ export default function EngagementDetailPage() {
                             }}
                           >
                             <CircleSlash className="mr-1 h-3.5 w-3.5" />
-                            Waive
+                            Dispensar
                           </Button>
                         </div>
                       )}
@@ -380,7 +380,7 @@ export default function EngagementDetailPage() {
       {engagement.notes && (
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Notes</CardTitle>
+            <CardTitle>Observações</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="whitespace-pre-wrap text-sm text-muted-foreground">{engagement.notes}</p>
@@ -391,27 +391,27 @@ export default function EngagementDetailPage() {
       <Dialog open={!!waiving} onOpenChange={(open) => !open && setWaiving(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Waive this entry</DialogTitle>
+            <DialogTitle>Dispensar este lançamento</DialogTitle>
             <DialogDescription>
-              {waiving ? `${waiving.label}, ${money(waiving.amount)}.` : ''} It stays in the
-              schedule with the reason, but stops counting towards what is left to bill.
+              {waiving ? `${waiving.label}, ${money(waiving.amount)}.` : ''} Ele continua no
+              cronograma com o motivo, mas deixa de contar no saldo a faturar.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="waive-reason">Reason</Label>
+            <Label htmlFor="waive-reason">Motivo</Label>
             <Input
               id="waive-reason"
               value={waiveReason}
               onChange={(event) => setWaiveReason(event.target.value)}
-              placeholder="Client absorbed this work"
+              placeholder="O cliente assumiu este trabalho"
             />
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setWaiving(null)}>
-              Cancel
+              Cancelar
             </Button>
             <Button onClick={confirmWaive} disabled={isBusy || waiveReason.trim().length === 0}>
-              Waive
+              Dispensar
             </Button>
           </DialogFooter>
         </DialogContent>

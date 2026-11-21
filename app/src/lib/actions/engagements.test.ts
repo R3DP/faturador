@@ -3,14 +3,14 @@ import { createFakeSupabase, type FakeSupabase } from '@/lib/mcp/fake-supabase'
 import { BUSINESS_ID, CLIENT_ID, ROW_ID } from './action-fixture'
 
 /**
- * The browser side of engagements part B: billing a schedule entry onto an
- * invoice, and turning an accepted quote into the agreement it was quoting.
+ * Parte B dos contratos no navegador: faturar um lançamento da agenda em uma
+ * fatura e transformar um orçamento aceito no contrato que ele descrevia.
  *
- * What these prove is the boundary, not the arithmetic. The arithmetic lives
- * in SQL and is asserted in supabase/tests/engagements.sql.
- * What can only be asserted here is that the action passes the entry ids and
- * NOT the money, and that a refusal comes back as the sentence a person is
- * shown rather than a Postgres error.
+ * Estes testes comprovam os limites, não os cálculos. A lógica dos cálculos
+ * fica no SQL e é verificada em supabase/tests/engagements.sql. Aqui, só é
+ * possível confirmar que a action envia os IDs dos lançamentos, e NÃO os
+ * valores, e que uma recusa retorna uma mensagem compreensível, em vez de um
+ * erro do Postgres.
  */
 
 const { createClientMock } = vi.hoisted(() => ({ createClientMock: vi.fn() }))
@@ -33,7 +33,7 @@ const invoiceInput = {
   line_items: [
     {
       id: 'line-1',
-      description: 'Consulting',
+      description: 'Consultoria',
       quantity: 1,
       rate: 250,
       amount: 250,
@@ -79,8 +79,8 @@ beforeEach(() => {
   setup()
 })
 
-describe('createInvoiceAction with engagement entries', () => {
-  it('passes the entry ids through and lets the database price them', async () => {
+describe('createInvoiceAction com lançamentos do contrato', () => {
+  it('repassa os IDs dos lançamentos e deixa o banco calcular os valores', async () => {
     await createInvoiceAction(BUSINESS_ID, invoiceInput, 'draft', REQUEST_ID, [ENTRY_A, ENTRY_B])
 
     const payload = rpcPayload('create_invoice_document')
@@ -89,16 +89,16 @@ describe('createInvoiceAction with engagement entries', () => {
       p_request_id: REQUEST_ID,
       p_engagement_entry_ids: [ENTRY_A, ENTRY_B],
     })
-    // No amount for an entry is ever sent from the browser.
+    // O navegador nunca envia o valor de um lançamento.
     expect(JSON.stringify(payload?.p_lines)).not.toContain(ENTRY_A)
   })
 
-  it('sends an empty list when nothing was billed off a schedule', async () => {
+  it('envia uma lista vazia quando nenhum lançamento da agenda foi faturado', async () => {
     await createInvoiceAction(BUSINESS_ID, invoiceInput, 'draft', REQUEST_ID)
     expect(rpcPayload('create_invoice_document')).toMatchObject({ p_engagement_entry_ids: [] })
   })
 
-  it('turns a double billing refusal into a sentence a person can act on', async () => {
+  it('converte a recusa de faturamento duplicado em uma mensagem compreensível', async () => {
     setup({
       'rpc.create_invoice_document': {
         data: null,
@@ -107,10 +107,10 @@ describe('createInvoiceAction with engagement entries', () => {
     })
     await expect(
       createInvoiceAction(BUSINESS_ID, invoiceInput, 'draft', REQUEST_ID, [ENTRY_A]),
-    ).rejects.toThrow(/already on an invoice/)
+    ).rejects.toThrow(/já está em uma fatura/)
   })
 
-  it('keeps an unrelated database message rather than swallowing it', async () => {
+  it('preserva mensagens do banco não relacionadas em vez de ocultá-las', async () => {
     setup({
       'rpc.create_invoice_document': { data: null, error: { message: 'Invoice number already exists' } },
     })
@@ -121,14 +121,14 @@ describe('createInvoiceAction with engagement entries', () => {
 })
 
 describe('convertEstimateToEngagementAction', () => {
-  it('sends the schedule shape and never the quoted total or currency', async () => {
+  it('envia o formato da agenda sem incluir o total ou a moeda do orçamento', async () => {
     const result = await convertEstimateToEngagementAction(
       ROW_ID,
       {
         billing_mode: 'percent_split',
         entries: [
-          { label: 'Deposit', percent: 50 },
-          { label: 'On delivery', percent: 50 },
+          { label: 'Entrada', percent: 50 },
+          { label: 'Na entrega', percent: 50 },
         ],
       },
       REQUEST_ID,
@@ -146,7 +146,7 @@ describe('convertEstimateToEngagementAction', () => {
     expect(payload).not.toHaveProperty('p_client_id')
   })
 
-  it('explains a quote that already became an invoice', async () => {
+  it('explica que o orçamento já foi convertido em fatura', async () => {
     setup({
       'rpc.convert_estimate_to_engagement': {
         data: null,
@@ -160,11 +160,11 @@ describe('convertEstimateToEngagementAction', () => {
     )
     expect(result).toEqual({
       error:
-        'That estimate has already been converted into an invoice, so it cannot also become an engagement.',
+        'Esse orçamento já foi convertido em fatura, então não pode também ser convertido em contrato.',
     })
   })
 
-  it('explains a quote that already became an engagement', async () => {
+  it('explica que o orçamento já foi convertido em contrato', async () => {
     setup({
       'rpc.convert_estimate_to_engagement': {
         data: null,
@@ -176,10 +176,10 @@ describe('convertEstimateToEngagementAction', () => {
       { billing_mode: 'equal_installments', installments: 2 },
       REQUEST_ID,
     )
-    expect('error' in result && result.error).toMatch(/already become an engagement/)
+    expect('error' in result && result.error).toMatch(/já foi convertido em contrato/)
   })
 
-  it('refuses a billing mode it does not know, without calling the database', async () => {
+  it('recusa um modo de faturamento desconhecido sem chamar o banco', async () => {
     const result = await convertEstimateToEngagementAction(
       ROW_ID,
       { billing_mode: 'retainer' as never },

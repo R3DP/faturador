@@ -13,8 +13,8 @@ export async function GET(request: Request) {
       const supabase = await createClient()
       const { error } = await supabase.auth.exchangeCodeForSession(code)
       if (!error) {
-        // GitHub and Google create the account before this point, so this is
-        // where sign-up closes for them.
+        // GitHub e Google criam a conta antes deste ponto, então é aqui que
+        // a inscrição usando esses provedores é concluída.
         const {
           data: { user },
         } = await supabase.auth.getUser()
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}${next}`)
       }
     } catch {
-      // A provider/network failure should leave the user able to try again.
+      // Uma falha do provedor ou da rede deve permitir que a pessoa tente novamente.
     }
   }
 

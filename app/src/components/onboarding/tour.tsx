@@ -20,101 +20,101 @@ const TOUR_STEPS: TourStepDef[] = [
   {
     id: 'nav',
     selector: '[data-tour="nav"]',
-    title: 'Your workspace',
-    body: 'Everything you need to run your business lives in this sidebar.',
+    title: 'Seu espaço de trabalho',
+    body: 'Tudo o que você precisa para administrar sua empresa está nesta barra lateral.',
     placement: 'right',
   },
   {
     id: 'dashboard',
     selector: '[data-tour="dashboard"]',
-    title: 'Daily snapshot',
-    body: 'Your dashboard opens on what needs attention today: money owed to you, invoices going overdue, and what you have earned this month.',
+    title: 'Resumo do dia',
+    body: 'Seu painel mostra o que precisa de atenção hoje: valores a receber, faturas prestes a vencer e quanto você ganhou neste mês.',
     placement: 'right',
   },
   {
     id: 'clients',
     selector: '[data-tour="clients"]',
-    title: 'Your clients',
-    body: 'Keep contact details, billing addresses, and payment terms in one place. Everything you bill starts by picking a client here.',
+    title: 'Seus clientes',
+    body: 'Mantenha contatos, endereços de cobrança e condições de pagamento em um só lugar. Para cobrar, comece escolhendo um cliente aqui.',
     placement: 'right',
   },
   {
     id: 'invoices',
     selector: '[data-tour="invoices"]',
-    title: 'Invoices',
-    body: 'Build an invoice, send it as a payable link, and let automatic reminders chase the late ones so you do not have to.',
+    title: 'Faturas',
+    body: 'Monte uma fatura, envie um link para pagamento e deixe os lembretes automáticos cobrarem os atrasados por você.',
     placement: 'right',
   },
   {
     id: 'estimates',
     selector: '[data-tour="estimates"]',
-    title: 'Estimates and quotes',
-    body: 'Send a quote before the work starts and get it approved in writing. Once a client accepts, convert it to an invoice in one click.',
+    title: 'Orçamentos e propostas',
+    body: 'Envie uma proposta antes de começar o trabalho e obtenha a aprovação por escrito. Quando o cliente aceitar, converta-a em fatura com um clique.',
     placement: 'right',
   },
   {
     id: 'items',
     selector: '[data-tour="items"]',
-    title: 'Saved items',
-    body: 'Store the services and products you bill again and again, with rates and tax already set, so new invoices take seconds to fill in.',
+    title: 'Itens salvos',
+    body: 'Cadastre serviços e produtos que você cobra com frequência, com valores e impostos definidos, para preencher novas faturas em segundos.',
     placement: 'right',
   },
   {
     id: 'time',
     selector: '[data-tour="time"]',
-    title: 'Time tracking',
-    body: 'Log billable hours against a client or project as you work. Unbilled time drops straight onto your next invoice.',
+    title: 'Controle de tempo',
+    body: 'Registre as horas faturáveis de um cliente ou projeto enquanto trabalha. O tempo ainda não faturado vai direto para sua próxima fatura.',
     placement: 'right',
   },
   {
     id: 'expenses',
     selector: '[data-tour="expenses"]',
-    title: 'Expenses',
-    body: 'Record costs and their vendors. Mark an expense billable to rebill it to the client, and keep the rest for your books at tax time.',
+    title: 'Despesas',
+    body: 'Registre custos e fornecedores. Marque uma despesa como faturável para repassá-la ao cliente e mantenha as demais organizadas para a contabilidade.',
     placement: 'right',
   },
   {
     id: 'payments',
     selector: '[data-tour="payments"]',
-    title: 'Getting paid',
-    body: 'Clients pay by card or bank transfer and the money lands in your own Stripe account. Billr takes 0% on top of what you collect.',
+    title: 'Recebimentos',
+    body: 'Os clientes pagam com cartão ou transferência bancária, e o dinheiro vai para sua própria conta Stripe. O Faturador não cobra nada sobre os valores recebidos.',
     placement: 'right',
   },
   {
     id: 'reports',
     selector: '[data-tour="reports"]',
-    title: 'Reports',
-    body: 'See revenue over time, who your best clients are, and what is still outstanding. Export the numbers when your accountant asks.',
+    title: 'Relatórios',
+    body: 'Acompanhe a receita ao longo do tempo, seus melhores clientes e o que ainda falta receber. Exporte os números quando seu contador solicitar.',
     placement: 'right',
   },
   {
     id: 'agents',
     selector: '[data-tour="agents"]',
-    title: 'Your agents',
-    body: 'Connect an AI assistant and it can add clients, draft and send invoices, log time and expenses, and record payments for you. This is the busywork you stop doing.',
+    title: 'Seus agentes',
+    body: 'Conecte um assistente de IA para adicionar clientes, criar rascunhos e enviar faturas, registrar horas e despesas e lançar pagamentos. Deixe as tarefas repetitivas com ele.',
     placement: 'right',
   },
   {
     id: 'settings',
     selector: '[data-tour="settings"]',
-    title: 'Settings',
-    body: 'Set your business details, logo, tax rates, and payment options here. Do this once and every document you send looks right.',
+    title: 'Configurações',
+    body: 'Configure aqui os dados da empresa, o logotipo, as alíquotas de impostos e as opções de pagamento. Faça isso uma vez para padronizar todos os documentos enviados.',
     placement: 'right',
   },
   {
     id: 'setup',
     selector: '[data-tour="setup"]',
-    title: 'Track your setup',
-    body: 'This bar shows what is left before your account is fully set up.',
+    title: 'Acompanhe sua configuração',
+    body: 'Esta barra mostra o que falta para concluir a configuração da sua conta.',
     placement: 'bottom',
   },
 ]
 
 const GAP = 12
 const POPOVER_WIDTH = 288
-// Bodies run to a couple of sentences and the popover now carries a step
-// counter and progress bar, so the estimate used for placement is taller
-// than the original single-line layout.
+// Os textos agora têm algumas frases e o popover exibe o número da etapa
+// e uma barra de progresso; por isso, a altura estimada para posicioná-lo é maior
+// que no layout original de uma única linha.
 const POPOVER_EST_HEIGHT = 210
 const SPOTLIGHT_PADDING = 6
 
@@ -136,18 +136,18 @@ interface PopoverPosition {
 }
 
 /**
- * Places the popover adjacent to the anchor's bounding rect, preferring the
- * given side, clamped to the viewport, and flipping to whichever side
- * actually has room so the popover never covers the anchor and never runs
- * off-screen.
+ * Posiciona o popover junto aos limites do elemento âncora, priorizando o
+ * lado indicado, mantendo-o dentro da tela e mudando para o lado que
+ * tiver espaço, para que o popover não cubra a âncora nem fique
+ * fora da tela.
  */
 function computePosition(rect: DOMRect, preferred: 'right' | 'bottom'): PopoverPosition {
   const viewportWidth = window.innerWidth
   const viewportHeight = window.innerHeight
 
-  // Center on the visible portion of the anchor, not its full (possibly
-  // off-screen) extent, so tall anchors like the sidebar nav don't push the
-  // popover toward the very top of the page.
+  // Centraliza na parte visível da âncora, e não em sua extensão total (que pode estar
+  // fora da tela), para que âncoras altas, como a navegação lateral, não empurrem o
+  // popover para o topo da página.
   const visibleTop = Math.max(rect.top, 0)
   const visibleBottom = Math.min(rect.bottom, viewportHeight)
   const anchorCenterY = (visibleTop + visibleBottom) / 2
@@ -193,11 +193,11 @@ interface TourProps {
 }
 
 /**
- * Hand-rolled, anchored first-run tour. Positions a small popover next to
- * real UI elements (found via data-tour attributes) rather than a scripted
- * modal overlay, with a dimmed spotlight around the anchor so the popover
- * reads as attached to it. Auto-opens once per account and never reopens on
- * its own after the user finishes or skips it.
+ * Tour inicial ancorado, implementado manualmente. Posiciona um pequeno popover junto a
+ * elementos reais da interface (localizados pelos atributos data-tour), em vez de uma
+ * sobreposição modal roteirizada, destacando a âncora para que o popover
+ * pareça ligado a ela. Abre automaticamente uma vez por conta e não volta a abrir
+ * sozinho depois que a pessoa conclui ou pula o tour.
  */
 export function Tour({ onboarding }: TourProps) {
   const { currentBusiness } = useBusiness()
@@ -211,25 +211,25 @@ export function Tour({ onboarding }: TourProps) {
 
   const finish = useCallback(() => {
     setOpen(false)
-    completeTour().catch((error) => console.error('Tour: failed to persist completion', error))
+    completeTour().catch((error) => console.error('Tour: falha ao salvar a conclusão', error))
   }, [completeTour])
 
-  // Decide whether to auto-open once loading settles. Only steps whose
-  // anchor actually exists in the DOM are included; if none exist, skip.
+  // Decide se deve abrir automaticamente quando o carregamento terminar. Inclui somente etapas cuja
+  // âncora existe no DOM; se nenhuma existir, não abre o tour.
   useEffect(() => {
     if (isLoading || !currentBusiness || tourCompleted) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronize tour visibility with mounted DOM anchors.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Sincroniza a visibilidade do tour com as âncoras montadas no DOM.
       setOpen(false)
       return
     }
     if (typeof document === 'undefined') return
-    // An anchor inside the hidden desktop sidebar exists but has no box on mobile.
+    // Uma âncora na barra lateral oculta para computador existe no DOM, mas não tem área visível no celular.
     const found = TOUR_STEPS.filter(
       (step) =>
         (document.querySelector(step.selector)?.getClientRects().length ?? 0) > 0,
     )
     if (found.length === 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronize tour visibility with mounted DOM anchors.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Sincroniza a visibilidade do tour com as âncoras montadas no DOM.
       setOpen(false)
       return
     }
@@ -253,9 +253,9 @@ export function Tour({ onboarding }: TourProps) {
     setRect(el.getBoundingClientRect())
   }, [currentStep])
 
-  // The sidebar nav scrolls, so anchors near the bottom of a long list can
-  // sit outside the visible area. Bring the anchor into view before measuring
-  // it; the scroll listener below re-measures once the scroll settles.
+  // A navegação lateral tem rolagem, então âncoras no fim de uma lista longa podem
+  // ficar fora da área visível. Traga a âncora para a tela antes de medir
+  // sua posição; o listener de rolagem abaixo mede novamente quando a rolagem terminar.
   useEffect(() => {
     if (!open || !currentStep) return
     const el = document.querySelector(currentStep.selector)
@@ -265,7 +265,7 @@ export function Tour({ onboarding }: TourProps) {
 
   useLayoutEffect(() => {
     if (!open) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Layout measurement must run after DOM commit.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- A medição do layout precisa ocorrer após a confirmação do DOM.
     measure()
     window.addEventListener('resize', measure)
     window.addEventListener('scroll', measure, true)
@@ -275,13 +275,13 @@ export function Tour({ onboarding }: TourProps) {
     }
   }, [open, measure])
 
-  // If the current step's anchor disappears mid-tour, skip forward
-  // instead of crashing or getting stuck.
+  // Se a âncora da etapa atual desaparecer durante o tour, avance
+  // para a próxima etapa, em vez de travar ou ficar preso.
   useEffect(() => {
     if (!open || !currentStep) return
     if (!document.querySelector(currentStep.selector)) {
       if (stepIndex < availableSteps.length - 1) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Skip an anchor removed from the DOM.
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Ignora uma âncora removida do DOM.
         setStepIndex((i) => i + 1)
       } else {
         finish()
@@ -289,8 +289,8 @@ export function Tour({ onboarding }: TourProps) {
     }
   }, [open, currentStep, stepIndex, availableSteps.length, finish])
 
-  // Focus trap: move focus into the popover and cycle Tab within it.
-  // Escape closes the tour, which counts as a skip.
+  // Armadilha de foco: move o foco para o popover e mantém a tecla Tab dentro dele.
+  // Esc fecha o tour, o que conta como pular.
   useEffect(() => {
     if (!open) return
     const previouslyFocused = document.activeElement as HTMLElement | null
@@ -302,9 +302,9 @@ export function Tour({ onboarding }: TourProps) {
           )
         )
       : []
-    // Focus the dialog container itself rather than the first control
-    // (the close button) so opening the tour doesn't paint a stray-looking
-    // focus ring on it; Tab still cycles through the real controls below.
+    // Coloca o foco no próprio contêiner do diálogo, em vez de no primeiro controle
+    // (o botão de fechar), para que a abertura do tour não deixe um
+    // contorno de foco inesperado; a tecla Tab ainda percorre os controles abaixo.
     container?.focus()
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -340,9 +340,7 @@ export function Tour({ onboarding }: TourProps) {
 
   return createPortal(
     <>
-      {/* Spotlight: dims the rest of the page while leaving the anchor
-          rect itself untouched, via a single transparent box whose
-          box-shadow doubles as a highlight ring plus the dimmed backdrop. */}
+      {/* Destaque: escurece o restante da página e mantém o próprio elemento rect visível, usando uma única caixa transparente cuja sombra também forma o contorno de destaque e o fundo escurecido. */}
       <div
         aria-hidden="true"
         className={cn(
@@ -370,7 +368,7 @@ export function Tour({ onboarding }: TourProps) {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              {stepIndex + 1} of {availableSteps.length}
+              {stepIndex + 1} de {availableSteps.length}
             </p>
             <h2 id="tour-step-title" className="mt-0.5 text-sm font-semibold">
               {currentStep.title}
@@ -379,7 +377,7 @@ export function Tour({ onboarding }: TourProps) {
           <button
             type="button"
             onClick={finish}
-            aria-label="Close tour"
+            aria-label="Fechar tour guiado"
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-ring/50 focus-visible:ring-[3px]"
           >
             <X className="h-4 w-4" />
@@ -390,7 +388,7 @@ export function Tour({ onboarding }: TourProps) {
         </p>
         <div
           role="progressbar"
-          aria-label="Tour progress"
+          aria-label="Progresso do tour guiado"
           aria-valuemin={1}
           aria-valuemax={availableSteps.length}
           aria-valuenow={stepIndex + 1}
@@ -410,16 +408,16 @@ export function Tour({ onboarding }: TourProps) {
             onClick={finish}
             className="text-xs font-medium text-muted-foreground underline-offset-2 hover:underline"
           >
-            Skip tour
+            Pular tour
           </button>
           <div className="flex items-center gap-2">
             {!isFirst && (
               <Button type="button" variant="outline" size="sm" onClick={() => setStepIndex((i) => i - 1)}>
-                Back
+                Voltar
               </Button>
             )}
             <Button type="button" size="sm" onClick={() => (isLast ? finish() : setStepIndex((i) => i + 1))}>
-              {isLast ? 'Finish' : 'Next'}
+              {isLast ? 'Concluir' : 'Próximo'}
             </Button>
           </div>
         </div>

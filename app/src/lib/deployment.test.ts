@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AGENT_DOCS_URL, DOCS_URL, appOrigin, mcpUrl } from './deployment'
 afterEach(() => vi.unstubAllEnvs())
-describe('installation isolation', () => {
-  it('defaults to local services', () => {
+describe('isolamento da instalação', () => {
+  it('usa serviços locais por padrão', () => {
     vi.stubEnv('NEXT_PUBLIC_APP_URL', '')
     expect(appOrigin()).toBe('http://localhost:3000')
     expect(mcpUrl()).toBe('http://localhost:3000/api/mcp')
   })
-  it('generates links for this installation', () => {
+  it('gera links para esta instalação', () => {
     vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://invoices.example.org')
     expect(mcpUrl()).toBe('https://invoices.example.org/api/mcp')
   })
@@ -16,12 +16,12 @@ describe('installation isolation', () => {
     'https://example.org/subpath',
     'https://example.org?token=x',
     'javascript:alert(1)',
-  ])('rejects ambiguous base URL %s', (value) => {
+  ])('rejeita uma URL base ambígua %s', (value) => {
     vi.stubEnv('NEXT_PUBLIC_APP_URL', value)
     expect(() => appOrigin()).toThrow()
   })
-  it('points help links at the public documentation', () => {
-    expect(DOCS_URL).toBe('https://billr.cc/docs')
-    expect(AGENT_DOCS_URL).toBe('https://billr.cc/docs/connect')
+  it('direciona os links de ajuda para a documentação pública', () => {
+    expect(DOCS_URL).toBe('https://github.com/R3DP/faturador/tree/pt-br/docs')
+    expect(AGENT_DOCS_URL).toBe('https://github.com/R3DP/faturador/blob/pt-br/plugins/README.md#instalações-auto-hospedadas')
   })
 })

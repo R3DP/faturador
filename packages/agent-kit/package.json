@@ -4,7 +4,7 @@
   "private": true,
   "license": "Apache-2.0",
   "type": "module",
-  "description": "Billr MCP client and transparent billing calculations.",
+  "description": "Cliente MCP do Faturador e cálculos transparentes de cobrança.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

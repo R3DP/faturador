@@ -40,7 +40,7 @@ const ALL_BUSINESSES_VALUE = '__all__'
 
 function PermissionBadges({ permissions }: { permissions: readonly string[] }) {
   if (permissions.length === 0) {
-    return <span className="text-xs text-muted-foreground">No permissions</span>
+    return <span className="text-xs text-muted-foreground">Sem permissões</span>
   }
   return (
     <span className="flex flex-wrap items-center gap-1">
@@ -90,19 +90,19 @@ export function ApiKeysPanel() {
   }
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Fetch the external key list when this panel mounts.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Busca a lista externa de chaves ao montar este painel.
     loadKeys()
     loadConnections()
   }, [])
 
   function businessName(id: string | null) {
-    if (!id) return 'All businesses'
-    return businesses.find((b) => b.id === id)?.name ?? 'Unknown business'
+    if (!id) return 'Todas as empresas'
+    return businesses.find((b) => b.id === id)?.name ?? 'Empresa desconhecida'
   }
 
   async function handleCreate() {
     if (!label.trim()) {
-      toast.error('Label is required')
+      toast.error('O nome é obrigatório')
       return
     }
 
@@ -127,7 +127,7 @@ export function ApiKeysPanel() {
   }
 
   async function handleRevoke(id: string) {
-    if (!confirm('Revoke this API key? Any integration using it will stop working.')) {
+    if (!confirm('Revogar esta chave de API? Qualquer integração que a utilize deixará de funcionar.')) {
       return
     }
 
@@ -136,11 +136,11 @@ export function ApiKeysPanel() {
     setRevokingId(null)
 
     if (!result.success) {
-      toast.error(result.error ?? 'Could not revoke key')
+      toast.error(result.error ?? 'Não foi possível revogar a chave')
       return
     }
 
-    toast.success('API key revoked')
+    toast.success('Chave de API revogada')
     await loadKeys()
   }
 
@@ -152,12 +152,12 @@ export function ApiKeysPanel() {
     setIsRevokingConnection(false)
 
     if (!result.success) {
-      toast.error(result.error ?? 'Could not revoke this connection')
+      toast.error(result.error ?? 'Não foi possível revogar esta conexão')
       return
     }
 
     setPendingRevoke(null)
-    toast.success('Connection revoked')
+    toast.success('Conexão revogada')
     await loadConnections()
   }
 
@@ -166,10 +166,10 @@ export function ApiKeysPanel() {
     try {
       await navigator.clipboard.writeText(newSecret)
       setCopied(true)
-      toast.success('Copied to clipboard')
+      toast.success('Copiado para a área de transferência')
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      toast.error('Could not copy. Select the key text and copy it manually')
+      toast.error('Não foi possível copiar. Selecione o texto da chave e copie manualmente')
     }
   }
 
@@ -177,20 +177,20 @@ export function ApiKeysPanel() {
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">API Keys</h2>
+          <h2 className="text-lg font-semibold text-foreground">Chaves de API</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Connect agents and integrations to your Billr account
+            Conecte agentes e integrações à sua conta do Faturador
           </p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)}>Create Key</Button>
+        <Button onClick={() => setIsCreateOpen(true)}>Criar chave</Button>
       </div>
 
       <div className="mt-6">
         <Card>
           <CardHeader>
-            <CardTitle>Your API Keys</CardTitle>
+            <CardTitle>Suas chaves de API</CardTitle>
             <CardDescription>
-              Keys let external tools and agents act on your behalf via the Billr API
+              As chaves permitem que ferramentas externas e agentes ajam em seu nome pela API do Faturador
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -201,7 +201,7 @@ export function ApiKeysPanel() {
             ) : keys.length === 0 ? (
               <div className="flex h-32 flex-col items-center justify-center text-center">
                 <p className="text-sm text-muted-foreground">
-                  No API keys yet. Create one to connect an agent or integration.
+                  Você ainda não tem chaves de API. Crie uma para conectar um agente ou integração.
                 </p>
               </div>
             ) : (
@@ -218,7 +218,7 @@ export function ApiKeysPanel() {
                           <span className="font-medium">{key.label}</span>
                           <PermissionBadges permissions={key.permissions} />
                           <span className="text-xs text-muted-foreground">
-                            Expires {formatDate(key.expires_at) ?? 'never'}
+                            Expira em {formatDate(key.expires_at) ?? 'nunca'}
                           </span>
                           {key.key_prefix && (
                             <span className="font-mono text-xs text-muted-foreground">
@@ -226,15 +226,15 @@ export function ApiKeysPanel() {
                             </span>
                           )}
                           <Badge variant={isRevoked ? 'outline' : 'default'}>
-                            {isRevoked ? 'Inactive' : 'Active'}
+                            {isRevoked ? 'Inativa' : 'Ativa'}
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          {businessName(key.business_id)} &middot; Created{' '}
-                          {new Date(key.created_at).toLocaleDateString()} &middot; Last used{' '}
+                          {businessName(key.business_id)} &middot; Criada em{' '}
+                          {new Date(key.created_at).toLocaleDateString()} &middot; Usada pela última vez{' '}
                           {key.last_used_at
                             ? new Date(key.last_used_at).toLocaleDateString()
-                            : 'Never'}
+                            : 'Nunca'}
                         </p>
                       </div>
                       {!isRevoked && (
@@ -247,7 +247,7 @@ export function ApiKeysPanel() {
                           {revokingId === key.id && (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           )}
-                          Revoke
+                          Revogar
                         </Button>
                       )}
                     </div>
@@ -262,16 +262,16 @@ export function ApiKeysPanel() {
       <div className="mt-6">
         <Card>
           <CardHeader>
-            <CardTitle>Connected apps</CardTitle>
+            <CardTitle>Aplicativos conectados</CardTitle>
             <CardDescription>
-              Apps you approved on the consent screen when connecting by URL
+              Aplicativos que você autorizou na tela de consentimento ao conectar por URL
             </CardDescription>
           </CardHeader>
           <CardContent>
             {connections.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No connected apps yet. Use the Connect tab to link Claude, Codex, Cursor or
-                ChatGPT by URL.
+                Você ainda não tem aplicativos conectados. Use a aba Conectar para vincular Claude, Codex, Cursor ou
+                ChatGPT por URL.
               </p>
             ) : (
               <div className="space-y-3">
@@ -291,22 +291,22 @@ export function ApiKeysPanel() {
                           </span>
                           <PermissionBadges permissions={connection.permissions} />
                           <Badge variant={isRevoked ? 'outline' : 'default'}>
-                            {isRevoked ? 'Revoked' : 'Active'}
+                            {isRevoked ? 'Revogada' : 'Ativa'}
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          {businessName(connection.businessId)} &middot; Connected{' '}
-                          {formatDate(connection.createdAt)} &middot; Last used{' '}
-                          {formatDate(connection.lastUsedAt) ?? 'Never'}
+                          {businessName(connection.businessId)} &middot; Conectado em{' '}
+                          {formatDate(connection.createdAt)} &middot; Usada pela última vez{' '}
+                          {formatDate(connection.lastUsedAt) ?? 'Nunca'}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {isRevoked
                             ? connection.revokedAt
-                              ? `Revoked ${formatDate(connection.revokedAt)}`
-                              : 'Access expired'
+                              ? `Revogada em ${formatDate(connection.revokedAt)}`
+                              : 'Acesso expirado'
                             : connection.expiresAt
-                              ? `Access expires ${formatDate(connection.expiresAt)}, renews automatically`
-                              : 'Renews automatically'}
+                              ? `O acesso expira em ${formatDate(connection.expiresAt)} e renova automaticamente`
+                              : 'Renova automaticamente'}
                         </p>
                       </div>
                       {!isRevoked && (
@@ -315,7 +315,7 @@ export function ApiKeysPanel() {
                           size="sm"
                           onClick={() => setPendingRevoke(connection)}
                         >
-                          Revoke
+                          Revogar
                         </Button>
                       )}
                     </div>
@@ -327,7 +327,7 @@ export function ApiKeysPanel() {
         </Card>
       </div>
 
-      {/* Confirm revoking a connected app */}
+      {/* Confirmar revogação de um aplicativo conectado */}
       <Dialog
         open={!!pendingRevoke}
         onOpenChange={(open) => !open && !isRevokingConnection && setPendingRevoke(null)}
@@ -335,11 +335,11 @@ export function ApiKeysPanel() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              Revoke {pendingRevoke?.clientName ?? pendingRevoke?.label ?? 'this app'}?
+              Revogar {pendingRevoke?.clientName ?? pendingRevoke?.label ?? 'este aplicativo'}?
             </DialogTitle>
             <DialogDescription>
-              It loses access to {businessName(pendingRevoke?.businessId ?? null)} right away and
-              cannot renew itself. Connect it again from the Connect tab if you change your mind.
+              O aplicativo perderá imediatamente o acesso a {businessName(pendingRevoke?.businessId ?? null)} e
+              não poderá renová-lo. Se mudar de ideia, conecte-o novamente pela aba Conectar.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -348,32 +348,32 @@ export function ApiKeysPanel() {
               onClick={() => setPendingRevoke(null)}
               disabled={isRevokingConnection}
             >
-              Cancel
+              Cancelar
             </Button>
             <Button onClick={handleRevokeConnection} disabled={isRevokingConnection}>
               {isRevokingConnection && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Revoke access
+              Revogar acesso
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Create key dialog */}
+      {/* Diálogo de criação de chave */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create API Key</DialogTitle>
+            <DialogTitle>Criar chave de API</DialogTitle>
             <DialogDescription>
-              Give the key a label so you can recognize it later.
+              Dê um nome à chave para reconhecê-la depois.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="key-label">Label</Label>
+              <Label htmlFor="key-label">Nome</Label>
               <Input
                 id="key-label"
-                placeholder="e.g. My agent"
+                placeholder="ex.: Meu agente"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 autoFocus
@@ -381,13 +381,13 @@ export function ApiKeysPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="key-business">Business</Label>
+              <Label htmlFor="key-business">Empresa</Label>
               <Select value={businessId} onValueChange={setBusinessId}>
                 <SelectTrigger id="key-business" className="w-full">
-                  <SelectValue placeholder="All businesses" />
+                  <SelectValue placeholder="Todas as empresas" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={ALL_BUSINESSES_VALUE}>All businesses</SelectItem>
+                  <SelectItem value={ALL_BUSINESSES_VALUE}>Todas as empresas</SelectItem>
                   {businesses.map((b) => (
                     <SelectItem key={b.id} value={b.id}>
                       {b.name}
@@ -398,26 +398,26 @@ export function ApiKeysPanel() {
             </div>
           </div>
 
-          <div className="space-y-2 mb-4"><Label htmlFor="key-permissions">Agent permissions</Label><select id="key-permissions" className="w-full rounded border p-2 bg-background" value={permissionProfile} onChange={e=>setPermissionProfile(e.target.value as KeyProfile)}><option value="draft">Read and draft (recommended)</option><option value="readonly">Read only</option><option value="billing">Billing: draft, send and record payments</option><option value="full">Full: billing and delete unbilled work</option></select><p className="text-xs text-muted-foreground">Expires in 90 days. Task pricing and billing approval always require a human.</p></div>
+          <div className="space-y-2 mb-4"><Label htmlFor="key-permissions">Permissões do agente</Label><select id="key-permissions" className="w-full rounded border p-2 bg-background" value={permissionProfile} onChange={e=>setPermissionProfile(e.target.value as KeyProfile)}><option value="draft">Leitura e rascunho (recomendado)</option><option value="readonly">Somente leitura</option><option value="billing">Faturamento: criar rascunhos, enviar e registrar pagamentos</option><option value="full">Completa: faturamento e exclusão de trabalho não faturado</option></select><p className="text-xs text-muted-foreground">Expira em 90 dias. A definição de preços de tarefas e a aprovação de cobranças sempre exigem uma pessoa.</p></div>
             <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-              Cancel
+              Cancelar
             </Button>
             <Button onClick={handleCreate} disabled={isCreating}>
               {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Key
+              Criar chave
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Secret shown once dialog */}
+      {/* Diálogo de chave exibida uma única vez */}
       <Dialog open={!!newSecret} onOpenChange={(open) => !open && setNewSecret(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>API Key Created</DialogTitle>
+            <DialogTitle>Chave de API criada</DialogTitle>
             <DialogDescription>
-              Copy this key now. You won&apos;t be able to see this key again.
+              Copie esta chave agora. Você não poderá vê-la novamente.
             </DialogDescription>
           </DialogHeader>
 
@@ -425,12 +425,12 @@ export function ApiKeysPanel() {
             <Input readOnly value={newSecret ?? ''} className="font-mono text-sm" />
             <Button type="button" variant="outline" size="icon" onClick={handleCopy}>
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              <span className="sr-only">Copy</span>
+              <span className="sr-only">Copiar</span>
             </Button>
           </div>
 
           <DialogFooter>
-            <Button onClick={() => setNewSecret(null)}>Done</Button>
+            <Button onClick={() => setNewSecret(null)}>Concluir</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

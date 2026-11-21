@@ -45,9 +45,9 @@ export async function updateSession(request: NextRequest) {
     },
   )
 
-  // IMPORTANT: Avoid writing any logic between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
+  // IMPORTANTE: Não inclua nenhuma lógica entre createServerClient e
+  // supabase.auth.getUser(). Um erro simples poderia dificultar muito a análise
+  // de problemas que desconectem usuários aleatoriamente.
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -56,7 +56,7 @@ export async function updateSession(request: NextRequest) {
   const isProtectedRoute = PROTECTED_ROUTES.some((route) => pathname.startsWith(route))
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route))
 
-  /** A redirect that keeps any auth cookies refreshed above. */
+  /** Redirecionamento que mantém os cookies de autenticação atualizados acima. */
   function redirectTo(url: URL) {
     const response = NextResponse.redirect(url)
     for (const cookie of supabaseResponse.cookies.getAll()) response.cookies.set(cookie)
@@ -70,7 +70,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // There is no homepage: "/" opens the workspace, or sign-in when signed out.
+  // Não há página inicial: "/" abre o espaço de trabalho ou, se a pessoa não estiver autenticada, o login.
   if (pathname === '/') {
     const url = request.nextUrl.clone()
     url.pathname = user ? '/dashboard' : '/login'

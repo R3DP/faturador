@@ -83,7 +83,7 @@ export function ActivityPanel() {
       setError(null)
       const result = await loadPage()
       if (!result.ok) {
-        setError('Could not load agent activity. Try again in a moment.')
+        setError('Não foi possível carregar a atividade do agente. Tente novamente em instantes.')
       }
       setIsLoading(false)
     }
@@ -97,7 +97,7 @@ export function ActivityPanel() {
     setLoadMoreError(null)
     const result = await loadPage({ createdAt: last.created_at, entityId: last.entity_id })
     if (!result.ok) {
-      setLoadMoreError('Could not load more activity. Try again in a moment.')
+      setLoadMoreError('Não foi possível carregar mais atividades. Tente novamente em instantes.')
     }
     setIsLoadingMore(false)
   }
@@ -109,9 +109,9 @@ export function ActivityPanel() {
   return (
     <div>
       <div>
-        <h2 className="text-lg font-semibold text-foreground">Activity</h2>
+        <h2 className="text-lg font-semibold text-foreground">Atividade</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          What your connected agents have created in Billr, newest first
+          O que seus agentes conectados criaram no Faturador, dos mais recentes aos mais antigos
         </p>
       </div>
 
@@ -130,9 +130,9 @@ export function ActivityPanel() {
             ) : rows.length === 0 ? (
               <EmptyState
                 icon={Activity}
-                title="No agent activity yet"
-                description="Agents have not created anything yet. Connect an agent to get started."
-                action={{ label: 'Go to Connect', href: '/agents?tab=connect' }}
+                title="Nenhuma atividade de agente ainda"
+                description="Os agentes ainda não criaram nada. Conecte um agente para começar."
+                action={{ label: 'Ir para Conexão', href: '/agents?tab=connect' }}
               />
             ) : (
               <div>
@@ -169,7 +169,7 @@ export function ActivityPanel() {
                     <p className="text-sm text-muted-foreground">{loadMoreError}</p>
                     <Button variant="outline" size="sm" onClick={handleLoadMore} disabled={isLoadingMore}>
                       {isLoadingMore && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Try again
+                      Tentar novamente
                     </Button>
                   </div>
                 )}
@@ -177,7 +177,7 @@ export function ActivityPanel() {
                   <div className="flex justify-center border-t p-4">
                     <Button variant="outline" onClick={handleLoadMore} disabled={isLoadingMore}>
                       {isLoadingMore && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Load more
+                      Carregar mais
                     </Button>
                   </div>
                 )}

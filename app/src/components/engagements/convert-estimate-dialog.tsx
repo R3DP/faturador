@@ -22,13 +22,13 @@ import {
 import { DUE_RULE_LABELS } from '@/lib/engagements/types'
 
 /**
- * Turning an accepted quote into the agreement it was quoting.
+ * Transforma um orçamento aceito no contrato que ele descreve.
  *
- * All the person picks is the SHAPE of the schedule. The client, the total and
- * the currency are read off the estimate inside the RPC and
- * are not sent from here, so a conversion is never a place a price quietly
- * changes. The preview below is the same expansion the server does, from
- * src/lib/engagements/schedule.ts, so what is shown is what gets written.
+ * A pessoa escolhe apenas o FORMATO do cronograma. O cliente, o total e
+ * a moeda são obtidos do orçamento dentro da RPC e
+ * não são enviados daqui, portanto a conversão não permite alterar um preço
+ * sem que se perceba. A prévia abaixo usa a mesma expansão feita pelo servidor em
+ * src/lib/engagements/schedule.ts, garantindo que o conteúdo exibido seja o mesmo que será gravado.
  */
 interface Props {
   open: boolean
@@ -48,8 +48,8 @@ export function ConvertEstimateToEngagementDialog({
   const router = useRouter()
   const [templateKey, setTemplateKey] = useState(DEFAULT_SCHEDULE_TEMPLATES[0].key)
   const [isBusy, setIsBusy] = useState(false)
-  // One request id per dialog, so a double click or a retry after a dropped
-  // connection is a replay rather than a second engagement.
+  // Um ID de requisição por diálogo, para que um clique duplo ou uma nova tentativa após uma
+  // falha de conexão repita a operação em vez de criar outro contrato.
   const requestId = useRef<string | null>(null)
 
   const template =
@@ -60,7 +60,7 @@ export function ConvertEstimateToEngagementDialog({
     try {
       return { entries: expandTemplate(template, total), error: null }
     } catch (error) {
-      return { entries: [], error: error instanceof Error ? error.message : 'Cannot split that total.' }
+      return { entries: [], error: error instanceof Error ? error.message : 'Não é possível dividir esse total.' }
     }
   }, [template, total])
 
@@ -82,7 +82,7 @@ export function ConvertEstimateToEngagementDialog({
       toast.error(result.error)
       return
     }
-    toast.success('Estimate turned into an engagement')
+    toast.success('Orçamento convertido em contrato')
     router.push(`/engagements/${result.engagementId}`)
   }
 
@@ -90,10 +90,10 @@ export function ConvertEstimateToEngagementDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Turn this estimate into an engagement</DialogTitle>
+          <DialogTitle>Converter este orçamento em contrato</DialogTitle>
           <DialogDescription>
-            The agreed {money(total)} stays exactly as quoted. Pick how it will be billed, and
-            Billr keeps track of what is left. Nothing is invoiced and nothing is sent.
+            O valor acordado de {money(total)} permanece exatamente como foi orçado. Escolha como será cobrado, e
+            o Faturador acompanhará o saldo restante. Nada será faturado nem enviado.
           </DialogDescription>
         </DialogHeader>
 
@@ -132,16 +132,16 @@ export function ConvertEstimateToEngagementDialog({
         </div>
 
         <p className="text-xs text-muted-foreground">
-          The engagement is created as a draft. Start it when the work begins, which is what makes
-          any deposit ready to bill.
+          O contrato será criado como rascunho. Inicie-o quando o trabalho começar para liberar
+          as parcelas para faturamento.
         </p>
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isBusy}>
-            Cancel
+            Cancelar
           </Button>
           <Button onClick={convert} disabled={isBusy || !!preview.error}>
-            Create engagement
+            Criar contrato
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -149,7 +149,7 @@ export function ConvertEstimateToEngagementDialog({
   )
 }
 
-/** The template as the action wants it: a shape, never an amount or a currency. */
+/** O modelo esperado pela ação: somente o formato, nunca um valor ou moeda. */
 function payloadFor(template: ScheduleTemplate) {
   return {
     billing_mode: template.billing_mode,

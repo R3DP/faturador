@@ -6,8 +6,8 @@ import { createClient } from '@/lib/supabase/server'
 import { failure, type WriteResult } from './result'
 
 /**
- * Expense writes, as server actions in the same shape as time entries. See
- * src/lib/actions/time.ts.
+ * Gravações de despesas por server actions, no mesmo formato dos lançamentos
+ * de horas. Consulte src/lib/actions/time.ts.
  */
 
 const expenseInput = z.object({
@@ -53,8 +53,9 @@ export async function createExpenseAction(
     const supabase = await createClient()
     const clientId = data.client_id || null
 
-    // Same durable retry as the time form: one request id per form, replayed
-    // on every attempt, so a timeout cannot record the expense twice.
+    // A mesma repetição confiável do formulário de horas: um request id por
+    // formulário, reutilizado a cada tentativa para que um timeout não registre
+    // a despesa duas vezes.
     const { error } = await supabase.rpc('create_work_entry_once', {
       p_business_id: z.string().uuid().parse(businessId),
       p_kind: 'expense',
@@ -77,7 +78,7 @@ export async function createExpenseAction(
     revalidatePath('/dashboard')
     return { ok: true }
   } catch (error) {
-    return failure(error, 'Could not save that expense.')
+    return failure(error, 'Não foi possível salvar essa despesa.')
   }
 }
 
@@ -105,13 +106,13 @@ export async function updateExpenseAction(
       .select('id')
 
     if (error) return { error: error.message }
-    if (!saved?.length) return { error: 'Invoiced expenses cannot be edited.' }
+    if (!saved?.length) return { error: 'Despesas faturadas não podem ser editadas.' }
 
     revalidatePath('/expenses')
     revalidatePath(`/expenses/${expenseId}`)
     return { ok: true }
   } catch (error) {
-    return failure(error, 'Could not save that expense.')
+    return failure(error, 'Não foi possível salvar essa despesa.')
   }
 }
 
@@ -127,12 +128,12 @@ export async function deleteExpenseAction(expenseId: string): Promise<WriteResul
       .select('id')
 
     if (error) return { error: error.message }
-    if (!deleted?.length) return { error: 'Invoiced expenses cannot be deleted.' }
+    if (!deleted?.length) return { error: 'Despesas faturadas não podem ser excluídas.' }
 
     revalidatePath('/expenses')
     revalidatePath('/dashboard')
     return { ok: true }
   } catch (error) {
-    return failure(error, 'Could not delete that expense.')
+    return failure(error, 'Não foi possível excluir essa despesa.')
   }
 }

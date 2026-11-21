@@ -4,10 +4,10 @@ import { protectedResourceMetadataUrl } from '@/lib/oauth/metadata'
 import { RATE_LIMITS } from '@/lib/rate-limit'
 import { createScopedDb, type ScopedDb } from './scoped-db'
 
-// MCP callers get 120 requests / 60s per key. This is applied
-// as the resolver's own per-key bucket rather than a second bucket layered on
-// top, so a single MCP request costs exactly one rate-limit hit. The counter is
-// durable and shared across instances and fails closed.
+// Quem chama MCP tem 120 requisições / 60s por chave. Este limite é aplicado
+// no próprio limite por chave do resolver, em vez de adicionar outro limite
+// sobre ele; assim, cada requisição MCP consome exatamente uma ocorrência do limite. O contador é
+// persistente e compartilhado entre instâncias, e em caso de falha bloqueia a requisição.
 const MCP_RATE_LIMIT = RATE_LIMITS.mcp
 
 export interface McpCtx {
@@ -26,12 +26,12 @@ function jsonError(status: number, body: Record<string, unknown>, headers?: Reco
 }
 
 /**
- * Authenticates and scopes an incoming MCP request.
+ * Autentica e limita o escopo de uma requisição MCP recebida.
  *
- * Returns the request context ({ userId, businessIds, db }) on success, or a
- * Response to send back verbatim (401 invalid key, 429 rate limited) on
- * failure. Every MCP tool handler must be built from the returned ctx;
- * never reach for a raw service client directly.
+ * Em caso de sucesso, retorna o contexto da requisição ({ userId, businessIds, db }); caso contrário, uma
+ * Response para devolver sem alterações (401 chave inválida, 429 limite excedido) em caso de
+ * falha. Todo handler de ferramenta MCP deve ser criado a partir do ctx retornado;
+ * nunca acesse diretamente um cliente de serviço sem escopo.
  */
 export async function getMcpContext(req: Request): Promise<McpCtx | Response> {
   const auth = req.headers.get('authorization') ?? ''
@@ -40,20 +40,20 @@ export async function getMcpContext(req: Request): Promise<McpCtx | Response> {
   const resolved = await resolveApiKey(secret, { rateLimit: MCP_RATE_LIMIT })
   if ('error' in resolved) {
     if (resolved.error === 'rate_limited') {
-      return jsonError(429, { error: 'Rate limit exceeded' }, { 'Retry-After': '60' })
+      return jsonError(429, { error: 'Limite de requisições excedido' }, { 'Retry-After': '60' })
     }
-    // WWW-Authenticate points MCP clients at the resource metadata endpoint
-    // (RFC 9728 / the MCP auth spec) so they can discover how to authenticate
-    // instead of just seeing an opaque 401. This one header is what turns
-    // "pasting the MCP URL fails" into "pasting it starts a sign-in":
-    // the client reads the metadata document, finds this installation as the
-    // authorization server, registers itself and runs the consent flow.
+    // WWW-Authenticate direciona os clientes MCP ao endpoint de metadados do recurso
+    // (RFC 9728 / especificação de autenticação MCP) para que descubram como se autenticar
+    // em vez de receberem apenas um 401 sem explicação. É este cabeçalho que transforma
+    // "colar a URL do MCP falha" em "colar a URL inicia o acesso":
+    // o cliente lê o documento de metadados, encontra esta instalação como
+    // servidor de autorização, registra-se e inicia o fluxo de consentimento.
     return jsonError(
       401,
       {
-        error: 'Missing or invalid access token',
+        error: 'Token de acesso ausente ou inválido',
         error_description:
-          'Send a Billr API key or an OAuth access token as "Authorization: Bearer ...", or connect through OAuth using the resource metadata in the WWW-Authenticate header.',
+          'Envie uma chave de API Faturador ou um token de acesso OAuth no formato "Authorization: Bearer ...", ou conecte-se via OAuth usando os metadados do recurso no cabeçalho WWW-Authenticate.',
       },
       {
         'WWW-Authenticate': `Bearer realm="billr", resource_metadata="${protectedResourceMetadataUrl()}"`,

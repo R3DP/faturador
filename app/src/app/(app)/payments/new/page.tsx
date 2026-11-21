@@ -57,11 +57,11 @@ function NewPaymentPageInner() {
     const invoice = invoices.find((inv) => inv.id === data.invoice_id)
     if (!invoice) return
 
-    // One transaction on the server: recordPaymentAction calls
-    // record_payment_once, which inserts the ledger row and
-    // recomputes the invoice from SUM(payments) together. business_id,
-    // client_id and currency come from the invoice inside the RPC rather than
-    // from here.
+    // Uma única transação no servidor: recordPaymentAction chama
+    // record_payment_once, que insere a linha no livro-razão e
+    // recalcula a fatura com base em SUM(payments). business_id,
+    // client_id e currency vêm da fatura dentro da RPC, em vez de
+    // serem informados aqui.
     const result = await recordPaymentAction(
       currentBusiness.id,
       {
@@ -94,8 +94,8 @@ function NewPaymentPageInner() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Record Payment"
-        description="Record a payment received for an invoice"
+        title="Registrar pagamento"
+        description="Registre um pagamento recebido por uma fatura"
       />
 
       <div className="mt-6 max-w-2xl">

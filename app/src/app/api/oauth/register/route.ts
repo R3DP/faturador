@@ -9,19 +9,19 @@ import { OAUTH_SCOPES } from '@/lib/oauth/scopes'
 import { registerClient } from '@/lib/oauth/store'
 
 /**
- * RFC 7591 dynamic client registration.
+ * Registro dinâmico de cliente da RFC 7591.
  *
- * Open registration is the only way an agent that was handed nothing but a URL
- * can become a client, so it is deliberately unauthenticated. What keeps it
- * from being a problem:
+ * O registro aberto é a única forma de um agente que recebeu apenas uma URL
+ * se tornar cliente; por isso, ele não exige autenticação. O que o mantém
+ * seguro é:
  *
- *   - Public clients only. No secret is issued, so a registration is worth
- *     nothing on its own: it still has to survive the consent screen, which
- *     shows a person the client's name before anything is granted.
- *   - Redirect URIs are restricted to https:// or loopback http:// and matched
- *     exactly at authorize time, so a registration cannot be used as a redirect.
- *   - Per-IP rate limit, fail closed, same durable limiter as every other
- *     endpoint.
+ *   - Somente clientes públicos. Nenhum segredo é emitido, então o registro não vale
+ *     nada por si só: ainda precisa passar pela tela de consentimento, que
+ *     mostra o nome do cliente à pessoa antes de conceder qualquer acesso.
+ *   - As URIs de redirecionamento são limitadas a https:// ou http:// de loopback e verificadas
+ *     com correspondência exata na autorização, impedindo que o registro seja usado para redirecionar.
+ *   - Limite de frequência por IP, bloqueio em caso de falha e o mesmo limitador persistente usado por todos os outros
+ *     endpoints.
  */
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -54,7 +54,7 @@ export async function POST(req: Request): Promise<Response> {
     return new Response(
       JSON.stringify({
         error: 'temporarily_unavailable',
-        error_description: 'Too many registrations from this address. Try again later.',
+        error_description: 'Muitos registros deste endereço. Tente novamente mais tarde.',
       }),
       { status: 429, headers: { ...NO_STORE, 'Retry-After': String(decision.retryAfterSeconds) } }
     )
@@ -64,27 +64,27 @@ export async function POST(req: Request): Promise<Response> {
   try {
     body = await req.json()
   } catch {
-    return error(400, 'invalid_client_metadata', 'Body must be JSON')
+    return error(400, 'invalid_client_metadata', 'O corpo deve estar em formato JSON.')
   }
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    return error(400, 'invalid_client_metadata', 'Body must be a JSON object')
+    return error(400, 'invalid_client_metadata', 'O corpo deve ser um objeto JSON.')
   }
 
   const input = body as Record<string, unknown>
 
   const redirects = validateRedirectUris(input.redirect_uris)
   if (!redirects.ok) {
-    return error(400, 'invalid_redirect_uri', redirects.reason ?? 'Invalid redirect_uris')
+    return error(400, 'invalid_redirect_uri', redirects.reason ?? 'redirect_uris inválidas.')
   }
 
-  // Public clients only: there is nowhere in a CLI or desktop agent to keep a
-  // secret, and PKCE is the proof we actually rely on.
+  // Somente clientes públicos: não há onde guardar um segredo em uma CLI ou agente desktop, e
+  // a prova de segurança usada é o PKCE.
   const authMethod = input.token_endpoint_auth_method
   if (authMethod !== undefined && authMethod !== 'none') {
     return error(
       400,
       'invalid_client_metadata',
-      'Only public clients are supported; token_endpoint_auth_method must be "none"'
+      'Somente clientes públicos são compatíveis; token_endpoint_auth_method deve ser "none".'
     )
   }
 
@@ -97,7 +97,7 @@ export async function POST(req: Request): Promise<Response> {
       return error(
         400,
         'invalid_client_metadata',
-        'grant_types must be a subset of ["authorization_code","refresh_token"]'
+        'grant_types deve ser um subconjunto de ["authorization_code","refresh_token"].'
       )
     }
   }
@@ -105,14 +105,14 @@ export async function POST(req: Request): Promise<Response> {
   const responseTypes = input.response_types
   if (responseTypes !== undefined) {
     if (!Array.isArray(responseTypes) || !responseTypes.every((r) => r === 'code')) {
-      return error(400, 'invalid_client_metadata', 'Only the "code" response type is supported')
+      return error(400, 'invalid_client_metadata', 'Somente o tipo de resposta "code" é compatível.')
     }
   }
 
   const clientName = normaliseClientName(input.client_name)
   const client = await registerClient({ clientName, redirectUris: redirects.uris })
   if (!client) {
-    return error(500, 'invalid_client_metadata', 'Could not register this client')
+    return error(500, 'invalid_client_metadata', 'Não foi possível registrar este cliente.')
   }
 
   return new Response(

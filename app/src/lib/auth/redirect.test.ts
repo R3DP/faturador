@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { safeAuthRedirect } from './redirect'
 
-describe('authentication return paths', () => {
+describe('caminhos de retorno da autenticação', () => {
   it.each(['/invoices/new', '/agents?tab=keys', '/reset-password'])(
-    'preserves local destination %s',
+    'preserva o destino local %s',
     (path) => {
       expect(safeAuthRedirect(path)).toBe(path)
     },
@@ -19,7 +19,7 @@ describe('authentication return paths', () => {
     '/%0a/evil.example',
     'javascript:alert(1)',
     '/%zz',
-  ])('rejects unsafe destination %s', (path) => {
+  ])('rejeita o destino inseguro %s', (path) => {
     expect(safeAuthRedirect(path)).toBe('/dashboard')
   })
 })

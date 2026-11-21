@@ -52,9 +52,9 @@ function StepRow({ step }: { step: ChecklistStep }) {
 }
 
 /**
- * Slim, self-hiding setup progress bar. Mounted once in the app shell above
- * page content. Hides itself once onboarding is complete, dismissed, or
- * there is no business/loading state to report on.
+ * Barra compacta de progresso da configuração, que se oculta sozinha. É montada uma vez no app shell, acima
+ * do conteúdo da página. Ela desaparece quando a configuração inicial é concluída ou dispensada, ou quando
+ * não há empresa nem estado de carregamento para exibir.
  */
 export function SetupProgress() {
   const { currentBusiness } = useBusiness()
@@ -67,7 +67,7 @@ export function SetupProgress() {
 
   const isComplete = progress.total > 0 && progress.done === progress.total
 
-  // These flags derive from loaded progress and are adjusted during render.
+  // Esses indicadores vêm do progresso carregado e são ajustados durante a renderização.
   if (!isLoading && !isComplete && !everIncomplete) setEverIncomplete(true)
   if (!isLoading && everIncomplete && isComplete && phase === 'active')
     setPhase('complete')
@@ -108,7 +108,7 @@ export function SetupProgress() {
       >
         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
           <CheckCircle2 className="h-4 w-4 text-success" />
-          Setup complete
+          Configuração concluída
         </div>
       </div>
     )
@@ -124,7 +124,7 @@ export function SetupProgress() {
         <div className="flex-1">
           <div className="flex items-center justify-between gap-4">
             <span className="text-sm font-medium text-foreground">
-              Getting started · {progress.done} of {progress.total} complete
+              Primeiros passos · {progress.done} de {progress.total} concluídos
             </span>
           </div>
           <div className="mt-1.5">
@@ -137,7 +137,7 @@ export function SetupProgress() {
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
             aria-label={
-              expanded ? 'Collapse setup checklist' : 'Expand setup checklist'
+              expanded ? 'Recolher lista de configuração' : 'Expandir lista de configuração'
             }
             className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
@@ -153,12 +153,12 @@ export function SetupProgress() {
             onClick={() => {
               dismiss().catch((error) =>
                 console.error(
-                  'SetupProgress: failed to dismiss checklist',
+                  'SetupProgress: não foi possível dispensar a lista de configuração',
                   error,
                 ),
               )
             }}
-            aria-label="Dismiss setup checklist"
+            aria-label="Ocultar lista de configuração"
             className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <X className="h-4 w-4" />

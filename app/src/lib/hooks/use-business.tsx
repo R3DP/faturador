@@ -114,7 +114,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 export function useBusiness() {
   const context = useContext(BusinessContext)
   if (context === undefined) {
-    throw new Error('useBusiness must be used within a BusinessProvider')
+    throw new Error('useBusiness deve ser usado dentro de um BusinessProvider')
   }
   return context
 }

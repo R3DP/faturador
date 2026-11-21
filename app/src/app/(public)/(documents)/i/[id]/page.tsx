@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { Download, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -18,6 +19,16 @@ type PublicInvoice = Invoice & {
   line_items: InvoiceLineItem[]
   business_snapshot: Business | null
   client_snapshot: Client | null
+}
+
+const invoiceStatusLabels: Record<Invoice['status'], string> = {
+  draft: 'Rascunho',
+  sent: 'Enviada',
+  viewed: 'Visualizada',
+  paid: 'Paga',
+  partial: 'Parcialmente paga',
+  overdue: 'Vencida',
+  cancelled: 'Cancelada',
 }
 
 export default function PublicInvoicePage() {
@@ -42,8 +53,8 @@ function PublicInvoicePageInner() {
       const { createClient } = await import('@/lib/supabase/client')
       const supabase = createClient()
 
-      // Public access goes through a SECURITY DEFINER function keyed on public_id;
-      // direct table selects are blocked for anonymous users. View recording happens inside it.
+      // O acesso público passa por uma função SECURITY DEFINER associada a public_id;
+      // consultas diretas às tabelas são bloqueadas para usuários anônimos. O registro de visualização acontece dentro dela.
       const { data } = await supabase.rpc('get_public_invoice', { p_public_id: publicId })
       const payload = data as {
         invoice: PublicInvoice
@@ -62,7 +73,7 @@ function PublicInvoicePageInner() {
     fetchInvoice()
   }, [fetchInvoice])
 
-  // Card payment is an installation setting, not a property of the invoice.
+  // O pagamento com cartão é uma configuração da instalação, não uma propriedade da fatura.
   useEffect(() => {
     let active = true
     fetch('/api/stripe/config')
@@ -79,7 +90,7 @@ function PublicInvoicePageInner() {
   }, [])
 
   const formatCurrency = (amount: number, currency = 'USD') => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency,
     }).format(amount)
@@ -98,9 +109,9 @@ function PublicInvoicePageInner() {
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="py-12 text-center">
-            <h1 className="text-xl font-semibold">Invoice Not Found</h1>
+            <h1 className="text-xl font-semibold">Fatura não encontrada</h1>
             <p className="mt-2 text-muted-foreground">
-              This invoice does not exist or has been removed.
+              Esta fatura não existe ou foi removida.
             </p>
           </CardContent>
         </Card>
@@ -114,30 +125,30 @@ function PublicInvoicePageInner() {
   return (
     <div className="min-h-screen bg-muted/30">
       <div className="mx-auto max-w-3xl p-4 py-8 sm:p-6 md:py-12">
-        {/* Payment Status Bar */}
+        {/* Barra de status do pagamento */}
         {invoice.status === 'paid' ? (
           <div className="no-print mb-6 rounded-lg bg-green-50 p-4 text-center">
             <p className="font-medium text-green-800">
-              ✓ This invoice has been paid
+              ✓ Esta fatura foi paga
             </p>
           </div>
         ) : justPaid ? (
           <div className="no-print mb-6 rounded-lg bg-green-50 p-4 text-center">
             <p className="font-medium text-green-800">
-              ✓ Payment received. It may take a minute to reflect on this page.
+              ✓ Pagamento recebido. Pode levar um minuto para aparecer nesta página.
             </p>
           </div>
         ) : invoice.balance_due > 0 ? (
           <Card className="no-print mb-6">
             <CardContent className="space-y-5 p-4 sm:p-6">
               <div>
-                <p className="text-sm text-muted-foreground">Amount Due</p>
+                <p className="text-sm text-muted-foreground">Valor devido</p>
                 <p className="text-2xl font-bold">
                   {formatCurrency(invoice.balance_due, invoice.currency)}
                 </p>
               </div>
               {paymentsEnabled ? (
-                /* Card payment through Stripe's Payment Element, on this page. */
+                /* Pagamento com cartão pelo Payment Element do Stripe, nesta página. */
                 <InvoiceCheckout
                   publicId={publicId}
                   balanceDue={invoice.balance_due}
@@ -145,43 +156,43 @@ function PublicInvoicePageInner() {
                   onConfirmed={fetchInvoice}
                 />
               ) : invoice.payment_instructions ? (
-                /* Card payments are not set up on this installation, so the invoice's own instructions are the way to pay. */
+                /* O pagamento com cartão não está configurado nesta instalação; use as instruções da própria fatura para pagar. */
                 <p className="whitespace-pre-line text-sm text-muted-foreground">
                   {invoice.payment_instructions}
                 </p>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Contact the sender to arrange payment.
+                  Entre em contato com o remetente para combinar o pagamento.
                 </p>
               )}
             </CardContent>
           </Card>
         ) : null}
 
-        {/* Download / Print */}
+        {/* Baixar / Imprimir */}
         <div className="no-print mb-4 flex justify-end gap-2">
           <Button size="sm" asChild>
             <a href={`/api/public/invoices/${publicId}/pdf`} download>
               <Download className="mr-2 h-4 w-4" />
-              Download PDF
+              Baixar PDF
             </a>
           </Button>
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="mr-2 h-4 w-4" />
-            Print
+            Imprimir
           </Button>
         </div>
 
-        {/* Invoice Document */}
+        {/* Documento da fatura */}
         <Card className="overflow-hidden">
           <CardContent className="p-8 sm:p-12">
-            {/* Header */}
+            {/* Cabeçalho */}
             <div className="flex flex-col gap-6 sm:flex-row sm:justify-between">
               <div>
                 {business?.logo_url && (
                   <img
                     src={business.logo_url}
-                    alt={business.name || 'Business'}
+                    alt={business.name || 'Empresa'}
                     className="mb-4 h-12 w-auto"
                   />
                 )}
@@ -205,12 +216,12 @@ function PublicInvoicePageInner() {
               </div>
               <div className="sm:text-right">
                 <div className="flex items-center gap-2 sm:justify-end">
-                  <h1 className="text-3xl font-bold">Invoice</h1>
+                  <h1 className="text-3xl font-bold">Fatura</h1>
                   <Badge
                     variant="secondary"
                     className={invoiceStatusColors[invoice.status]}
                   >
-                    {invoice.status}
+                    {invoiceStatusLabels[invoice.status]}
                   </Badge>
                 </div>
                 <p className="mt-2 text-lg font-medium text-muted-foreground">
@@ -220,10 +231,10 @@ function PublicInvoicePageInner() {
             </div>
 
             <div className="mt-8 grid gap-8 sm:grid-cols-2">
-              {/* Bill To */}
+              {/* Faturar para */}
               <div>
                 <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                  Bill To
+                  Faturar para
                 </p>
                 <p className="mt-2 font-semibold">{client?.name}</p>
                 {client?.email && (
@@ -240,45 +251,45 @@ function PublicInvoicePageInner() {
                 )}
               </div>
 
-              {/* Invoice Details */}
+              {/* Detalhes da fatura */}
               <div className="space-y-3 sm:text-right">
                 <div>
-                  <p className="text-sm text-muted-foreground">Issue Date</p>
+                  <p className="text-sm text-muted-foreground">Data de emissão</p>
                   <p className="font-medium">
-                    {format(parseDay(invoice.issue_date), 'MMMM d, yyyy')}
+                    {format(parseDay(invoice.issue_date), 'PPP', { locale: ptBR })}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Due Date</p>
+                  <p className="text-sm text-muted-foreground">Vencimento</p>
                   <p className="font-medium">
-                    {format(parseDay(invoice.due_date), 'MMMM d, yyyy')}
+                    {format(parseDay(invoice.due_date), 'PPP', { locale: ptBR })}
                   </p>
                 </div>
                 {invoice.po_number && (
                   <div>
-                    <p className="text-sm text-muted-foreground">PO Number</p>
+                    <p className="text-sm text-muted-foreground">Número do pedido</p>
                     <p className="font-medium">{invoice.po_number}</p>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Line Items */}
+            {/* Itens */}
             <div className="mt-10">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border/50">
                     <th className="pb-3 text-left text-sm font-medium text-muted-foreground">
-                      Description
+                      Descrição
                     </th>
                     <th className="pb-3 text-right text-sm font-medium text-muted-foreground">
-                      Qty
+                      Qtd.
                     </th>
                     <th className="pb-3 text-right text-sm font-medium text-muted-foreground">
-                      Rate
+                      Valor
                     </th>
                     <th className="pb-3 text-right text-sm font-medium text-muted-foreground">
-                      Amount
+                      Valor
                     </th>
                   </tr>
                 </thead>
@@ -301,7 +312,7 @@ function PublicInvoicePageInner() {
               </table>
             </div>
 
-            {/* Totals */}
+            {/* Totais */}
             <div className="mt-8 flex justify-end">
               <div className="w-72 space-y-2">
                 <div className="flex justify-between text-sm">
@@ -312,7 +323,7 @@ function PublicInvoicePageInner() {
                 </div>
                 {invoice.discount_amount > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Discount</span>
+                    <span className="text-muted-foreground">Desconto</span>
                     <span className="tabular-nums text-green-600">
                       -{formatCurrency(invoice.discount_amount, invoice.currency)}
                     </span>
@@ -321,7 +332,7 @@ function PublicInvoicePageInner() {
                 {invoice.tax_amount > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">
-                      Tax ({invoice.tax_rate}%)
+                      Imposto ({invoice.tax_rate}%)
                     </span>
                     <span className="tabular-nums">
                       {formatCurrency(invoice.tax_amount, invoice.currency)}
@@ -330,7 +341,7 @@ function PublicInvoicePageInner() {
                 )}
                 {invoice.shipping_amount > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Shipping</span>
+                    <span className="text-muted-foreground">Frete</span>
                     <span className="tabular-nums">
                       {formatCurrency(invoice.shipping_amount, invoice.currency)}
                     </span>
@@ -346,13 +357,13 @@ function PublicInvoicePageInner() {
                 {invoice.amount_paid > 0 && (
                   <>
                     <div className="flex justify-between text-sm text-green-600">
-                      <span>Amount Paid</span>
+                      <span>Valor pago</span>
                       <span className="tabular-nums">
                         -{formatCurrency(invoice.amount_paid, invoice.currency)}
                       </span>
                     </div>
                     <div className="flex justify-between font-bold">
-                      <span>Balance Due</span>
+                      <span>Saldo pendente</span>
                       <span className="tabular-nums">
                         {formatCurrency(invoice.balance_due, invoice.currency)}
                       </span>
@@ -362,29 +373,29 @@ function PublicInvoicePageInner() {
               </div>
             </div>
 
-            {/* Notes */}
+            {/* Observações */}
             {invoice.notes && (
               <div className="mt-10 rounded-lg bg-muted/50 p-4">
-                <p className="text-sm font-medium text-muted-foreground">Notes</p>
+                <p className="text-sm font-medium text-muted-foreground">Observações</p>
                 <p className="mt-1 whitespace-pre-wrap text-sm">{invoice.notes}</p>
               </div>
             )}
 
-            {/* Terms */}
+            {/* Termos */}
             {invoice.terms && (
               <div className="mt-4 rounded-lg bg-muted/50 p-4">
                 <p className="text-sm font-medium text-muted-foreground">
-                  Terms & Conditions
+                  Termos e condições
                 </p>
                 <p className="mt-1 whitespace-pre-wrap text-sm">{invoice.terms}</p>
               </div>
             )}
 
-            {/* Payment Instructions */}
+            {/* Instruções de pagamento */}
             {invoice.payment_instructions && (
               <div className="mt-4 rounded-lg bg-muted/50 p-4">
                 <p className="text-sm font-medium text-muted-foreground">
-                  Payment Instructions
+                  Instruções de pagamento
                 </p>
                 <p className="mt-1 whitespace-pre-wrap text-sm">
                   {invoice.payment_instructions}
@@ -393,16 +404,16 @@ function PublicInvoicePageInner() {
             )}
           </CardContent>
 
-          {/* Footer */}
+          {/* Rodapé */}
           <div className="border-t bg-muted/30 p-4 text-center">
             <p className="text-sm text-muted-foreground">
-              Powered by{' '}
+              Desenvolvido com{' '}
               <a
                 href="/"
                 target="_blank"
                 className="font-medium text-foreground hover:text-primary"
               >
-                Billr
+                Faturador
               </a>
             </p>
           </div>

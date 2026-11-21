@@ -26,13 +26,13 @@ export default function NewClientPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Add Client"
-        description="Add a new client to your business"
+        title="Adicionar cliente"
+        description="Adicione um novo cliente à sua empresa"
       />
 
       <Card className="mx-auto mt-6 max-w-3xl">
         <CardHeader>
-          <CardTitle>Client Information</CardTitle>
+          <CardTitle>Informações do cliente</CardTitle>
         </CardHeader>
         <CardContent>
           <ClientForm

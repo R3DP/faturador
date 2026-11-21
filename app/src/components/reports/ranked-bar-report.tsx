@@ -1,17 +1,15 @@
 'use client'
 
 /**
- * A ranked horizontal bar report, shared by "Top clients" and "Expenses by
- * category" so the two read as the same object with different data.
+ * Relatório de barras horizontais ordenadas, compartilhado por "Principais clientes" e
+ * "Despesas por categoria", para que ambos tenham a mesma apresentação com dados diferentes.
  *
- * Colour: ONE series, so one hue for every bar. Shading each bar darker as it
- * gets bigger would double-encode the bar length and burn the only free
- * channel on information the bar already shows. Categories here have no
- * natural order, so there is nothing for an ordinal ramp to say (unlike the
- * aging report, where age genuinely is ordered).
+ * Cor: há uma única série, então todas as barras usam o mesmo tom. Escurecer as barras maiores
+ * duplicaria a informação já indicada pelo comprimento e usaria uma variável visual à toa.
+ * As categorias não têm uma ordem natural, então uma escala ordinal não acrescentaria informação
+ * (diferentemente do relatório de vencimentos, em que a idade segue uma ordem).
  *
- * Horizontal, because these categories have long names and there are usually
- * fewer than ten of them.
+ * A orientação é horizontal porque as categorias têm nomes longos e geralmente são menos de dez.
  */
 
 import Link from 'next/link'
@@ -37,9 +35,9 @@ export interface RankedRow {
   key: string
   label: string
   amount: number
-  /** Share of the section total, 0-100. */
+  /** Participação no total da seção, de 0 a 100. */
   share: number
-  /** Small line under the label in the table view, e.g. "3 invoices". */
+  /** Informação complementar exibida abaixo do rótulo na tabela, por exemplo, "3 faturas". */
   secondary?: string
   href?: string
 }
@@ -88,7 +86,7 @@ export function RankedBarReport({
           { header: `${amountLabel} (${currency})`, value: (row: RankedRow) => row.amount },
           { header: shareLabel, value: (row: RankedRow) => row.share.toFixed(1) },
           ...(rows.some((row) => row.secondary)
-            ? [{ header: 'Detail', value: (row: RankedRow) => row.secondary ?? '' }]
+            ? [{ header: 'Detalhe', value: (row: RankedRow) => row.secondary ?? '' }]
             : []),
         ]),
         { title, range, currency }
@@ -97,7 +95,7 @@ export function RankedBarReport({
 
   const table = (
     <ReportTable
-      caption={`${title}, ${amountLabel.toLowerCase()} and ${shareLabel.toLowerCase()}`}
+      caption={`${title}, ${amountLabel.toLowerCase()} e ${shareLabel.toLowerCase()}`}
       columns={[
         { key: 'label', label: categoryLabel },
         { key: 'amount', label: amountLabel, align: 'right' },
@@ -142,7 +140,7 @@ export function RankedBarReport({
 
   return (
     <ReportCard title={title} description={description} csv={csv} table={table} footer={footer}>
-      <VizFrame height={height} label={`Horizontal bar chart of ${title.toLowerCase()} in ${currency}`}>
+      <VizFrame height={height} label={`Gráfico de barras horizontal de ${title.toLowerCase()}, em ${currency}`}>
         <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 72, bottom: 4, left: 8 }}>
           <VizGrid horizontal={false} vertical />
           <XAxis

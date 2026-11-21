@@ -17,11 +17,11 @@ import { createClient } from '@/lib/supabase/client'
 import { updateBusinessProfileAction } from '@/lib/actions/business'
 
 const businessSchema = z.object({
-  name: z.string().min(1, 'Business name is required'),
+  name: z.string().min(1, 'O nome da empresa é obrigatório'),
   legal_name: z.string().optional(),
-  email: z.string().email('Invalid email').optional().or(z.literal('')),
+  email: z.string().email('E-mail inválido').optional().or(z.literal('')),
   phone: z.string().optional(),
-  website: z.string().url('Invalid URL').optional().or(z.literal('')),
+  website: z.string().url('URL inválida').optional().or(z.literal('')),
   address_line1: z.string().optional(),
   address_line2: z.string().optional(),
   city: z.string().optional(),
@@ -34,8 +34,8 @@ const businessSchema = z.object({
 type BusinessForm = z.infer<typeof businessSchema>
 
 const createBusinessSchema = z.object({
-  name: z.string().min(1, 'Business name is required'),
-  email: z.string().email('Invalid email').optional().or(z.literal('')),
+  name: z.string().min(1, 'O nome da empresa é obrigatório'),
+  email: z.string().email('E-mail inválido').optional().or(z.literal('')),
 })
 
 type CreateBusinessForm = z.infer<typeof createBusinessSchema>
@@ -97,7 +97,7 @@ function CreateBusinessView() {
     }
 
     if (business) {
-      // BusinessProvider restores the saved selection from this key on refresh
+      // O BusinessProvider restaura a seleção salva nesta chave ao recarregar a página
       localStorage.setItem('billr_current_business', business.id)
     }
     await refreshBusinesses()
@@ -107,16 +107,16 @@ function CreateBusinessView() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="New Business"
-        description="Create another business to invoice from"
+        title="Nova empresa"
+        description="Crie outra empresa para emitir faturas"
       />
 
       <div className="mt-6 max-w-lg">
         <Card>
           <CardHeader>
-            <CardTitle>Business Information</CardTitle>
+            <CardTitle>Informações da empresa</CardTitle>
             <CardDescription>
-              You can fill in the rest of the details after creating it
+              Você pode preencher os demais dados depois de criar a empresa.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -128,10 +128,10 @@ function CreateBusinessView() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="new-name">Business Name *</Label>
+                <Label htmlFor="new-name">Nome da empresa *</Label>
                 <Input
                   id="new-name"
-                  placeholder="Acme Design Studio"
+                  placeholder="Estúdio de Design Acme"
                   autoFocus
                   {...register('name')}
                 />
@@ -141,7 +141,7 @@ function CreateBusinessView() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="new-email">Email</Label>
+                <Label htmlFor="new-email">E-mail</Label>
                 <Input
                   id="new-email"
                   type="email"
@@ -159,11 +159,11 @@ function CreateBusinessView() {
                   variant="outline"
                   onClick={() => router.replace('/settings/business')}
                 >
-                  Cancel
+                  Cancelar
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Create Business
+                  Criar empresa
                 </Button>
               </div>
             </form>
@@ -202,7 +202,7 @@ function EditBusinessView() {
     },
   })
 
-  // Businesses load asynchronously; sync the form once data arrives
+  // As empresas carregam de forma assíncrona; sincroniza o formulário quando os dados chegam
   useEffect(() => {
     if (currentBusiness) {
       reset({
@@ -235,7 +235,7 @@ function EditBusinessView() {
     if ('error' in result) {
       setMessage({ type: 'error', text: result.error })
     } else {
-      setMessage({ type: 'success', text: 'Business settings updated' })
+      setMessage({ type: 'success', text: 'Configurações da empresa atualizadas' })
       refreshBusinesses()
     }
   }
@@ -253,9 +253,9 @@ function EditBusinessView() {
       <div className="p-6 lg:p-8">
         <div className="flex h-[400px] items-center justify-center">
           <div className="text-center">
-            <h2 className="text-xl font-semibold">No business selected</h2>
+            <h2 className="text-xl font-semibold">Nenhuma empresa selecionada</h2>
             <p className="mt-2 text-muted-foreground">
-              Create a business to get started.
+              Crie uma empresa para começar.
             </p>
           </div>
         </div>
@@ -266,8 +266,8 @@ function EditBusinessView() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Settings"
-        description="Manage your business settings and preferences"
+        title="Configurações"
+        description="Gerencie as configurações e preferências da sua empresa"
       />
 
       <div className="mt-6">
@@ -288,55 +288,55 @@ function EditBusinessView() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Business Information</CardTitle>
+                <CardTitle>Informações da empresa</CardTitle>
                 <CardDescription>
-                  Basic information about your business
+                  Informações básicas da sua empresa
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Business Name *</Label>
+                    <Label htmlFor="name">Nome da empresa *</Label>
                     <Input id="name" {...register('name')} />
                     {errors.name && (
                       <p className="text-sm text-destructive">{errors.name.message}</p>
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="legal_name">Legal Name</Label>
+                    <Label htmlFor="legal_name">Razão social</Label>
                     <Input
                       id="legal_name"
                       {...register('legal_name')}
-                      placeholder="For invoices (if different)"
+                      placeholder="Para faturas (se diferente)"
                     />
                   </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">E-mail</Label>
                     <Input id="email" type="email" {...register('email')} />
                     {errors.email && (
                       <p className="text-sm text-destructive">{errors.email.message}</p>
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone</Label>
+                    <Label htmlFor="phone">Telefone</Label>
                     <Input id="phone" {...register('phone')} />
                   </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="website">Website</Label>
+                    <Label htmlFor="website">Site</Label>
                     <Input id="website" {...register('website')} placeholder="https://" />
                     {errors.website && (
                       <p className="text-sm text-destructive">{errors.website.message}</p>
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="tax_id">Tax ID</Label>
-                    <Input id="tax_id" {...register('tax_id')} placeholder="XX-XXXXXXX" />
+                    <Label htmlFor="tax_id">Identificação fiscal</Label>
+                    <Input id="tax_id" {...register('tax_id')} placeholder="CNPJ, CPF, NIF etc." />
                   </div>
                 </div>
               </CardContent>
@@ -344,35 +344,35 @@ function EditBusinessView() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Business Address</CardTitle>
+                <CardTitle>Endereço da empresa</CardTitle>
                 <CardDescription>
-                  This address will appear on your invoices
+                  Este endereço aparecerá nas suas faturas
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="address_line1">Address Line 1</Label>
+                  <Label htmlFor="address_line1">Endereço - linha 1</Label>
                   <Input id="address_line1" {...register('address_line1')} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address_line2">Address Line 2</Label>
+                  <Label htmlFor="address_line2">Endereço - linha 2</Label>
                   <Input id="address_line2" {...register('address_line2')} />
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
+                    <Label htmlFor="city">Cidade</Label>
                     <Input id="city" {...register('city')} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="state">State</Label>
+                    <Label htmlFor="state">Estado</Label>
                     <Input id="state" {...register('state')} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="postal_code">Postal Code</Label>
+                    <Label htmlFor="postal_code">CEP</Label>
                     <Input id="postal_code" {...register('postal_code')} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
+                    <Label htmlFor="country">País</Label>
                     <Input id="country" {...register('country')} />
                   </div>
                 </div>
@@ -382,7 +382,7 @@ function EditBusinessView() {
             <div className="flex justify-end">
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
+                Salvar alterações
               </Button>
             </div>
           </form>

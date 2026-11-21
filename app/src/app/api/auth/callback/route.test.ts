@@ -20,7 +20,7 @@ function signedIn(id = 'user-1') {
   getUser.mockResolvedValue({ data: { user: { id } } })
 }
 
-describe('authentication callback', () => {
+describe('retorno da autenticação', () => {
   beforeEach(() => {
     exchange.mockReset()
     getUser.mockReset()
@@ -29,7 +29,7 @@ describe('authentication callback', () => {
     admitAccount.mockResolvedValue(true)
   })
 
-  it('exchanges the code and returns an admitted account to the requested local page', async () => {
+  it('troca o código e direciona uma conta aprovada à página local solicitada', async () => {
     signedIn()
     const response = await GET(
       new Request(`${ORIGIN}/api/auth/callback?code=example&next=%2Fagents%3Ftab%3Dkeys`),
@@ -39,7 +39,7 @@ describe('authentication callback', () => {
     expect(response.headers.get('location')).toBe(`${ORIGIN}/agents?tab=keys`)
   })
 
-  it('does not allow an external destination after authentication', async () => {
+  it('não permite um destino externo após a autenticação', async () => {
     signedIn()
     const response = await GET(
       new Request(`${ORIGIN}/api/auth/callback?code=example&next=%2F%2Fevil.example`),
@@ -47,7 +47,7 @@ describe('authentication callback', () => {
     expect(response.headers.get('location')).toBe(`${ORIGIN}/dashboard`)
   })
 
-  it('signs out a new GitHub or Google account once sign-up is closed', async () => {
+  it('encerra a sessão de uma nova conta do GitHub ou Google quando as inscrições estão fechadas', async () => {
     signedIn('stranger')
     admitAccount.mockResolvedValue(false)
     const response = await GET(new Request(`${ORIGIN}/api/auth/callback?code=example&next=%2Fdashboard`))
@@ -55,7 +55,7 @@ describe('authentication callback', () => {
     expect(response.headers.get('location')).toBe(`${ORIGIN}/login?error=signup_closed`)
   })
 
-  it('signs out and says so honestly when access cannot be checked', async () => {
+  it('encerra a sessão e informa com clareza quando não é possível verificar o acesso', async () => {
     signedIn('owner')
     admitAccount.mockRejectedValue(new Error('could not check access'))
     const response = await GET(new Request(`${ORIGIN}/api/auth/callback?code=example&next=%2Fdashboard`))
@@ -63,7 +63,7 @@ describe('authentication callback', () => {
     expect(response.headers.get('location')).toBe(`${ORIGIN}/login?error=access_check`)
   })
 
-  it('sends a failed exchange back to sign-in with the destination kept', async () => {
+  it('retorna à página de entrada após uma troca malsucedida, preservando o destino', async () => {
     exchange.mockResolvedValue({ error: { message: 'expired' } })
     const response = await GET(
       new Request(`${ORIGIN}/api/auth/callback?code=example&next=%2Finvoices`),

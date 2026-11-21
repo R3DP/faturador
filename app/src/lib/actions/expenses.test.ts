@@ -13,10 +13,10 @@ const REQUEST_ID = '50000000-0000-4000-8000-000000000002'
 const input = {
   client_id: CLIENT_ID,
   category: 'software',
-  description: 'Design tool',
+  description: 'Ferramenta de design',
   amount: 25,
   date: '2026-09-22',
-  vendor: 'Vendor',
+  vendor: 'Fornecedor',
   is_billable: false,
 }
 
@@ -40,7 +40,7 @@ beforeEach(() => {
 })
 
 describe('createExpenseAction', () => {
-  it('records the expense, replaying one request id', async () => {
+  it('registra a despesa reutilizando um request id', async () => {
     expect(await createExpenseAction(BUSINESS_ID, input, REQUEST_ID)).toEqual({ ok: true })
     const rpc = db.calls.find((call) => call.op === 'rpc')
     const args = rpc?.payload as Record<string, unknown>
@@ -52,7 +52,7 @@ describe('createExpenseAction', () => {
 })
 
 describe('updateExpenseAction', () => {
-  it('saves an edit without touching invoiced expenses', async () => {
+  it('salva a edição sem alterar despesas faturadas', async () => {
     expect(await updateExpenseAction(ROW_ID, input)).toEqual({ ok: true })
     const update = db.calls.find((call) => call.op === 'update')
     expect(update?.payload).toMatchObject({ amount: 25, category: 'software' })
@@ -61,7 +61,7 @@ describe('updateExpenseAction', () => {
 })
 
 describe('deleteExpenseAction', () => {
-  it('deletes an unbilled expense', async () => {
+  it('exclui uma despesa não faturada', async () => {
     expect(await deleteExpenseAction(ROW_ID)).toEqual({ ok: true })
   })
 })

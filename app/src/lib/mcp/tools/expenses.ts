@@ -6,7 +6,7 @@ import { resolveClient } from './invoices-write'
 import { appUrl, errorResult, jsonResult, formatCurrency, truncationNote } from '@/lib/mcp/shared'
 import type { Database } from '@/types/database'
 
-const DATE_FIELD = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+const DATE_FIELD = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use o formato YYYY-MM-DD')
 
 const EXPENSE_CATEGORIES = [
   'office',
@@ -27,56 +27,56 @@ function round2(n: number): number {
 }
 
 /**
- * Registers the expense management tools (list_expenses, update_expense,
- * delete_expense) that complement log_expense in work.ts, scoped to the
- * businesses in ctx.db.scope.
+ * Registra as ferramentas de gestão de despesas (list_expenses, update_expense,
+ * delete_expense), complementares a log_expense em work.ts e limitadas às
+ * empresas em ctx.db.scope.
  *
- * An expense counts as billed once invoice_id is set; as with time entries,
- * billed rows are refused by update and delete so an invoice the client has
- * already seen cannot be silently contradicted.
+ * Uma despesa é considerada faturada quando invoice_id está definido; assim
+ * como nas entradas de tempo, despesas faturadas não podem ser atualizadas nem
+ * excluídas, evitando contradizer silenciosamente uma fatura já vista pelo cliente.
  *
- * Currency discipline: expenses are stored with their own currency, so totals
- * are grouped per currency and never summed across them.
+ * Disciplina de moeda: cada despesa é armazenada em sua própria moeda; por isso,
+ * os totais são agrupados por moeda e nunca somados entre moedas diferentes.
  */
 export function registerExpenseTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'list_expenses',
     {
-      title: 'List Expenses',
+      title: 'Listar despesas',
       description:
-        'List expenses filtered by category, client, date range, and billed status, with totals grouped per currency. Use this for "what did I spend on software last quarter" or to find an expense to correct. For rebilling unbilled costs to a client, prefer list_unbilled.',
+        'Lista despesas filtradas por categoria, cliente, período e situação de faturamento, com totais agrupados por moeda. Use para "quanto gastei com software no último trimestre" ou para encontrar uma despesa a corrigir. Para refaturar custos ainda não faturados a um cliente, prefira list_unbilled.',
       inputSchema: z.object({
-        offset: z.number().int().min(0).max(1000000).optional().describe('Page offset. Start at 0, then use next_offset until it is null. Keep other filters unchanged.'),
+        offset: z.number().int().min(0).max(1000000).optional().describe('Deslocamento da página. Comece em 0 e use next_offset até que seja null. Mantenha os demais filtros inalterados.'),
         business_id: z
           .string()
           .uuid()
           .optional()
           .describe(
-            'Id of the business whose expenses to list. Optional when the API key is scoped to exactly one business; required if scoped to multiple.'
+            'ID da empresa cujas despesas serão listadas. Opcional quando a chave de API tem escopo de uma única empresa; obrigatório quando abrange várias.'
           ),
         category: z
           .enum(EXPENSE_CATEGORIES)
           .optional()
-          .describe('Restrict to a single expense category. Omit to include every category.'),
-        client_id: z.string().uuid().optional().describe('Restrict to one client. Provide this or client_name.'),
+          .describe('Limita a uma categoria de despesa. Omita para incluir todas as categorias.'),
+        client_id: z.string().uuid().optional().describe('Limita a um cliente. Informe este campo ou client_name.'),
         client_name: z
           .string()
           .max(200)
           .optional()
-          .describe('Exact (case-insensitive) client name to restrict to. Provide this or client_id.'),
-        from: DATE_FIELD.optional().describe('Earliest expense date to include, YYYY-MM-DD (inclusive).'),
-        to: DATE_FIELD.optional().describe('Latest expense date to include, YYYY-MM-DD (inclusive).'),
+          .describe('Nome exato do cliente (sem diferenciar maiúsculas de minúsculas) para filtrar. Informe este campo ou client_id.'),
+        from: DATE_FIELD.optional().describe('Data inicial das despesas, no formato YYYY-MM-DD (inclusiva).'),
+        to: DATE_FIELD.optional().describe('Data final das despesas, no formato YYYY-MM-DD (inclusiva).'),
         billed: z
           .enum(['billed', 'unbilled', 'all'])
           .optional()
           .describe(
-            '"unbilled" returns expenses not yet on an invoice, "billed" returns those already invoiced, "all" returns both. Defaults to "all".'
+            '"unbilled" retorna despesas ainda não incluídas em uma fatura, "billed" retorna as já faturadas, "all" retorna ambas. O padrão é "all".'
           ),
         billable: z
           .boolean()
           .optional()
-          .describe('Filter by the billable flag. Omit to include both billable and non-billable expenses.'),
-        limit: z.number().int().min(1).max(200).optional().describe('Max expenses to return (default 50, max 200).'),
+          .describe('Filtra pelo indicador de faturável. Omita para incluir despesas faturáveis e não faturáveis.'),
+        limit: z.number().int().min(1).max(200).optional().describe('Máximo de despesas a retornar (padrão 50, máximo 200).'),
       }),
     },
     async ({ offset, business_id, category, client_id, client_name, from, to, billed, billable, limit }) => {
@@ -84,7 +84,7 @@ export function registerExpenseTools(server: McpServer, ctx: McpCtx) {
       try {
         resolvedBusinessId = ctx.db.resolveBusinessId(business_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
       }
 
       let clientFilterId: string | undefined
@@ -92,7 +92,7 @@ export function registerExpenseTools(server: McpServer, ctx: McpCtx) {
         try {
           clientFilterId = (await resolveClient(ctx, resolvedBusinessId, client_id, client_name)).id
         } catch (err) {
-          return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve client.')
+          return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar o cliente.')
         }
       }
 
@@ -120,7 +120,7 @@ export function registerExpenseTools(server: McpServer, ctx: McpCtx) {
 
       if (error) {
         console.error('list_expenses:', error)
-        return errorResult('Could not list expenses.')
+        return errorResult('Não foi possível listar as despesas.')
       }
 
       const rows = data ?? []
@@ -139,7 +139,7 @@ export function registerExpenseTools(server: McpServer, ctx: McpCtx) {
         invoice_id: row.invoice_id,
       }))
 
-      // Never sum across currencies: one total per currency, each labeled.
+      // Nunca some moedas diferentes: calcule um total separado e identificado para cada moeda.
       const byCurrency = new Map<string, number>()
       for (const expense of expenses) {
         byCurrency.set(expense.currency, round2((byCurrency.get(expense.currency) ?? 0) + expense.amount))
@@ -151,7 +151,7 @@ export function registerExpenseTools(server: McpServer, ctx: McpCtx) {
       return jsonResult({
         offset: offset ?? 0,
         next_offset: (data ?? []).length === resolvedLimit ? (offset ?? 0) + resolvedLimit : null,
-        summary: `${expenses.length} expense${expenses.length === 1 ? '' : 's'}${totalsLabel ? ` totaling ${totalsLabel}` : ''}${truncated ? truncationNote(resolvedLimit) : ''}`,
+        summary: `${expenses.length} despesa${expenses.length === 1 ? '' : 's'}${totalsLabel ? ` totalizando ${totalsLabel}` : ''}${truncated ? truncationNote(resolvedLimit) : ''}`,
         totals_by_currency: totals,
         expenses,
         app_url: `${appUrl()}/expenses`,
@@ -162,30 +162,30 @@ export function registerExpenseTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'update_expense',
     {
-      title: 'Update Expense',
+      title: 'Atualizar despesa',
       description:
-        'Correct a single logged expense: amount, description, vendor, category, date, client, or billable flag. Use it to fix a mistake before the cost is rebilled. Refuses expenses already attached to an invoice, since changing those would not change the invoice the client received.',
+        'Corrige uma despesa registrada: valor, descrição, fornecedor, categoria, data, cliente ou indicador de faturável. Use para corrigir um erro antes de refaturar o custo. Recusa despesas já vinculadas a uma fatura, pois alterá-las não mudaria a fatura recebida pelo cliente.',
       inputSchema: z.object({
         expense_id: z
           .string()
           .uuid()
-          .describe('Id of the expense to update, from list_expenses or list_unbilled. Exactly one expense is affected.'),
-        description: z.string().min(1).max(500).optional().describe('New description of what the expense was for.'),
-        amount: z.number().gt(0).optional().describe('New expense amount, must be > 0. Keeps the existing currency.'),
-        date: DATE_FIELD.optional().describe('New expense date, YYYY-MM-DD.'),
-        category: z.enum(EXPENSE_CATEGORIES).optional().describe('New expense category.'),
-        vendor: z.string().max(200).optional().describe('New vendor or merchant name.'),
-        notes: z.string().max(2000).optional().describe('New internal notes; not shown to the client.'),
-        client_id: z.string().uuid().optional().describe('Reassign to this client id. Provide this or client_name.'),
+          .describe('ID da despesa a atualizar, obtido por list_expenses ou list_unbilled. Somente uma despesa será afetada.'),
+        description: z.string().min(1).max(500).optional().describe('Nova descrição do motivo da despesa.'),
+        amount: z.number().gt(0).optional().describe('Novo valor da despesa, deve ser > 0. Mantém a moeda atual.'),
+        date: DATE_FIELD.optional().describe('Nova data da despesa, no formato YYYY-MM-DD.'),
+        category: z.enum(EXPENSE_CATEGORIES).optional().describe('Nova categoria da despesa.'),
+        vendor: z.string().max(200).optional().describe('Novo nome do fornecedor ou estabelecimento.'),
+        notes: z.string().max(2000).optional().describe('Novas observações internas; não são exibidas ao cliente.'),
+        client_id: z.string().uuid().optional().describe('Transfere para este ID de cliente. Informe este campo ou client_name.'),
         client_name: z
           .string()
           .max(200)
           .optional()
-          .describe('Reassign to this exact (case-insensitive) client name. Provide this or client_id.'),
+          .describe('Transfere para o cliente com este nome exato (sem diferenciar maiúsculas de minúsculas). Informe este campo ou client_id.'),
         billable: z
           .boolean()
           .optional()
-          .describe('New billable flag. Non-billable expenses never appear in list_unbilled.'),
+          .describe('Novo indicador de faturável. Despesas não faturáveis nunca aparecem em list_unbilled.'),
       }),
     },
     async ({ expense_id, description, amount, date, category, vendor, notes, client_id, client_name, billable }) => {
@@ -193,12 +193,12 @@ export function registerExpenseTools(server: McpServer, ctx: McpCtx) {
       try {
         expense = await ctx.db.assertExpenseAccess(expense_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access expense.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar a despesa.')
       }
 
       if (expense.invoice_id) {
         return errorResult(
-          `Expense ${expense_id} is already billed on invoice ${expense.invoice_id} and cannot be edited. Adjust the invoice itself, or log a separate correcting expense.`
+          `A despesa ${expense_id} já está vinculada à fatura ${expense.invoice_id} e não pode ser editada. Ajuste a própria fatura ou registre uma despesa separada para correção.`
         )
       }
 
@@ -210,7 +210,7 @@ export function registerExpenseTools(server: McpServer, ctx: McpCtx) {
           reassignedClientId = client.id
           reassignedClientName = client.name
         } catch (err) {
-          return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve client.')
+          return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar o cliente.')
         }
       }
 
@@ -225,7 +225,7 @@ export function registerExpenseTools(server: McpServer, ctx: McpCtx) {
       if (reassignedClientId !== undefined) updates.client_id = reassignedClientId
 
       if (Object.keys(updates).length === 0) {
-        return errorResult('Nothing to update. Pass at least one field to change.')
+        return errorResult('Nada para atualizar. Informe pelo menos um campo para alterar.')
       }
 
       const { data: updated, error } = await ctx.db.svc
@@ -238,13 +238,13 @@ export function registerExpenseTools(server: McpServer, ctx: McpCtx) {
 
       if (error || !updated) {
         console.error('update_expense (update):', error)
-        return errorResult('Could not update expense.')
+        return errorResult('Não foi possível atualizar a despesa.')
       }
 
-      const forClient = reassignedClientName ? ` (reassigned to ${reassignedClientName})` : ''
+      const forClient = reassignedClientName ? ` (atribuída novamente a ${reassignedClientName})` : ''
 
       return jsonResult({
-        summary: `Updated expense: ${formatCurrency(updated.amount, updated.currency)} on ${updated.date}${forClient}`,
+        summary: `Despesa atualizada: ${formatCurrency(updated.amount, updated.currency)} em ${updated.date}${forClient}`,
         expense: {
           id: updated.id,
           business_id: updated.business_id,
@@ -266,15 +266,15 @@ export function registerExpenseTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'delete_expense',
     {
-      title: 'Delete Expense',
+      title: 'Excluir despesa',
       description:
-        'Permanently delete ONE expense by its id, returning what was deleted so it can be re-logged if that was a mistake. There is no bulk delete and no filter-based delete on purpose. Refuses expenses already attached to an invoice. Prefer update_expense when the expense is merely wrong rather than unwanted.',
+        'Exclui permanentemente UMA despesa pelo ID e retorna os dados excluídos para que ela possa ser registrada novamente caso tenha sido um engano. Não há exclusão em lote nem por filtros, intencionalmente. Recusa despesas já vinculadas a uma fatura. Prefira update_expense quando a despesa apenas estiver incorreta, em vez de indesejada.',
       inputSchema: z.object({
         expense_id: z
           .string()
           .uuid()
           .describe(
-            'Id of the single expense to delete, from list_expenses. Required and exact: this tool never deletes by category, client, date, or any other filter.'
+            'ID exato da única despesa a excluir, obtido por list_expenses. Obrigatório: esta ferramenta nunca exclui por categoria, cliente, data ou qualquer outro filtro.'
           ),
       }),
     },
@@ -283,12 +283,12 @@ export function registerExpenseTools(server: McpServer, ctx: McpCtx) {
       try {
         expense = await ctx.db.assertExpenseAccess(expense_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access expense.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar a despesa.')
       }
 
       if (expense.invoice_id) {
         return errorResult(
-          `Expense ${expense_id} is already billed on invoice ${expense.invoice_id} and cannot be deleted. Adjust the invoice instead.`
+          `A despesa ${expense_id} já está vinculada à fatura ${expense.invoice_id} e não pode ser excluída. Ajuste a própria fatura.`
         )
       }
 
@@ -300,11 +300,11 @@ export function registerExpenseTools(server: McpServer, ctx: McpCtx) {
 
       if (error) {
         console.error('delete_expense (delete):', error)
-        return errorResult('Could not delete expense.')
+        return errorResult('Não foi possível excluir a despesa.')
       }
 
       return jsonResult({
-        summary: `Deleted expense: ${formatCurrency(expense.amount, expense.currency)} on ${expense.date}. This cannot be undone; re-log it with log_expense if it was removed by mistake.`,
+        summary: `Despesa excluída: ${formatCurrency(expense.amount, expense.currency)} em ${expense.date}. Esta ação não pode ser desfeita; registre novamente com log_expense se a exclusão foi um engano.`,
         deleted_expense: {
           id: expense.id,
           business_id: expense.business_id,

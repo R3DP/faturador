@@ -46,8 +46,8 @@ beforeEach(() => {
   refundsList.mockReset()
 })
 
-describe('verified Stripe event processing', () => {
-  it('records a successful yen payment in yen, inside the database', async () => {
+describe('processamento verificado de eventos Stripe', () => {
+  it('registra corretamente no banco um pagamento bem-sucedido em ienes', async () => {
     const db = setup()
     await reconcileEvent(db as never, event('payment_intent.succeeded', paid()))
     expect(ledgerWrites(db)[0]?.payload).toMatchObject({
@@ -58,32 +58,32 @@ describe('verified Stripe event processing', () => {
     expect(updates(db)).toEqual([{ stripe_payment_status: 'succeeded' }])
   })
 
-  it('rejects a mismatched currency before touching the ledger', async () => {
+  it('recusa uma moeda incompatível antes de alterar o livro-razão', async () => {
     const db = setup()
     await expect(
       reconcileEvent(db as never, event('payment_intent.succeeded', paid(undefined, 'usd'))),
-    ).rejects.toThrow('does not match invoice')
+    ).rejects.toThrow('A moeda ou a empresa do evento Stripe não corresponde à fatura')
     expect(ledgerWrites(db)).toHaveLength(0)
   })
 
-  it('rejects a PaymentIntent stamped with another business', async () => {
+  it('recusa um PaymentIntent associado a outra empresa', async () => {
     const db = setup()
     await expect(
       reconcileEvent(
         db as never,
         event('payment_intent.succeeded', paid({ invoice_id: 'i', business_id: 'someone-else' })),
       ),
-    ).rejects.toThrow('does not match invoice')
+    ).rejects.toThrow('A moeda ou a empresa do evento Stripe não corresponde à fatura')
     expect(ledgerWrites(db)).toHaveLength(0)
   })
 
-  it('ignores an event from a connected account without touching anything', async () => {
+  it('ignora um evento de uma conta conectada sem alterar nada', async () => {
     const db = setup()
     await reconcileEvent(db as never, event('payment_intent.succeeded', paid(), 'acct_elsewhere'))
     expect(db.calls).toHaveLength(0)
   })
 
-  it('ignores a PaymentIntent another app created on the same Stripe account', async () => {
+  it('ignora um PaymentIntent criado por outro aplicativo na mesma conta Stripe', async () => {
     const db = createFakeSupabase({ 'invoices.select': { data: null, error: null } })
     await reconcileEvent(
       db as never,
@@ -93,7 +93,7 @@ describe('verified Stripe event processing', () => {
     expect(updates(db)).toEqual([])
   })
 
-  it('propagates database read failures so webhook delivery can retry', async () => {
+  it('propaga falhas de leitura do banco para que a entrega do webhook possa ser repetida', async () => {
     const db = createFakeSupabase({
       'invoices.select': { data: null, error: { message: 'database unavailable' } },
     })
@@ -103,8 +103,8 @@ describe('verified Stripe event processing', () => {
   })
 })
 
-describe('failed card attempts', () => {
-  it('records a declined card against the invoice without writing to the ledger', async () => {
+describe('tentativas de pagamento com cartão recusadas', () => {
+  it('registra a recusa do cartão na fatura sem gravar no livro-razão', async () => {
     const db = setup()
     await reconcileEvent(
       db as never,
@@ -119,7 +119,7 @@ describe('failed card attempts', () => {
     expect(ledgerWrites(db)).toHaveLength(0)
   })
 
-  it('guards the write at the database so a payment landing mid-event still wins', async () => {
+  it('protege a gravação no banco para que um pagamento recebido durante o evento ainda prevaleça', async () => {
     const db = setup()
     await reconcileEvent(
       db as never,
@@ -129,7 +129,7 @@ describe('failed card attempts', () => {
     expect(update?.filters).toContainEqual({ method: 'neq', args: ['status', 'paid'] })
   })
 
-  it('ignores a failure for an attempt the invoice has already moved past', async () => {
+  it('ignora uma falha de uma tentativa que a fatura já deixou para trás', async () => {
     const db = setup()
     await reconcileEvent(
       db as never,
@@ -138,7 +138,7 @@ describe('failed card attempts', () => {
     expect(updates(db)).toEqual([])
   })
 
-  it('never downgrades an invoice that has already been paid', async () => {
+  it('nunca rebaixa o status de uma fatura já paga', async () => {
     const db = setup({ status: 'paid' })
     await reconcileEvent(
       db as never,
@@ -147,15 +147,15 @@ describe('failed card attempts', () => {
     expect(updates(db)).toEqual([])
   })
 
-  it('clears a stale failure when the retry succeeds', async () => {
+  it('limpa uma falha antiga quando a nova tentativa tem sucesso', async () => {
     const db = setup({ stripe_payment_status: 'failed' })
     await reconcileEvent(db as never, event('payment_intent.succeeded', paid()))
     expect(updates(db)).toEqual([{ stripe_payment_status: 'succeeded' }])
   })
 
-  it('only marks the attempt succeeded on the invoice still pointing at that intent', async () => {
-    // A replayed success for an earlier intent must not overwrite the state
-    // of the attempt the invoice has since moved on to.
+  it('marca a tentativa como bem-sucedida somente se a fatura ainda aponta para esse intent', async () => {
+    // Um evento de sucesso reentregue para um intent anterior não deve sobrescrever
+    // o estado da tentativa mais recente da fatura.
     const db = setup({ stripe_payment_intent_id: 'pi_newer' })
     await reconcileEvent(db as never, event('payment_intent.succeeded', paid()))
     const mark = db.calls.find((c) => c.table === 'invoices' && c.op === 'update')
@@ -164,15 +164,15 @@ describe('failed card attempts', () => {
     expect(mark?.filters).toContainEqual({ method: 'eq', args: ['stripe_payment_intent_id', 'pi_current'] })
   })
 
-  it('records a three-decimal currency in thousandths', async () => {
+  it('registra moedas com três casas decimais em milésimos', async () => {
     const db = setup({ currency: 'KWD', total: 12.345 })
     await reconcileEvent(db as never, event('payment_intent.succeeded', { ...paid(), currency: 'kwd', amount_received: 12345 }))
     expect(ledgerWrites(db)[0]?.payload).toMatchObject({ p_amount: 12.345, p_provider_id: 'pi_current' })
   })
 })
 
-describe('refunds and disputes', () => {
-  it('records each refund once as a negative payment, listing refunds on this account', async () => {
+describe('estornos e contestações', () => {
+  it('registra cada estorno uma vez como pagamento negativo, listando os estornos desta conta', async () => {
     refundsList.mockResolvedValue({ data: [{ id: 're_1', status: 'succeeded', amount: 300 }], has_more: false })
     const db = setup()
     await reconcileEvent(
@@ -188,9 +188,9 @@ describe('refunds and disputes', () => {
     expect(ledgerWrites(db)[0]?.payload).toMatchObject({ p_amount: -300, p_provider_id: 're_1' })
   })
 
-  it('records a refund of an earlier, already booked payment through the ledger', async () => {
-    // No metadata on the charge and the invoice points at a newer attempt,
-    // so only the ledger row for the earlier intent leads back to it.
+  it('registra pelo livro-razão o estorno de um pagamento anterior já contabilizado', async () => {
+    // A cobrança não tem metadados e a fatura aponta para uma tentativa mais recente;
+    // por isso, somente a linha do livro-razão do intent anterior permite associá-la.
     refundsList.mockResolvedValue({ data: [{ id: 're_old', status: 'succeeded', amount: 400 }], has_more: false })
     const db = createFakeSupabase({
       'invoices.select': (q) =>
@@ -210,15 +210,15 @@ describe('refunds and disputes', () => {
     expect(ledgerWrites(db)[0]?.payload).toMatchObject({ p_invoice_id: 'i', p_amount: -400, p_provider_id: 're_old' })
   })
 
-  it('flags a disputed invoice', async () => {
+  it('sinaliza uma fatura contestada', async () => {
     const db = setup()
     await reconcileEvent(db as never, event('charge.dispute.created', { payment_intent: 'pi_current', currency: 'jpy' }))
     expect(updates(db)).toContainEqual({ disputed: true })
   })
 
-  it('flags the right invoice when the dispute is on an earlier, already booked payment', async () => {
-    // The invoice has moved on to a newer attempt (its total was raised after
-    // the first payment), so only the ledger still knows the earlier intent.
+  it('sinaliza a fatura correta quando a contestação envolve um pagamento anterior já contabilizado', async () => {
+    // A fatura passou para uma tentativa mais recente (seu total aumentou após
+    // o primeiro pagamento), então somente o livro-razão ainda identifica o intent anterior.
     const db = createFakeSupabase({
       'invoices.select': (q) =>
         q.filters.some((f) => f.method === 'eq' && f.args[0] === 'id' && f.args[1] === 'i')
@@ -236,8 +236,8 @@ describe('refunds and disputes', () => {
   })
 })
 
-describe('the webhook event list', () => {
-  it('handles every event the setup instructions ask for, and ignores others', async () => {
+describe('lista de eventos do webhook', () => {
+  it('processa todos os eventos indicados nas instruções de configuração e ignora os demais', async () => {
     for (const type of STRIPE_WEBHOOK_EVENTS) {
       refundsList.mockResolvedValue({ data: [], has_more: false })
       const db = setup()

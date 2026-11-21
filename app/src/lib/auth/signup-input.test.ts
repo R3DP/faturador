@@ -8,13 +8,13 @@ const VALID = {
 }
 
 describe('parseSignUpInput', () => {
-  it('accepts a complete request', () => {
+  it('aceita uma solicitação completa', () => {
     const result = parseSignUpInput(VALID)
     expect(result.success).toBe(true)
     if (result.success) expect(result.data.fullName).toBe('Harper Lane')
   })
 
-  it('still validates the rest of the form', () => {
+  it('continua validando os demais campos do formulário', () => {
     expect(parseSignUpInput({ ...VALID, email: 'nope' }).success).toBe(false)
     expect(parseSignUpInput({ ...VALID, password: 'short' }).success).toBe(false)
     expect(parseSignUpInput({ ...VALID, fullName: ' ' }).success).toBe(false)

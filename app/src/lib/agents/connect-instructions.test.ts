@@ -28,8 +28,8 @@ function everyString(): string[] {
   return out
 }
 
-describe('connect instructions', () => {
-  it('covers every client the Connect panel advertises', () => {
+describe('instruções de conexão', () => {
+  it('inclui todos os clientes anunciados no painel Connect', () => {
     expect(clients.map((c) => c.id)).toEqual([
       'claude',
       'claude-code',
@@ -40,19 +40,41 @@ describe('connect instructions', () => {
     ])
   })
 
-  it('gives every client three to six numbered steps and a verify line', () => {
+  it('usa faturador como alias local nos exemplos e mantém os rótulos traduzidos', () => {
+    const clientCode = (id: string) => {
+      const client = clients.find((entry) => entry.id === id)
+      expect(client, id).toBeDefined()
+      return [...client!.steps, ...(client!.fallback?.steps ?? [])]
+        .map((step) => step.code?.text ?? '')
+        .join('\n')
+    }
+
+    expect(clientCode('claude-code')).toContain('claude mcp add --transport http faturador ')
+    expect(clientCode('claude-code')).not.toMatch(/\bbillr\b/i)
+    expect(clientCode('codex')).toContain('codex mcp add faturador --url ')
+    expect(clientCode('codex')).toContain('codex mcp login faturador')
+    expect(clientCode('codex')).toContain('[mcp_servers.faturador]')
+    expect(clientCode('codex')).toContain('BILLR_API_KEY')
+    expect(clientCode('cursor')).toContain('"faturador": {')
+    expect(clientCode('cursor')).toContain('BILLR_API_KEY')
+    expect(everyString().join('\n')).not.toContain('Agents → API Keys')
+    expect(everyString().join('\n')).not.toMatch(/\bbillr\b/i)
+    expect(CONSENT_SUMMARY).toContain('Agentes → Chaves de API')
+  })
+
+  it('fornece de três a seis etapas numeradas e uma instrução de verificação para cada cliente', () => {
     for (const client of clients) {
       expect(client.steps.length, client.id).toBeGreaterThanOrEqual(3)
       expect(client.steps.length, client.id).toBeLessThanOrEqual(6)
       expect(client.requirements.trim(), client.id).not.toBe('')
       expect(client.verify, client.id).toContain(FIRST_PROMPT)
       for (const step of client.steps) {
-        expect(step.title.trim(), `${client.id}: step title`).not.toBe('')
+        expect(step.title.trim(), `${client.id}: título da etapa`).not.toBe('')
       }
     }
   })
 
-  it('shows the MCP URL to every client and never a different server URL', () => {
+  it('mostra a URL MCP para cada cliente e nunca uma URL de servidor diferente', () => {
     for (const client of clients) {
       const blocks = [...client.steps, ...(client.fallback?.steps ?? [])]
         .map((s) => s.code?.text)
@@ -67,17 +89,17 @@ describe('connect instructions', () => {
     }
   })
 
-  it('offers the API key fallback only where a client cannot sign in', () => {
+  it('oferece a alternativa de chave de API somente quando o cliente não consegue autenticar', () => {
     const withFallback = clients.filter((c) => c.fallback).map((c) => c.id)
     expect(withFallback).toEqual(['claude-code', 'codex', 'cursor', 'other'])
     for (const client of clients) {
       if (!client.fallback) continue
-      expect(client.fallback.summary, client.id).toBe('Use an API key instead')
+      expect(client.fallback.summary, client.id).toBe('Use uma chave de API')
       expect(client.fallback.steps.length, client.id).toBeGreaterThan(0)
     }
   })
 
-  it('labels every copyable block', () => {
+  it('identifica todos os blocos copiáveis', () => {
     for (const step of allSteps()) {
       if (!step.code) continue
       expect(step.code.label.trim()).not.toBe('')
@@ -85,7 +107,7 @@ describe('connect instructions', () => {
     }
   })
 
-  it('records the vendor page each set of steps was read from', () => {
+  it('registra a página do fornecedor consultada para cada conjunto de etapas', () => {
     for (const client of clients) {
       if (client.id === 'other') continue
       expect(client.source, client.id).toMatch(/^https:\/\//)
@@ -93,7 +115,7 @@ describe('connect instructions', () => {
     }
   })
 
-  it('uses no em-dashes or en-dashes anywhere', () => {
+  it('não usa travessão nem meia-risca em nenhum texto', () => {
     for (const value of everyString()) {
       expect(value).not.toMatch(/[\u2013\u2014]/)
     }

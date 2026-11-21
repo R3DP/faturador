@@ -11,10 +11,10 @@ import {
 } from './reconcile'
 
 /**
- * A refund object shaped like what `stripe.refunds.list(...)` actually
- * returns (extra fields beyond what refundEventInputsFromStripeRefunds
- * reads, to prove it only depends on id/status/amount and tolerates the
- * rest of the real API response shape).
+ * Objeto de estorno no formato realmente retornado por `stripe.refunds.list(...)`,
+ * com campos adicionais além dos lidos por refundEventInputsFromStripeRefunds,
+ * para comprovar que a função depende apenas de id/status/amount e aceita os
+ * demais campos do formato real de resposta da API.
  */
 function fetchedRefund(overrides: { id: string; amount: number; status?: 'succeeded' | 'pending' | 'failed' }) {
   return {
@@ -40,11 +40,11 @@ const baseInvoice: ReconcileInvoiceRow = {
 }
 
 /**
- * Test-only stand-in for the DB's unique index on payments.stripe_payment_id
- * (`ON CONFLICT (stripe_payment_id) DO NOTHING`), so the idempotency /
- * self-healing behavior of the real ledger + recompute flow can be exercised
- * purely, without a database. Mirrors exactly what insertPaymentIdempotent +
- * recomputeInvoice do in reconcile.ts's orchestration layer.
+ * Substituto usado somente nos testes para o índice exclusivo do banco em payments.stripe_payment_id
+ * (`ON CONFLICT (stripe_payment_id) DO NOTHING`), que permite exercitar o comportamento idempotente
+ * e autorreparável do fluxo real de livro-razão e recálculo
+ * sem banco de dados. Reproduz exatamente o que insertPaymentIdempotent +
+ * recomputeInvoice fazem na camada de orquestração de reconcile.ts.
  */
 function makeLedger() {
   const rows = new Map<string, PaymentInsert>()
@@ -63,7 +63,7 @@ function makeLedger() {
 }
 
 describe('buildPaidPaymentInsert', () => {
-  it('builds a payment row keyed on the stripe payment id, independent of current invoice state', () => {
+  it('monta uma linha de pagamento indexada pelo ID Stripe, independentemente do estado atual da fatura', () => {
     const row = buildPaidPaymentInsert(baseInvoice, 10000, 'pi_123', '2026-08-26')
     expect(row).toEqual({
       business_id: 'business-1',
@@ -78,24 +78,24 @@ describe('buildPaidPaymentInsert', () => {
     })
   })
 
-  it('handles a null stripe payment id without throwing', () => {
+  it('trata um ID de pagamento Stripe null sem lançar exceção', () => {
     const row = buildPaidPaymentInsert(baseInvoice, 10000, null, '2026-08-26')
     expect(row.stripe_payment_id).toBeNull()
   })
 })
 
 describe('recomputeInvoiceFromSum', () => {
-  it('full payment: sum equals total -> paid, paid_at set', () => {
+  it('pagamento integral: a soma corresponde ao total -> paid, paid_at preenchido', () => {
     const update = recomputeInvoiceFromSum(baseInvoice, 100, '2026-08-26')
     expect(update).toEqual({ amount_paid: 100, balance_due: 0, status: 'paid', paid_at: '2026-08-26' })
   })
 
-  it('partial payment: status partial, paid_at null', () => {
+  it('pagamento parcial: status partial, paid_at null', () => {
     const update = recomputeInvoiceFromSum(baseInvoice, 40, '2026-08-26')
     expect(update).toEqual({ amount_paid: 40, balance_due: 60, status: 'partial', paid_at: null })
   })
 
-  it('zero/negative sum: status sent, paid_at null, clamped at 0', () => {
+  it('soma zero ou negativa: status sent, paid_at null, limitada a 0', () => {
     expect(recomputeInvoiceFromSum(baseInvoice, 0, '2026-08-26')).toEqual({
       amount_paid: 0,
       balance_due: 100,
@@ -110,12 +110,12 @@ describe('recomputeInvoiceFromSum', () => {
     })
   })
 
-  it('with no backfill id supplied, the returned update has no stripe_payment_intent_id key at all', () => {
+  it('sem ID de preenchimento retroativo, a atualização retornada não inclui a chave stripe_payment_intent_id', () => {
     const update = recomputeInvoiceFromSum(baseInvoice, 40, '2026-08-26')
     expect('stripe_payment_intent_id' in update).toBe(false)
   })
 
-  it('backfills stripe_payment_intent_id when the paid handler supplies the authoritative PI id from the event, regardless of the write when the intent was created', () => {
+  it('preenche stripe_payment_intent_id retroativamente quando o handler de pagamento fornece o ID PI oficial do evento, independentemente da gravação feita ao criar o intent', () => {
     const update = recomputeInvoiceFromSum(baseInvoice, 100, '2026-08-26', 'pi_authoritative')
     expect(update).toEqual({
       amount_paid: 100,
@@ -126,7 +126,7 @@ describe('recomputeInvoiceFromSum', () => {
     })
   })
 
-  it('does not backfill when no id is supplied (null/undefined), leaving the key absent', () => {
+  it('não preenche retroativamente quando nenhum ID é fornecido (null/undefined), mantendo a chave ausente', () => {
     expect('stripe_payment_intent_id' in recomputeInvoiceFromSum(baseInvoice, 40, '2026-08-26', null)).toBe(false)
     expect('stripe_payment_intent_id' in recomputeInvoiceFromSum(baseInvoice, 40, '2026-08-26', undefined)).toBe(
       false
@@ -135,11 +135,11 @@ describe('recomputeInvoiceFromSum', () => {
 })
 
 describe('extractDisputePaymentIntentId', () => {
-  it('extracts a string payment_intent id directly', () => {
+  it('extrai diretamente uma string de ID payment_intent', () => {
     expect(extractDisputePaymentIntentId({ payment_intent: 'pi_disputed' })).toBe('pi_disputed')
   })
 
-  it('extracts the id from an expanded PaymentIntent object', () => {
+  it('extrai o ID de um objeto PaymentIntent expandido', () => {
     expect(
       extractDisputePaymentIntentId({
         payment_intent: { id: 'pi_expanded' } as unknown as import('stripe').default.PaymentIntent,
@@ -147,18 +147,18 @@ describe('extractDisputePaymentIntentId', () => {
     ).toBe('pi_expanded')
   })
 
-  it('returns null when payment_intent is null', () => {
+  it('retorna null quando payment_intent é null', () => {
     expect(extractDisputePaymentIntentId({ payment_intent: null })).toBeNull()
   })
 })
 
-describe('dispute matching by payment_intent id', () => {
-  it('a dispute event whose payment_intent matches an invoice backfilled by the paid handler resolves to that invoice', () => {
-    // Simulates the end-to-end sequence: the paid handler backfills
-    // stripe_payment_intent_id via recomputeInvoiceFromSum's 4th param,
-    // then a later charge.dispute.created event for the same PI must
-    // resolve to the same id - proving the two are wired to the same key
-    // without ever needing a stripe.charges.retrieve call.
+describe('associação da contestação pelo ID payment_intent', () => {
+  it('um evento de contestação cujo payment_intent corresponde a uma fatura preenchida retroativamente pelo handler de pagamento é associado a essa fatura', () => {
+    // Simula a sequência de ponta a ponta: o handler de pagamento preenche retroativamente
+    // stripe_payment_intent_id pelo quarto parâmetro de recomputeInvoiceFromSum,
+    // então um evento charge.dispute.created posterior para o mesmo PI precisa
+    // ser associado ao mesmo ID - comprovando que ambos usam a mesma chave
+    // sem precisar chamar stripe.charges.retrieve.
     const invoiceUpdate = recomputeInvoiceFromSum(baseInvoice, 100, '2026-08-26', 'pi_shared')
     const disputePaymentIntentId = extractDisputePaymentIntentId({ payment_intent: 'pi_shared' })
     expect(invoiceUpdate.stripe_payment_intent_id).toBe(disputePaymentIntentId)
@@ -166,7 +166,7 @@ describe('dispute matching by payment_intent id', () => {
 })
 
 describe('buildRefundPaymentInserts', () => {
-  it('builds one negative-amount row per refund, keyed on the refund id (not the charge id)', () => {
+  it('monta uma linha de valor negativo por estorno, indexada pelo ID do estorno (não pelo ID da cobrança)', () => {
     const rows = buildRefundPaymentInserts(
       baseInvoice,
       [
@@ -205,7 +205,7 @@ describe('buildRefundPaymentInserts', () => {
 })
 
 describe('refundEventInputsFromStripeRefunds', () => {
-  it('maps the fetched-list shape (stripe.refunds.list response) to RefundEventInput, ignoring extra fields', () => {
+  it('converte o formato da lista obtida (resposta de stripe.refunds.list) para RefundEventInput, ignorando campos extras', () => {
     const inputs = refundEventInputsFromStripeRefunds([
       fetchedRefund({ id: 're_1', amount: 3000 }),
       fetchedRefund({ id: 're_2', amount: 5000 }),
@@ -216,7 +216,7 @@ describe('refundEventInputsFromStripeRefunds', () => {
     ])
   })
 
-  it('excludes refunds that are not yet succeeded (pending/failed)', () => {
+  it('exclui estornos que ainda não tiveram sucesso (pending/failed)', () => {
     const inputs = refundEventInputsFromStripeRefunds([
       fetchedRefund({ id: 're_pending', amount: 1000, status: 'pending' }),
       fetchedRefund({ id: 're_failed', amount: 1000, status: 'failed' }),
@@ -225,28 +225,28 @@ describe('refundEventInputsFromStripeRefunds', () => {
     expect(inputs).toEqual([{ id: 're_ok', amountCents: 1000 }])
   })
 
-  it('excludes zero/negative-amount refund entries', () => {
+  it('exclui entradas de estorno com valor zero ou negativo', () => {
     const inputs = refundEventInputsFromStripeRefunds([fetchedRefund({ id: 're_zero', amount: 0 })])
     expect(inputs).toEqual([])
   })
 
-  it('returns an empty list (not a throw) when the fetched list is empty', () => {
+  it('retorna uma lista vazia (sem lançar exceção) quando a lista obtida está vazia', () => {
     expect(refundEventInputsFromStripeRefunds([])).toEqual([])
   })
 })
 
-describe('ledger + recompute end-to-end scenarios (simulating the DB unique index + recompute-from-sum flow)', () => {
-  it('C2: a paid event applied twice (same payment_intent id) yields ONE ledger row and the invoice paid exactly once', () => {
+describe('cenários ponta a ponta do livro-razão e recálculo (simulando o índice único do banco e o fluxo de recálculo a partir da soma)', () => {
+  it('C2: aplicar duas vezes um evento de pagamento (mesmo ID payment_intent) gera UMA linha no livro-razão e paga a fatura uma única vez', () => {
     const ledger = makeLedger()
 
-    // First delivery of payment_intent.succeeded.
+    // Primeira entrega de payment_intent.succeeded.
     ledger.insert(buildPaidPaymentInsert(baseInvoice, 10000, 'pi_dup', '2026-08-26'))
     let update = recomputeInvoiceFromSum(baseInvoice, ledger.sum(), '2026-08-26')
     expect(update).toEqual({ amount_paid: 100, balance_due: 0, status: 'paid', paid_at: '2026-08-26' })
 
-    // A second delivery for the SAME payment_intent id - the
-    // unique index (simulated by makeLedger's dedup-by-key) rejects the
-    // duplicate insert; recompute still runs and must not double-count.
+    // Segunda entrega para o MESMO ID payment_intent - o
+    // índice exclusivo (simulado pela deduplicação por chave de makeLedger) recusa a
+    // inserção duplicada; o recálculo ainda é executado e não pode contar duas vezes.
     ledger.insert(buildPaidPaymentInsert(baseInvoice, 10000, 'pi_dup', '2026-08-26'))
     update = recomputeInvoiceFromSum(baseInvoice, ledger.sum(), '2026-08-26')
 
@@ -254,17 +254,17 @@ describe('ledger + recompute end-to-end scenarios (simulating the DB unique inde
     expect(update).toEqual({ amount_paid: 100, balance_due: 0, status: 'paid', paid_at: '2026-08-26' })
   })
 
-  it('C1: retrying after a simulated invoice-update failure (payment row already inserted) converges to the correct state, not a double-count', () => {
+  it('C1: repetir após uma falha simulada ao atualizar a fatura (linha de pagamento já inserida) converge para o estado correto, sem contar duas vezes', () => {
     const ledger = makeLedger()
 
-    // First attempt: payment row inserts fine, but imagine the subsequent
-    // invoice UPDATE throws (network blip) - the caller in reconcile.ts
-    // deletes the stripe_events row so Stripe retries the whole event.
+    // Primeira tentativa: a linha de pagamento é inserida, mas imagine que a atualização
+    // UPDATE posterior da fatura falha (instabilidade de rede) - a chamada em reconcile.ts
+    // remove a linha stripe_events para que a Stripe repita o evento inteiro.
     ledger.insert(buildPaidPaymentInsert(baseInvoice, 4000, 'pi_retry', '2026-08-26'))
-    // (invoice update intentionally not applied here, simulating the failure)
+    // (a atualização da fatura não é aplicada intencionalmente, simulando a falha)
 
-    // Retry: reconcileEvent re-runs from scratch. The insert is a no-op
-    // (already in the ledger from attempt 1), but recompute still runs.
+    // Nova tentativa: reconcileEvent recomeça do início. A inserção não faz nada
+    // (a linha já foi registrada na primeira tentativa), mas o recálculo ainda é executado.
     ledger.insert(buildPaidPaymentInsert(baseInvoice, 4000, 'pi_retry', '2026-08-26'))
     const update = recomputeInvoiceFromSum(baseInvoice, ledger.sum(), '2026-08-26')
 
@@ -272,17 +272,17 @@ describe('ledger + recompute end-to-end scenarios (simulating the DB unique inde
     expect(update).toEqual({ amount_paid: 40, balance_due: 60, status: 'partial', paid_at: null })
   })
 
-  it('I1: two partial refunds (first $30, then a second refund bringing the cumulative charge.amount_refunded to $80) net to exactly $50 refunded, not $80, and re-delivery of the first refund event does not double it', () => {
+  it('I1: dois estornos parciais (primeiro de US$ 30; depois outro que eleva charge.amount_refunded acumulado a US$ 80) resultam exatamente em US$ 50 estornados, não US$ 80; a reentrega do primeiro evento não duplica o valor', () => {
     const ledger = makeLedger()
 
-    // Invoice fully paid first.
+    // Primeiro, a fatura é paga integralmente.
     ledger.insert(buildPaidPaymentInsert(baseInvoice, 10000, 'pi_refund_test', '2026-08-26'))
 
-    // First charge.refunded event: the orchestration fetches the
-    // authoritative refunds list from Stripe (not the webhook payload's
-    // embedded charge.refunds.data), which at this point contains only
-    // re_1, whose OWN amount is $30 (charge.amount_refunded is also 30 at
-    // this point, so a cumulative-amount bug wouldn't yet be visible).
+    // Primeiro evento charge.refunded: a orquestração obtém a
+    // lista oficial de estornos da Stripe (não a lista incorporada ao payload do webhook
+    // em charge.refunds.data), que neste momento contém somente
+    // re_1, cujo valor PRÓPRIO é US$ 30 (charge.amount_refunded também é 30 neste
+    // momento, então um erro com o valor acumulado ainda não seria percebido).
     let fetchedRefunds = refundEventInputsFromStripeRefunds([fetchedRefund({ id: 're_1', amount: 3000 })])
     for (const row of buildRefundPaymentInserts(baseInvoice, fetchedRefunds, '2026-08-27')) {
       ledger.insert(row)
@@ -290,11 +290,11 @@ describe('ledger + recompute end-to-end scenarios (simulating the DB unique inde
     let update = recomputeInvoiceFromSum(baseInvoice, ledger.sum(), '2026-08-27')
     expect(update.amount_paid).toBe(70)
 
-    // A second, separate $50 refund (re_2) is issued. The authoritative
-    // fetched list now returns BOTH refund objects: re_1 ($30, already
-    // recorded) and re_2 ($50, new). Using each refund's own incremental
-    // amount (never charge.amount_refunded, which would now cumulatively
-    // read $80) and deduping re_1 by id keeps the total correct.
+    // É emitido um segundo estorno independente de US$ 50 (re_2). A lista oficial
+    // obtida agora retorna AMBOS os objetos de estorno: re_1 (US$ 30, já
+    // registrado) e re_2 (US$ 50, novo). Usar o valor incremental próprio de cada estorno
+    // (nunca charge.amount_refunded, que agora indicaria o valor acumulado
+    // de US$ 80) e deduplicar re_1 pelo ID mantém o total correto.
     fetchedRefunds = refundEventInputsFromStripeRefunds([
       fetchedRefund({ id: 're_1', amount: 3000 }),
       fetchedRefund({ id: 're_2', amount: 5000 }),
@@ -304,20 +304,20 @@ describe('ledger + recompute end-to-end scenarios (simulating the DB unique inde
     }
     update = recomputeInvoiceFromSum(baseInvoice, ledger.sum(), '2026-08-27')
 
-    // Total refunded is $30 + $50 = $80, so amount_paid nets to $20 - not
-    // $100 - $80(cumulative)-$30(re-added) = -$10 or any other double-count.
+    // O total estornado é US$ 30 + US$ 50 = US$ 80, então amount_paid fica em US$ 20 - não
+    // em US$ 100 - US$ 80 (acumulado) - US$ 30 (adicionado novamente) = -US$ 10, nem sofre outra contagem duplicada.
     expect(ledger.size()).toBe(3) // pi_refund_test, re_1, re_2
     expect(update).toEqual({ amount_paid: 20, balance_due: 80, status: 'partial', paid_at: null })
   })
 
-  it('I2 (webhook-payload-independence): a fetched refunds list with more entries than the webhook payload embedded (simulating a truncated/absent charge.refunds.data) is still fully applied', () => {
+  it('I2 (independência do payload do webhook): a lista de estornos obtida, mesmo com mais entradas do que as incorporadas ao payload do webhook (simulando charge.refunds.data truncado/ausente), é aplicada por completo', () => {
     const ledger = makeLedger()
     ledger.insert(buildPaidPaymentInsert(baseInvoice, 10000, 'pi_many_refunds', '2026-08-26'))
 
-    // Simulates the case the coordinator flagged: the webhook payload's
-    // embedded refunds list would have been empty/truncated, but the
-    // authoritative fetched list (what stripe.refunds.list actually
-    // returns) has every refund.
+    // Simula o caso sinalizado pelo coordenador: a lista de estornos incorporada ao payload do webhook
+    // estaria vazia ou truncada, mas a lista
+    // oficial obtida (a que stripe.refunds.list realmente
+    // retorna) contém todos os estornos.
     const fetchedRefunds = refundEventInputsFromStripeRefunds([
       fetchedRefund({ id: 're_a', amount: 1000 }),
       fetchedRefund({ id: 're_b', amount: 1500 }),
@@ -332,7 +332,7 @@ describe('ledger + recompute end-to-end scenarios (simulating the DB unique inde
     expect(update).toEqual({ amount_paid: 55, balance_due: 45, status: 'partial', paid_at: null })
   })
 
-  it('over-refund (refund total exceeding what was paid) clamps amount_paid at 0 rather than going negative', () => {
+  it('estorno excedente (total estornado maior que o valor pago) limita amount_paid a 0 em vez de deixá-lo negativo', () => {
     const ledger = makeLedger()
     ledger.insert(buildPaidPaymentInsert(baseInvoice, 10000, 'pi_over', '2026-08-26'))
     const fetchedRefunds = refundEventInputsFromStripeRefunds([fetchedRefund({ id: 're_over', amount: 20000 })])
@@ -344,20 +344,20 @@ describe('ledger + recompute end-to-end scenarios (simulating the DB unique inde
   })
 })
 
-describe('embedded Payment Element path: one PaymentIntent can only ever record one payment', () => {
-  // The Payment Element does not create a Checkout Session, so the only
-  // paid event it produces is payment_intent.succeeded. These lock in that
-  // the new path cannot double-record, which is exactly the class of bug
-  // this codebase has already had twice.
+describe('fluxo do Payment Element incorporado: cada PaymentIntent pode registrar apenas um pagamento', () => {
+  // O Payment Element não cria uma Checkout Session; portanto, o único
+  // evento de pagamento que ele produz é payment_intent.succeeded. Estes testes garantem que
+  // o fluxo novo não registre pagamentos em duplicidade, justamente o tipo de falha
+  // que já ocorreu duas vezes nesta base de código.
 
-  it('a redelivered payment_intent.succeeded records once and converges on the same invoice state', () => {
+  it('a reentrega de payment_intent.succeeded é registrada uma única vez e converge para o mesmo estado da fatura', () => {
     const ledger = makeLedger()
     const row = buildPaidPaymentInsert(baseInvoice, 10000, 'pi_embedded', '2026-08-26')
 
     ledger.insert(row)
     const first = recomputeInvoiceFromSum(baseInvoice, ledger.sum(), '2026-08-26')
 
-    // Stripe redelivers the identical event (at-least-once delivery).
+    // A Stripe reentrega o mesmo evento (entrega pelo menos uma vez).
     ledger.insert(buildPaidPaymentInsert(baseInvoice, 10000, 'pi_embedded', '2026-08-26'))
     const second = recomputeInvoiceFromSum(baseInvoice, ledger.sum(), '2026-08-26')
 
@@ -366,8 +366,8 @@ describe('embedded Payment Element path: one PaymentIntent can only ever record 
     expect(second).toEqual({ amount_paid: 100, balance_due: 0, status: 'paid', paid_at: '2026-08-26' })
   })
 
-  it('two genuinely different intents against one invoice are two ledger rows, and the recompute still nets correctly', () => {
-    // e.g. the amount changed and a new intent was created for the remainder.
+  it('dois intents diferentes para uma fatura geram duas linhas no livro-razão, e o recálculo mantém os valores corretos', () => {
+    // por exemplo, o valor mudou e um novo intent foi criado para o saldo restante.
     const ledger = makeLedger()
     ledger.insert(buildPaidPaymentInsert(baseInvoice, 4000, 'pi_first', '2026-08-26'))
     expect(recomputeInvoiceFromSum(baseInvoice, ledger.sum(), '2026-08-26')).toEqual({
@@ -394,33 +394,33 @@ describe('decideFailedAttempt', () => {
     stripe_payment_intent_id: 'pi_current',
   }
 
-  it('records the current attempt as failed', () => {
+  it('registra a tentativa atual como failed', () => {
     expect(decideFailedAttempt(current, 'pi_current')).toEqual({
       stripe_payment_status: 'failed',
     })
   })
 
-  it('ignores an attempt the invoice has already superseded', () => {
+  it('ignora uma tentativa que a fatura já substituiu', () => {
     expect(decideFailedAttempt(current, 'pi_old')).toBeNull()
   })
 
-  it('accepts the first attempt on an invoice that has no attempt recorded yet', () => {
+  it('aceita a primeira tentativa de uma fatura sem tentativa registrada', () => {
     const fresh = { status: 'sent', stripe_payment_intent_id: null }
     expect(decideFailedAttempt(fresh, 'pi_1')).toEqual({
       stripe_payment_status: 'failed',
     })
   })
 
-  it('never downgrades a paid invoice, whatever the event says', () => {
+  it('nunca rebaixa uma fatura paga, qualquer que seja o evento', () => {
     const paid = { ...current, status: 'paid' }
     expect(decideFailedAttempt(paid, 'pi_current')).toBeNull()
   })
 
-  it('ignores an event with no attempt id to bind to', () => {
+  it('ignora um evento sem ID de tentativa para associar', () => {
     expect(decideFailedAttempt(current, null)).toBeNull()
   })
 
-  it('is idempotent: replaying the same event yields the same decision', () => {
+  it('é idempotente: reproduzir o mesmo evento resulta na mesma decisão', () => {
     const first = decideFailedAttempt(current, 'pi_current')
     const second = decideFailedAttempt(current, 'pi_current')
     expect(second).toEqual(first)

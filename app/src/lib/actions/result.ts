@@ -1,14 +1,14 @@
 /**
- * What every browser-facing write action returns.
+ * O que cada ação de gravação chamada pelo navegador retorna.
  *
- * These actions are called from client components that already show a toast on
- * failure, so they answer with a value rather than throwing across the server
- * action boundary: a thrown error reaches the browser as an opaque digest and
- * the person is told nothing useful.
+ * Essas ações são chamadas por componentes de cliente que já exibem uma
+ * notificação em caso de falha; por isso, retornam um valor em vez de lançar
+ * uma exceção através do limite da server action. Uma exceção chega ao
+ * navegador como um identificador opaco, sem informar nada útil à pessoa.
  */
 export type WriteResult = { ok: true } | { error: string }
 
-/** Narrows an unknown failure to something worth showing a person. */
+/** Reduz uma falha desconhecida a uma mensagem útil para exibição. */
 export function failure(error: unknown, fallback: string): WriteResult {
   return { error: error instanceof Error ? error.message : fallback }
 }

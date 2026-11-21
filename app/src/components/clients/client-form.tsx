@@ -24,11 +24,11 @@ interface ClientFormProps {
 }
 
 const currencies = [
-  { value: 'USD', label: 'USD - US Dollar' },
+  { value: 'USD', label: 'USD - Dólar americano' },
   { value: 'EUR', label: 'EUR - Euro' },
-  { value: 'GBP', label: 'GBP - British Pound' },
-  { value: 'CAD', label: 'CAD - Canadian Dollar' },
-  { value: 'AUD', label: 'AUD - Australian Dollar' },
+  { value: 'GBP', label: 'GBP - Libra esterlina' },
+  { value: 'CAD', label: 'CAD - Dólar canadense' },
+  { value: 'AUD', label: 'AUD - Dólar australiano' },
 ]
 
 export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
@@ -62,13 +62,13 @@ export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {/* Basic Info */}
+      {/* Informações básicas */}
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">Basic Information</h3>
+        <h3 className="text-lg font-medium">Informações básicas</h3>
         
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="name">Client Name *</Label>
+            <Label htmlFor="name">Nome do cliente *</Label>
             <Input
               id="name"
               placeholder="Acme Inc."
@@ -80,7 +80,7 @@ export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">E-mail</Label>
             <Input
               id="email"
               type="email"
@@ -93,7 +93,7 @@ export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone</Label>
+            <Label htmlFor="phone">Telefone</Label>
             <Input
               id="phone"
               placeholder="+1 (555) 123-4567"
@@ -102,7 +102,7 @@ export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="website">Website</Label>
+            <Label htmlFor="website">Site</Label>
             <Input
               id="website"
               placeholder="https://acme.com"
@@ -115,13 +115,13 @@ export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
         </div>
       </div>
 
-      {/* Address */}
+      {/* Endereço */}
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">Billing Address</h3>
+        <h3 className="text-lg font-medium">Endereço de cobrança</h3>
         
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="address_line1">Address Line 1</Label>
+            <Label htmlFor="address_line1">Endereço, linha 1</Label>
             <Input
               id="address_line1"
               placeholder="123 Main Street"
@@ -130,7 +130,7 @@ export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="address_line2">Address Line 2</Label>
+            <Label htmlFor="address_line2">Endereço, linha 2</Label>
             <Input
               id="address_line2"
               placeholder="Suite 100"
@@ -140,7 +140,7 @@ export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
-              <Label htmlFor="city">City</Label>
+              <Label htmlFor="city">Cidade</Label>
               <Input
                 id="city"
                 placeholder="San Francisco"
@@ -149,7 +149,7 @@ export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="state">State / Province</Label>
+              <Label htmlFor="state">Estado / província</Label>
               <Input
                 id="state"
                 placeholder="CA"
@@ -158,7 +158,7 @@ export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="postal_code">Postal Code</Label>
+              <Label htmlFor="postal_code">CEP</Label>
               <Input
                 id="postal_code"
                 placeholder="94102"
@@ -167,7 +167,7 @@ export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="country">Country</Label>
+              <Label htmlFor="country">País</Label>
               <Input
                 id="country"
                 placeholder="United States"
@@ -178,19 +178,19 @@ export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
         </div>
       </div>
 
-      {/* Billing Settings */}
+      {/* Configurações de cobrança */}
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">Billing Settings</h3>
+        <h3 className="text-lg font-medium">Configurações de cobrança</h3>
         
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor="currency">Currency</Label>
+            <Label htmlFor="currency">Moeda</Label>
             <Select
               value={currency}
               onValueChange={(value) => setValue('currency', value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select currency" />
+                <SelectValue placeholder="Selecionar moeda" />
               </SelectTrigger>
               <SelectContent>
                 {currencies.map((curr) => (
@@ -203,7 +203,7 @@ export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="payment_terms">Payment Terms (days)</Label>
+            <Label htmlFor="payment_terms">Prazo de pagamento (dias)</Label>
             <Input
               id="payment_terms"
               type="number"
@@ -213,7 +213,7 @@ export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tax_id">Tax ID</Label>
+            <Label htmlFor="tax_id">CNPJ/CPF ou identificação fiscal</Label>
             <Input
               id="tax_id"
               placeholder="XX-XXXXXXX"
@@ -223,25 +223,25 @@ export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
         </div>
       </div>
 
-      {/* Notes */}
+      {/* Observações */}
       <div className="space-y-2">
-        <Label htmlFor="notes">Internal Notes</Label>
+        <Label htmlFor="notes">Observações internas</Label>
         <Textarea
           id="notes"
-          placeholder="Notes about this client (only visible to you)"
+          placeholder="Observações sobre este cliente (visíveis apenas para você)"
           rows={3}
           {...register('notes')}
         />
       </div>
 
-      {/* Actions */}
+      {/* Ações */}
       <div className="flex justify-end gap-4">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          Cancelar
         </Button>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {client ? 'Update Client' : 'Create Client'}
+          {client ? 'Atualizar cliente' : 'Criar cliente'}
         </Button>
       </div>
     </form>

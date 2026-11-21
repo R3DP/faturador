@@ -13,30 +13,30 @@ afterEach(() => {
 })
 
 describe('isAllowedLogoUrl', () => {
-  it('accepts an upload on this installation storage origin', () => {
+  it('aceita um envio na origem de armazenamento desta instalação', () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', SUPABASE)
     expect(isAllowedLogoUrl(good)).toBe(true)
   })
 
   it.each([
-    // Low-2: zod 4 `z.string().url()` accepts all four of these.
+    // Low-2: zod 4 `z.string().url()` aceita todos estes quatro valores.
     'javascript:alert(1)',
     'data:image/png;base64,iVBORw0KGgo=',
     'file:///etc/passwd',
     'vbscript:msgbox(1)',
-  ])('refuses the scheme in %s', (value) => {
+  ])('recusa o esquema em %s', (value) => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', SUPABASE)
     expect(isAllowedLogoUrl(value)).toBe(false)
   })
 
   it.each([
-    // Low-3: any of these would be fetched server-side by the public PDF route.
+    // Low-3: qualquer um destes seria buscado no servidor pela rota pública de PDF.
     'https://evil.example/logo.png',
     'https://example-install.supabase.co.evil.example/storage/v1/object/public/logos/b1/x.png',
     'http://example-install.supabase.co/storage/v1/object/public/logos/b1/x.png',
     'https://example-install.supabase.co:8443/storage/v1/object/public/logos/b1/x.png',
     'https://user:pw@example-install.supabase.co/storage/v1/object/public/logos/b1/x.png',
-  ])('refuses the origin in %s', (value) => {
+  ])('recusa a origem em %s', (value) => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', SUPABASE)
     expect(isAllowedLogoUrl(value)).toBe(false)
   })
@@ -46,18 +46,18 @@ describe('isAllowedLogoUrl', () => {
     `${SUPABASE}/rest/v1/businesses?select=*`,
     `${SUPABASE}/storage/v1/object/public/logos`,
     `${SUPABASE}/`,
-  ])('refuses the path in %s', (value) => {
+  ])('recusa o caminho em %s', (value) => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', SUPABASE)
     expect(isAllowedLogoUrl(value)).toBe(false)
   })
 
-  it('refuses everything when no Supabase URL is configured', () => {
+  it('recusa tudo quando nenhuma URL do Supabase está configurada', () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', '')
     expect(isAllowedLogoUrl(good)).toBe(false)
     expect(supabaseStorageOrigin()).toBeNull()
   })
 
-  it('validates against the configured storage origin', () => {
+  it('valida usando a origem de armazenamento configurada', () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://storage.example.org')
     expect(isAllowedLogoUrl(good)).toBe(false)
     expect(
@@ -65,14 +65,14 @@ describe('isAllowedLogoUrl', () => {
     ).toBe(true)
   })
 
-  it('allows the CLI local stack, which is http on loopback', () => {
+  it('permite a pilha local da CLI, que usa http em loopback', () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'http://127.0.0.1:56421')
     expect(
       isAllowedLogoUrl('http://127.0.0.1:56421/storage/v1/object/public/logos/b1/l.png'),
     ).toBe(true)
   })
 
-  it('refuses a non-string, an empty string and an over-long value', () => {
+  it('recusa um valor que não seja string, uma string vazia e um valor longo demais', () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', SUPABASE)
     expect(isAllowedLogoUrl(undefined)).toBe(false)
     expect(isAllowedLogoUrl('')).toBe(false)

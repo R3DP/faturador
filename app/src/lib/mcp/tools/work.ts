@@ -35,10 +35,10 @@ const EXPENSE_CATEGORIES = [
 ] as const
 
 /**
- * Resolves an optional client for log_expense: unlike resolveClient (used by
- * create_invoice / log_time, where a client is mandatory), an expense may
- * legitimately have no client. Returns null when neither client_id nor
- * client_name is provided, otherwise delegates to resolveClient.
+ * Resolve um cliente opcional para log_expense: diferentemente de resolveClient (usado por
+ * create_invoice / log_time, que exigem cliente), uma despesa pode
+ * legitimamente não ter cliente. Retorna null quando nem client_id nem
+ * client_name é informado; caso contrário, delega a resolveClient.
  */
 async function resolveOptionalClient(
   ctx: McpCtx,
@@ -53,60 +53,60 @@ async function resolveOptionalClient(
 }
 
 /**
- * Registers the work-logging tools (log_time, log_expense, list_unbilled) on
- * the given MCP server, scoped to the businesses in ctx.db.scope.
+ * Registra as ferramentas de lançamento de trabalho (log_time, log_expense, list_unbilled) no
+ * servidor MCP fornecido, limitadas às empresas em ctx.db.scope.
  *
- * Schema mapping (see supabase/migrations/00001_baseline.sql and the
- * app's own insert paths in src/app/(app)/time/new/page.tsx and
- * src/app/(app)/expenses/new/page.tsx, which these tools mirror):
- *   time_entries: hours -> duration_minutes (hours * 60, rounded); rate ->
- *     hourly_rate (nullable: left null, not 0, when the caller omits it, so
- *     list_unbilled can distinguish "no rate" from "explicit $0 rate");
- *     amount = hours * rate when a rate is given, else null; billable ->
- *     is_billable (default true); "unbilled" = invoice_id IS NULL.
- *   expenses: amount is a flat DECIMAL (no unit conversion); billable ->
- *     is_billable (defaults true only when a client is attached, since an
- *     expense with no client can't be put on a client invoice); currency
- *     comes from the business's default_currency, matching the app's own
- *     expense form; "unbilled" = invoice_id IS NULL.
+ * Mapeamento do esquema (consulte supabase/migrations/00001_baseline.sql e os
+ * caminhos de inserção do próprio app em src/app/(app)/time/new/page.tsx e
+ * src/app/(app)/expenses/new/page.tsx, espelhados por estas ferramentas):
+ *   time_entries: hours -> duration_minutes (hours * 60, arredondadas); rate ->
+ *     hourly_rate (aceita null: permanece null, não 0, quando omitida pelo usuário, para que
+ *     list_unbilled diferencie "sem tarifa" de "tarifa explicitamente igual a $0");
+ *     amount = hours * rate quando uma tarifa é informada; caso contrário, null; billable ->
+ *     is_billable (padrão true); "unbilled" = invoice_id IS NULL.
+ *   expenses: amount é um DECIMAL simples (sem conversão de unidades); billable ->
+ *     is_billable (padrão true apenas quando há um cliente associado, pois uma
+ *     despesa sem cliente não pode ser incluída na fatura de um cliente); currency
+ *     vem de default_currency da empresa, conforme o formulário de despesas do app;
+ *     "unbilled" = invoice_id IS NULL.
  */
 export function registerWorkTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'log_time',
     {
-      title: 'Log Time',
+      title: 'Registrar tempo',
       description:
-        'Log a time entry for a client, identified by client_id or client_name (exact match, case-insensitive). Billable by default.',
+        'Registra um lançamento de tempo para um cliente, identificado por client_id ou client_name (correspondência exata, sem diferenciar maiúsculas de minúsculas). Faturável por padrão.',
       inputSchema: z.object({
-        request_id: z.uuid().describe('Stable work-entry ID. Reuse identical input on retries.'),
+        request_id: z.uuid().describe('Identificador estável do lançamento. Reutilize a mesma entrada em novas tentativas.'),
         business_id: z
           .string()
           .uuid()
           .optional()
           .describe(
-            'Id of the business to log time under. Optional when the API key is scoped to exactly one business; required if scoped to multiple.'
+            'Id da empresa em que o tempo será registrado. Opcional quando a chave de API está limitada a uma única empresa; obrigatório quando está limitada a várias.'
           ),
-        client_id: z.string().uuid().optional().describe('Id of the client. Provide this or client_name.'),
+        client_id: z.string().uuid().optional().describe('Id do cliente. Informe este campo ou client_name.'),
         client_name: z
           .string()
           .max(200)
           .optional()
-          .describe('Exact (case-insensitive) client name. Provide this or client_id.'),
-        description: z.string().min(1).max(500).describe('What the time was spent on.'),
-        hours: z.number().gt(0).lte(24).describe('Hours worked, > 0 and <= 24.'),
+          .describe('Nome exato do cliente (sem diferenciar maiúsculas de minúsculas). Informe este campo ou client_id.'),
+        description: z.string().min(1).max(500).describe('Atividade realizada nesse período.'),
+        hours: z.number().gt(0).lte(24).describe('Horas trabalhadas, > 0 e <= 24.'),
         date: z
           .string()
-          .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+          .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use o formato YYYY-MM-DD')
           .optional()
-          .describe('Date of the work, YYYY-MM-DD. Defaults to today.'),
+          .describe('Data do trabalho, YYYY-MM-DD. O padrão é hoje.'),
         rate: z
           .number()
           .min(0)
           .optional()
           .describe(
-            'Hourly rate for this entry. If omitted, the entry is logged without a rate and flagged by list_unbilled so it can be confirmed before invoicing.'
+            'Tarifa por hora deste lançamento. Se omitida, o lançamento é registrado sem tarifa e sinalizado por list_unbilled para confirmação antes do faturamento.'
           ),
-        billable: z.boolean().optional().describe('Whether this time is billable. Defaults to true.'),
+        billable: z.boolean().optional().describe('Indica se este tempo pode ser faturado. O padrão é true.'),
       }),
     },
     async ({ request_id, business_id, client_id, client_name, description, hours, date, rate, billable }) => {
@@ -114,14 +114,14 @@ export function registerWorkTools(server: McpServer, ctx: McpCtx) {
       try {
         resolvedBusinessId = ctx.db.resolveBusinessId(business_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
       }
 
       let client: ClientRow
       try {
         client = await resolveClient(ctx, resolvedBusinessId, client_id, client_name)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve client.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar o cliente.')
       }
 
       const resolvedDate = date || today()
@@ -148,12 +148,12 @@ export function registerWorkTools(server: McpServer, ctx: McpCtx) {
 
       if (error || !entry) {
         console.error('log_time (insert):', error)
-        return errorResult('Could not log time entry.')
+        return errorResult('Não foi possível registrar o lançamento de tempo.')
       }
 
-      const noRateNote = rate === undefined ? ' (no rate set; confirm before invoicing)' : ''
+      const noRateNote = rate === undefined ? ' (sem tarifa definida; confirme antes de faturar)' : ''
       const result = {
-        summary: `Logged ${hours}h for ${client.name}${noRateNote}`,
+        summary: `Tempo registrado: ${hours}h para ${client.name}${noRateNote}`,
         time_entry: {
           id: entry.id,
           business_id: entry.business_id,
@@ -175,40 +175,40 @@ export function registerWorkTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'log_expense',
     {
-      title: 'Log Expense',
+      title: 'Registrar despesa',
       description:
-        "Log a business expense. A client is optional; identify one by client_id or client_name (exact match, case-insensitive) to attach the expense for later billing.",
+        "Registra uma despesa da empresa. O cliente é opcional; identifique-o por client_id ou client_name (correspondência exata, sem diferenciar maiúsculas de minúsculas) para associar a despesa a um faturamento futuro.",
       inputSchema: z.object({
-        request_id: z.uuid().describe('Stable work-entry ID. Reuse identical input on retries.'),
+        request_id: z.uuid().describe('Identificador estável do lançamento. Reutilize a mesma entrada em novas tentativas.'),
         business_id: z
           .string()
           .uuid()
           .optional()
           .describe(
-            'Id of the business to log the expense under. Optional when the API key is scoped to exactly one business; required if scoped to multiple.'
+            'Id da empresa em que a despesa será registrada. Opcional quando a chave de API está limitada a uma única empresa; obrigatório quando está limitada a várias.'
           ),
-        client_id: z.string().uuid().optional().describe('Id of the client this expense is for, if any.'),
+        client_id: z.string().uuid().optional().describe('Id do cliente relacionado a esta despesa, se houver.'),
         client_name: z
           .string()
           .max(200)
           .optional()
-          .describe('Exact (case-insensitive) client name this expense is for, if any.'),
-        description: z.string().min(1).max(500).describe('What the expense was for.'),
-        amount: z.number().gt(0).describe('Expense amount, must be > 0.'),
+          .describe('Nome exato do cliente relacionado a esta despesa (sem diferenciar maiúsculas de minúsculas), se houver.'),
+        description: z.string().min(1).max(500).describe('Finalidade da despesa.'),
+        amount: z.number().gt(0).describe('Valor da despesa; deve ser > 0.'),
         date: z
           .string()
-          .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+          .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use o formato YYYY-MM-DD')
           .optional()
-          .describe('Date of the expense, YYYY-MM-DD. Defaults to today.'),
+          .describe('Data da despesa, YYYY-MM-DD. O padrão é hoje.'),
         category: z
           .enum(EXPENSE_CATEGORIES)
           .optional()
-          .describe('Expense category. Defaults to "other".'),
+          .describe('Categoria da despesa. O padrão é "other".'),
         billable: z
           .boolean()
           .optional()
           .describe(
-            'Whether this expense is billable to the client. Defaults to true when a client is attached, false otherwise.'
+            'Indica se esta despesa pode ser faturada ao cliente. O padrão é true quando há um cliente associado e false nos demais casos.'
           ),
       }),
     },
@@ -217,14 +217,14 @@ export function registerWorkTools(server: McpServer, ctx: McpCtx) {
       try {
         resolvedBusinessId = ctx.db.resolveBusinessId(business_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
       }
 
       let client: ClientRow | null
       try {
         client = await resolveOptionalClient(ctx, resolvedBusinessId, client_id, client_name)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve client.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar o cliente.')
       }
 
       const { data: business, error: businessError } = await ctx.db.svc
@@ -235,7 +235,7 @@ export function registerWorkTools(server: McpServer, ctx: McpCtx) {
 
       if (businessError || !business) {
         console.error('log_expense (business):', businessError)
-        return errorResult('Could not load business.')
+        return errorResult('Não foi possível carregar os dados da empresa.')
       }
 
       const resolvedDate = date || today()
@@ -258,12 +258,12 @@ export function registerWorkTools(server: McpServer, ctx: McpCtx) {
 
       if (error || !expense) {
         console.error('log_expense (insert):', error)
-        return errorResult('Could not log expense.')
+        return errorResult('Não foi possível registrar a despesa.')
       }
 
-      const forClient = client ? ` for ${client.name}` : ''
+      const forClient = client ? ` para ${client.name}` : ''
       const result = {
-        summary: `Logged ${formatCurrency(amount, expense.currency)} expense${forClient}`,
+        summary: `Despesa registrada: ${formatCurrency(amount, expense.currency)}${forClient}`,
         expense: {
           id: expense.id,
           business_id: expense.business_id,
@@ -285,19 +285,19 @@ export function registerWorkTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'list_unbilled',
     {
-      title: 'List Unbilled Work',
+      title: 'Listar trabalho não faturado',
       description:
-        'List billable time entries and expenses not yet attached to an invoice, grouped by client with totals. Use this to draft an invoice from a client\'s unbilled work; entries missing an hourly rate are flagged. Billable entries with no client can\'t be grouped into a client invoice, so they\'re excluded from `clients` but still surfaced via the summary and the `unassigned` field.',
+        'Lista lançamentos de tempo e despesas faturáveis ainda não associados a uma fatura, agrupados por cliente e com seus totais. Use para preparar uma fatura com o trabalho não faturado de um cliente; lançamentos sem tarifa por hora são sinalizados. Lançamentos faturáveis sem cliente não podem ser agrupados em uma fatura de cliente; por isso, são excluídos de `clients`, mas aparecem no resumo e no campo `unassigned`.',
       inputSchema: z.object({
-        offset: z.number().int().min(0).max(1000000).optional().describe('Page offset for time and expenses. Totals apply to this page only; follow next_offset for more work.'),
+        offset: z.number().int().min(0).max(1000000).optional().describe('Deslocamento da página de lançamentos de tempo e despesas. Os totais se aplicam somente a esta página; use next_offset para consultar o restante.'),
         business_id: z
           .string()
           .uuid()
           .optional()
           .describe(
-            'Id of the business to list unbilled work for. Optional when the API key is scoped to exactly one business; required if scoped to multiple.'
+            'Id da empresa cujos trabalhos não faturados serão listados. Opcional quando a chave de API está limitada a uma única empresa; obrigatório quando está limitada a várias.'
           ),
-        client_id: z.string().uuid().optional().describe('Restrict to a single client.'),
+        client_id: z.string().uuid().optional().describe('Restringe a um único cliente.'),
       }),
     },
     async ({ offset, business_id, client_id }) => {
@@ -305,17 +305,17 @@ export function registerWorkTools(server: McpServer, ctx: McpCtx) {
       try {
         resolvedBusinessId = ctx.db.resolveBusinessId(business_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
       }
 
       if (client_id) {
         try {
           const client = await ctx.db.assertClientAccess(client_id)
           if (client.business_id !== resolvedBusinessId) {
-            return errorResult(`Client ${client_id} does not belong to business ${resolvedBusinessId}.`)
+            return errorResult(`O cliente ${client_id} não pertence à empresa ${resolvedBusinessId}.`)
           }
         } catch (err) {
-          return errorResult(err instanceof ScopeError ? err.message : 'Could not access client.')
+          return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar o cliente.')
         }
       }
 
@@ -327,7 +327,7 @@ export function registerWorkTools(server: McpServer, ctx: McpCtx) {
 
       if (businessError || !business) {
         console.error('list_unbilled (business):', businessError)
-        return errorResult('Could not load business.')
+        return errorResult('Não foi possível carregar os dados da empresa.')
       }
 
       let timeQuery = ctx.db.svc
@@ -358,12 +358,12 @@ export function registerWorkTools(server: McpServer, ctx: McpCtx) {
 
       if (timeError) {
         console.error('list_unbilled (time_entries):', timeError)
-        return errorResult('Could not load unbilled time entries.')
+        return errorResult('Não foi possível carregar os lançamentos de tempo não faturados.')
       }
 
       if (expenseError) {
         console.error('list_unbilled (expenses):', expenseError)
-        return errorResult('Could not load unbilled expenses.')
+        return errorResult('Não foi possível carregar as despesas não faturadas.')
       }
 
       interface ClientBucket {
@@ -402,7 +402,7 @@ export function registerWorkTools(server: McpServer, ctx: McpCtx) {
         if (!bucket) {
           bucket = {
             client_id: clientId,
-            client_name: clientName ?? 'Unknown client',
+            client_name: clientName ?? 'Cliente desconhecido',
             currency,
             time: [],
             expenses: [],
@@ -419,9 +419,9 @@ export function registerWorkTools(server: McpServer, ctx: McpCtx) {
         const amount = round2(hours * (row.hourly_rate ?? 0))
 
         if (!row.client_id) {
-          // Billable and unbilled, but not attached to any client, so it can't be
-          // grouped into a per-client invoice. Counted separately (via
-          // `unassigned` below) rather than dropped, so it stays visible.
+          // Faturável e não faturado, mas sem cliente associado; portanto, não pode ser
+          // agrupado em uma fatura por cliente. É contabilizado separadamente (em
+          // `unassigned` abaixo), em vez de ser descartado, para continuar visível.
           unassignedTimeCount += 1
           unassignedTotal = round2(unassignedTotal + amount)
           unassignedByCurrency[row.currency]=round2((unassignedByCurrency[row.currency]||0)+amount)
@@ -467,30 +467,28 @@ export function registerWorkTools(server: McpServer, ctx: McpCtx) {
       for(const c of clients) totalsByCurrency[c.currency]=round2((totalsByCurrency[c.currency]||0)+c.total_unbilled)
       const totalsLabel=Object.entries(totalsByCurrency).map(([currency,amount])=>formatCurrency(amount,currency)).join(', ')
 
-      const countLabel = `${clients.length} billing group${clients.length === 1 ? '' : 's'}`
-      const haveLabel = clients.length === 1 ? 'has' : 'have'
+      const countLabel = `${clients.length} grupo${clients.length === 1 ? '' : 's'} de faturamento`
+      const totalVerb = clients.length === 1 ? 'totaliza' : 'totalizam'
       const rateNote = missingRateCount > 0
-        ? ` (${missingRateCount} time entr${missingRateCount === 1 ? 'y' : 'ies'} missing a rate; confirm before invoicing)`
+        ? ` (${missingRateCount} lançamento${missingRateCount === 1 ? '' : 's'} de tempo sem tarifa; confirme antes de faturar)`
         : ''
 
       const unassignedCount = unassignedTimeCount + unassignedExpenseCount
-      const unassignedHaveLabel = unassignedCount === 1 ? 'has' : 'have'
-      const unassignedWasLabel = unassignedCount === 1 ? 'was' : 'were'
       const unassignedNote =
         unassignedCount > 0
-          ? ` (${unassignedTimeCount > 0 ? `${unassignedTimeCount} time entr${unassignedTimeCount === 1 ? 'y' : 'ies'}` : ''}${unassignedTimeCount > 0 && unassignedExpenseCount > 0 ? ' and ' : ''}${unassignedExpenseCount > 0 ? `${unassignedExpenseCount} expense${unassignedExpenseCount === 1 ? '' : 's'}` : ''} ${unassignedHaveLabel} no client and ${unassignedWasLabel} excluded; assign a client to include them)`
+          ? ` (${unassignedTimeCount > 0 ? `${unassignedTimeCount} lançamento${unassignedTimeCount === 1 ? '' : 's'} de tempo` : ''}${unassignedTimeCount > 0 && unassignedExpenseCount > 0 ? ' e ' : ''}${unassignedExpenseCount > 0 ? `${unassignedExpenseCount} despesa${unassignedExpenseCount === 1 ? '' : 's'}` : ''} sem cliente e fora dos grupos por cliente; informe um cliente para faturar esses itens)`
           : ''
 
       const summary =
         clients.length === 0 && unassignedCount === 0
-          ? 'No unbilled work found.'
+          ? 'Nenhum trabalho não faturado encontrado.'
           : clients.length === 0
-            ? `No client-assigned unbilled work found${unassignedNote}.`
-            : `${countLabel} ${haveLabel} ${totalsLabel} unbilled${rateNote}${unassignedNote}`
+            ? `Nenhum trabalho não faturado atribuído a cliente foi encontrado${unassignedNote}.`
+            : `${countLabel} ${totalVerb} ${totalsLabel} em trabalho não faturado${rateNote}${unassignedNote}`
 
-      // Either side hitting its own cap means the grouped totals below are a
-      // partial picture, so say so rather than letting the caller invoice off
-      // an incomplete set.
+      // Se qualquer um dos conjuntos atingir seu próprio limite, os totais agrupados abaixo serão
+      // parciais; informe isso para evitar que o usuário emita uma fatura com base em dados
+      // incompletos.
       const truncated =
         (timeRows ?? []).length === UNBILLED_LIMIT || (expenseRows ?? []).length === UNBILLED_LIMIT
 

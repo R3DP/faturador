@@ -1,14 +1,14 @@
 'use client'
 
 /**
- * The shared chart chrome. Every chart on the reports page draws its colours,
- * grid, axes, tooltip and legend from here so the page reads as one system
- * rather than a pile of separately-styled charts.
+ * Elementos visuais compartilhados dos gráficos. Todos os gráficos da página de relatórios
+ * usam daqui as cores, a grade, os eixos, a dica de contexto e a legenda, para que a página
+ * pareça um sistema coeso, e não um conjunto de gráficos com estilos independentes.
  *
- * Colours arrive as CSS custom properties (see lib/reports/palette.ts for how
- * the values were chosen and validated). Recharts happily takes
- * `fill="var(--viz-series-1)"`, so light and dark swap in one place and no
- * component ever has to ask which theme is active.
+ * As cores são fornecidas como propriedades personalizadas de CSS (consulte lib/reports/palette.ts
+ * para saber como foram escolhidas e validadas). O Recharts aceita
+ * `fill="var(--viz-series-1)"`, assim, os temas claro e escuro são definidos em um só lugar, sem que cada componente
+ * precise verificar qual tema está ativo.
  */
 
 import { useSyncExternalStore } from 'react'
@@ -27,8 +27,8 @@ const VIZ_CSS = `
 `
 
 /**
- * Defines the chart custom properties for everything inside it. Mounted once,
- * near the top of the reports page.
+ * Define as propriedades personalizadas do gráfico para todos os elementos internos.
+ * É montado uma vez, no início da página de relatórios.
  */
 export function VizScope({ children, className }: { children: ReactNode; className?: string }) {
   return (
@@ -48,9 +48,10 @@ function subscribeToMotionPreference(onChange: () => void) {
 }
 
 /**
- * Honours the OS reduced-motion setting; charts render instantly when it is
- * on. Read through useSyncExternalStore so the first client render already has
- * the right answer instead of animating once and then correcting itself.
+ * Respeita a configuração de redução de movimento do sistema operacional; com ela
+ * ativada, os gráficos são exibidos sem animação. A leitura usa useSyncExternalStore
+ * para que a primeira renderização no cliente já considere a configuração correta,
+ * em vez de animar e só depois corrigir o resultado.
  */
 export function useReducedMotion(): boolean {
   return useSyncExternalStore(
@@ -62,7 +63,7 @@ export function useReducedMotion(): boolean {
 
 const AXIS_TICK = { fontSize: 12, fill: 'var(--viz-axis)' } as const
 
-/** Hairline, solid, one step off the surface. Never dashed. */
+/** Linha fina e contínua, um tom diferente da superfície. Nunca tracejada. */
 export function VizGrid({ horizontal = true, vertical = false }: { horizontal?: boolean; vertical?: boolean }) {
   return (
     <CartesianGrid
@@ -116,14 +117,14 @@ export interface VizTooltipRow {
   name: string
   value: string
   color: string
-  /** Lines key with a stroke, bars and areas with a small rounded rect. */
+  /** Linhas são identificadas por um traço; barras e áreas, por um pequeno retângulo arredondado. */
   mark?: 'line' | 'rect'
 }
 
 /**
- * One tooltip for the whole page. The value leads, the series name follows,
- * and the reader never has to land on a specific mark to see every series at
- * that position.
+ * Uma única dica de contexto para toda a página. O valor aparece primeiro, seguido pelo nome
+ * da série; assim, a pessoa não precisa apontar para um elemento específico para consultar
+ * todas as séries naquele ponto do gráfico.
  */
 export function VizTooltipCard({ title, rows, note }: { title: string; rows: VizTooltipRow[]; note?: string }) {
   return (
@@ -149,7 +150,7 @@ export function VizTooltipCard({ title, rows, note }: { title: string; rows: Viz
 
 type TooltipRenderer = (props: TooltipContentProps) => ReactNode
 
-/** Wires a custom card into recharts with the shared cursor treatment. */
+/** Conecta um cartão personalizado ao Recharts e aplica o estilo compartilhado do cursor. */
 export function VizTooltip({ render, cursor = 'bar' }: { render: TooltipRenderer; cursor?: 'bar' | 'line' | 'none' }) {
   return (
     <Tooltip
@@ -174,9 +175,9 @@ export interface VizLegendItem {
 }
 
 /**
- * Legends live outside the plot so they never fight the marks for space, and
- * they are always present for two or more series: identity is never carried by
- * colour alone.
+ * As legendas ficam fora da área do gráfico para não disputar espaço com os dados.
+ * Quando há duas ou mais séries, a legenda é sempre exibida: a identificação nunca depende
+ * apenas da cor.
  */
 export function VizLegend({ items, className }: { items: VizLegendItem[]; className?: string }) {
   if (items.length < 2) return null
@@ -197,8 +198,8 @@ export function VizLegend({ items, className }: { items: VizLegendItem[]; classN
 }
 
 /**
- * Sizes the plot to include its axis band, so a card never grows an inner
- * scrollbar to reach the x labels.
+ * Dimensiona a área do gráfico para incluir a faixa dos eixos, evitando que o cartão ganhe
+ * uma barra de rolagem interna para alcançar os rótulos do eixo X.
  */
 export function VizFrame({
   height = 260,
@@ -207,7 +208,7 @@ export function VizFrame({
   className,
 }: {
   height?: number
-  /** Screen-reader description of what the chart shows. */
+  /** Descrição acessível do conteúdo do gráfico para leitores de tela. */
   label: string
   children: React.ReactElement
   className?: string
@@ -221,14 +222,14 @@ export function VizFrame({
   )
 }
 
-/** Bar radius: rounded data-end, square at the baseline. */
+/** Raio das barras: extremidade dos dados arredondada e base reta. */
 export const BAR_RADIUS: [number, number, number, number] = [4, 4, 0, 0]
 export const MAX_BAR_SIZE = 24
 
 /**
- * LabelList's formatter is typed for any renderable value; report labels are
- * always numeric money, so this narrows it in one place instead of at every
- * call site.
+ * O formatador de LabelList aceita qualquer valor renderizável; nos relatórios, os rótulos
+ * são sempre valores monetários numéricos. Esta função restringe o tipo em um só lugar,
+ * em vez de repetir a verificação em cada chamada.
  */
 export function moneyLabelFormatter(format: (value: number) => string) {
   return (value: unknown) => (typeof value === 'number' && value !== 0 ? format(value) : '')

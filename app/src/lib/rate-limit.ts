@@ -3,46 +3,47 @@ import { createHash } from 'node:crypto'
 import { createServiceClient } from '@/lib/supabase/service'
 
 /**
- * Durable, cross-instance rate limiting.
+ * Limitação de requisições durável e compartilhada entre instâncias.
  *
- * The previous implementation was a module-level Map. On Vercel each serverless
- * instance had its own copy and every deploy wiped it, so the effective ceiling
- * was "limit x number of warm instances" and an attacker could reset it by
- * waiting out a deploy. Counters now live in Postgres, which
- * is the only store every instance shares, and the increment is a single
- * INSERT ... ON CONFLICT DO UPDATE so it is atomic under concurrency: there is
- * no read-then-write window for two requests to race through.
+ * A implementação anterior usava um Map no nível do módulo. Na Vercel, cada
+ * instância serverless tinha sua própria cópia, e cada publicação a apagava;
+ * assim, o limite efetivo era "limite x número de instâncias ativas", e um
+ * invasor podia zerá-lo aguardando uma publicação. Agora os contadores ficam
+ * no Postgres, o único armazenamento compartilhado por todas as instâncias, e
+ * o incremento é feito em um único INSERT ... ON CONFLICT DO UPDATE, tornando-o
+ * atômico sob concorrência: não há janela de leitura e gravação na qual duas
+ * requisições possam passar ao mesmo tempo.
  *
- * FAIL CLOSED. If the store cannot be reached, the default is to deny. A rate
- * limiter that silently allows everything the moment the database hiccups is
- * not a rate limiter, and the endpoints these guard (login, MCP, the public pay
- * links) are exactly the ones an attacker would try to knock the database over
- * to bypass. Call sites that would rather stay up than stay guarded must opt in
- * explicitly with onStoreFailure: 'allow', and say why.
+ * FALHA FECHADA. Se não for possível acessar o armazenamento, o padrão é negar.
+ * Um limitador que libera tudo silenciosamente quando o banco falha deixa de
+ * limitar justamente os endpoints protegidos (login, MCP e links públicos de
+ * pagamento), que um invasor tentaria sobrecarregar para contornar a proteção.
+ * Os pontos de chamada que preferirem permanecer disponíveis em vez de
+ * protegidos devem optar explicitamente por onStoreFailure: 'allow' e explicar o motivo.
  */
 
 export interface RateLimitPolicy {
-  /** Requests permitted per window. */
+  /** Requisições permitidas por janela. */
   limit: number
-  /** Window length in milliseconds. Clamped server-side to [1s, 24h]. */
+  /** Duração da janela em milissegundos. Limitada no servidor ao intervalo [1s, 24h]. */
   windowMs: number
   /**
-   * Behaviour when Postgres is unreachable. Defaults to 'deny' (fail closed).
+   * Comportamento quando o Postgres está inacessível. O padrão é 'deny' (falha fechada).
    */
   onStoreFailure?: 'deny' | 'allow'
 }
 
 export interface RateLimitDecision {
   allowed: boolean
-  /** Allowance left in the current window, floored at 0. */
+  /** Cota restante na janela atual, nunca inferior a 0. */
   remaining: number
-  /** Seconds until the window rolls over, suitable for a Retry-After header. */
+  /** Segundos até a renovação da janela, adequado para o cabeçalho Retry-After. */
   retryAfterSeconds: number
-  /** True when the store was unreachable and onStoreFailure decided this. */
+  /** Verdadeiro quando o armazenamento estava inacessível e onStoreFailure determinou este resultado. */
   degraded: boolean
 }
 
-/** Minimal surface this module needs from a Supabase client, so tests can fake it. */
+/** Interface mínima do cliente Supabase necessária neste módulo, permitindo substituí-lo nos testes. */
 export interface RateLimitStore {
   rpc(
     fn: 'consume_rate_limit' | 'peek_rate_limit',
@@ -53,9 +54,9 @@ export interface RateLimitStore {
 let storeFactory: (() => RateLimitStore) | null = null
 
 /**
- * Test seam. Swaps the Postgres-backed store for a fake so the atomicity and
- * fail-closed behaviour can be exercised without a database. Not part of the
- * production API; production callers never touch this.
+ * Ponto de substituição para testes. Troca o armazenamento baseado em Postgres
+ * por uma simulação, permitindo testar atomicidade e falha fechada sem banco de
+ * dados. Não faz parte da API de produção; o código de produção nunca o utiliza.
  */
 export function _setRateLimitStore(factory: (() => RateLimitStore) | null): void {
   storeFactory = factory
@@ -67,12 +68,13 @@ function store(): RateLimitStore {
 }
 
 /**
- * Builds an opaque bucket key.
+ * Cria uma chave opaca para o grupo.
  *
- * The identifier is hashed rather than stored in the clear: the counter table
- * would otherwise accumulate email addresses, IP addresses and API-key hashes,
- * which is personal data we have no reason to keep and a length we cannot
- * bound. The namespace stays readable so a bucket is still debuggable.
+ * O identificador é armazenado como hash, não em texto puro: caso contrário, a
+ * tabela de contadores acumularia endereços de e-mail, endereços IP e hashes de
+ * chaves de API - dados pessoais que não temos motivo para guardar e cujo
+ * tamanho não podemos limitar. O namespace permanece legível para facilitar a
+ * depuração do grupo.
  */
 export function rateLimitKey(namespace: string, identifier: string): string {
   const digest = createHash('sha256').update(identifier).digest('hex').slice(0, 32)
@@ -85,7 +87,7 @@ interface RpcRow {
   retry_after_seconds: number
 }
 
-/** PostgREST returns a RETURNS TABLE function as an array of rows. */
+/** O PostgREST retorna funções RETURNS TABLE como um vetor de linhas. */
 function firstRow(data: unknown): RpcRow | null {
   const row = Array.isArray(data) ? data[0] : data
   if (!row || typeof row !== 'object') return null
@@ -102,7 +104,7 @@ function firstRow(data: unknown): RpcRow | null {
 function storeFailure(policy: RateLimitPolicy, reason: string): RateLimitDecision {
   const allow = policy.onStoreFailure === 'allow'
   console.error(
-    `rate-limit: store unavailable (${reason}); ${allow ? 'allowing (fail open, opted in)' : 'denying (fail closed)'}`
+    `rate-limit: armazenamento indisponível (${reason}); ${allow ? 'permitindo (falha aberta, opção explícita)' : 'negando (falha fechada)'}`
   )
   return {
     allowed: allow,
@@ -113,9 +115,9 @@ function storeFailure(policy: RateLimitPolicy, reason: string): RateLimitDecisio
 }
 
 /**
- * Spends one unit of a bucket's allowance and reports whether the caller may
- * proceed. Blocked requests still count, so hammering a tripped bucket keeps it
- * tripped rather than earning a fresh allowance.
+ * Consome uma unidade da cota de um grupo e informa se a chamada pode prosseguir.
+ * Requisições bloqueadas também são contabilizadas; insistir em um grupo já
+ * bloqueado o mantém assim, em vez de conceder uma nova cota.
  */
 export async function consumeRateLimit(
   bucket: string,
@@ -130,7 +132,7 @@ export async function consumeRateLimit(
     })
     if (error) return storeFailure(policy, error.message)
     const row = firstRow(data)
-    if (!row) return storeFailure(policy, 'unexpected response shape')
+    if (!row) return storeFailure(policy, 'formato de resposta inesperado')
     return {
       allowed: row.allowed,
       remaining: row.remaining,
@@ -138,13 +140,13 @@ export async function consumeRateLimit(
       degraded: false,
     }
   } catch (err) {
-    return storeFailure(policy, err instanceof Error ? err.message : 'unknown error')
+    return storeFailure(policy, err instanceof Error ? err.message : 'erro desconhecido')
   }
 }
 
 /**
- * Reads a bucket without spending from it. Used to honour a standing lockout
- * before an attempt is made, so checking the lock does not deepen it.
+ * Consulta um grupo sem consumir sua cota. Usado para respeitar um bloqueio
+ * vigente antes de uma tentativa, sem prolongá-lo durante a consulta.
  */
 export async function peekRateLimit(
   bucket: string,
@@ -158,7 +160,7 @@ export async function peekRateLimit(
     })
     if (error) return storeFailure(policy, error.message)
     const row = firstRow(data)
-    if (!row) return storeFailure(policy, 'unexpected response shape')
+    if (!row) return storeFailure(policy, 'formato de resposta inesperado')
     return {
       allowed: row.allowed,
       remaining: row.remaining,
@@ -166,7 +168,7 @@ export async function peekRateLimit(
       degraded: false,
     }
   } catch (err) {
-    return storeFailure(policy, err instanceof Error ? err.message : 'unknown error')
+    return storeFailure(policy, err instanceof Error ? err.message : 'erro desconhecido')
   }
 }
 
@@ -176,13 +178,12 @@ export interface LayeredCheck {
 }
 
 /**
- * Spends from several buckets at once and returns the most restrictive answer.
+ * Consome cotas de vários grupos de uma vez e retorna a decisão mais restritiva.
  *
- * Every layer is consumed even when an earlier one already denies, which is the
- * point of layering: an attacker rotating email addresses must still burn the
- * per-IP allowance, and an attacker rotating IPs must still burn the
- * per-account allowance. Short-circuiting on the first denial would let the
- * cheap layer shield the expensive one.
+ * Todas as camadas são consumidas, mesmo que uma anterior já negue a chamada.
+ * Assim, um invasor que alterne endereços de e-mail ainda consome a cota por IP,
+ * e quem alterne IPs ainda consome a cota por conta. Interromper na primeira
+ * negativa permitiria que a camada mais barata protegesse a mais custosa.
  */
 export async function consumeRateLimits(checks: LayeredCheck[]): Promise<RateLimitDecision> {
   if (checks.length === 0) {
@@ -207,20 +208,21 @@ export async function consumeRateLimits(checks: LayeredCheck[]): Promise<RateLim
 }
 
 // ---------------------------------------------------------------------------
-// Client IP
+// IP do cliente
 // ---------------------------------------------------------------------------
 
 /**
- * The single-value header this installation's own edge overwrites, or null when
- * there is no such header and nothing but `x-forwarded-for` may be believed.
+ * Cabeçalho de valor único que a camada de borda desta instalação sobrescreve,
+ * ou null quando esse cabeçalho não existe e só podemos confiar em
+ * `x-forwarded-for`.
  *
- * A header is only worth reading if something in front of us REPLACES it on
- * every request. `x-vercel-forwarded-for` qualifies on Vercel and nowhere else:
- * no other proxy sets it, so off Vercel it is simply a name an attacker can
- * choose, and reading it hands every caller a private rate-limit bucket. The
- * same is true of `x-real-ip`, which a reverse proxy may or may not
- * overwrite, so it is opt-in through BILLR_TRUSTED_IP_HEADER rather than
- * trusted by default.
+ * Só devemos ler um cabeçalho se algum componente à nossa frente o SUBSTITUIR em
+ * toda requisição. `x-vercel-forwarded-for` atende a esse critério na Vercel e
+ * em nenhum outro lugar: nenhum outro proxy o define; fora da Vercel, é apenas
+ * um nome que o invasor pode escolher, e usá-lo daria a cada chamada um grupo
+ * privado de limite. O mesmo vale para `x-real-ip`, que um proxy reverso pode
+ * ou não sobrescrever. Por isso, seu uso exige configuração explícita em
+ * BILLR_TRUSTED_IP_HEADER, em vez de ser confiável por padrão.
  */
 function trustedIpHeader(): string | null {
   const configured = process.env.BILLR_TRUSTED_IP_HEADER?.trim().toLowerCase()
@@ -230,23 +232,24 @@ function trustedIpHeader(): string | null {
 }
 
 /**
- * Resolves the caller's IP address from proxy headers.
+ * Resolve o endereço IP de quem chama a partir dos cabeçalhos do proxy.
  *
- * The order matters and the obvious choice is the wrong one. `x-forwarded-for`
- * is a list that each proxy APPENDS to, so its FIRST entry is whatever the
- * client sent, which anyone can set to a value of their choosing:
+ * A ordem importa, e a escolha mais óbvia está errada. `x-forwarded-for` é uma
+ * lista à qual cada proxy ACRESCENTA valores; portanto, o PRIMEIRO item é o que
+ * o cliente enviou, e qualquer pessoa pode defini-lo como quiser:
  *
  *     curl -H 'x-forwarded-for: 1.2.3.4' https://invoices.example.org/...
  *
- * Keying a limit on that first entry means an attacker gets a fresh allowance
- * per forged header, i.e. no limit at all. That is what the old
- * `forwarded.split(',')[0]` in the Stripe routes did.
+ * Usar esse primeiro item como chave dá ao invasor uma cota nova para cada
+ * cabeçalho falsificado - ou seja, elimina o limite. Isso acontecia antes com
+ * `forwarded.split(',')[0]` nas rotas do Stripe.
  *
- * So: the platform header above when this installation actually has one, then
- * the LAST entry of `x-forwarded-for`, which is the hop the nearest trusted
- * proxy observed rather than anything the client asserted. A deployment with
- * neither returns null, and ipKey puts every such caller in ONE shared bucket:
- * an unidentifiable flood is still capped, which is the safe direction.
+ * Portanto: primeiro use o cabeçalho da plataforma, se esta instalação tiver
+ * um; depois, use o ÚLTIMO item de `x-forwarded-for`, que representa o salto
+ * observado pelo proxy confiável mais próximo, e não algo declarado pelo
+ * cliente. Se nenhum estiver disponível, a implantação retorna null e ipKey
+ * coloca todas essas chamadas no MESMO grupo compartilhado: até uma enxurrada
+ * sem IP identificável continua limitada, que é a opção segura.
  */
 export function clientIpFrom(headers: Headers): string | null {
   const trusted = trustedIpHeader()
@@ -257,73 +260,74 @@ export function clientIpFrom(headers: Headers): string | null {
 
   const forwarded = headers.get('x-forwarded-for')
   if (!forwarded) return null
-  // Last, never first. See above.
+  // Último, nunca o primeiro. Veja acima.
   return normaliseIp(forwarded.split(',').pop())
 }
 
 function normaliseIp(value: string | null | undefined): string | null {
   if (!value) return null
   const trimmed = value.trim()
-  // Only characters that can appear in an IPv4/IPv6 literal (plus a zone id),
-  // capped, so a hostile header cannot become an unbounded bucket key.
+  // Somente caracteres válidos em um literal IPv4/IPv6 (mais um identificador
+  // de zona), com tamanho limitado para impedir chaves de grupo ilimitadas.
   if (!trimmed || trimmed.length > 45 || !/^[0-9a-fA-F.:%]+$/.test(trimmed)) return null
   return trimmed.toLowerCase()
 }
 
 /**
- * Bucket key for an IP. When no IP can be resolved every such caller shares one
- * bucket rather than being waved through, so an unidentifiable flood is still
- * capped. In practice Vercel always supplies one.
+ * Chave de grupo para um IP. Se não for possível resolver o IP, todas essas
+ * chamadas compartilham um grupo em vez de serem liberadas; assim, até uma
+ * enxurrada não identificável continua limitada. Na prática, a Vercel sempre
+ * fornece um IP.
  */
 export function ipKey(namespace: string, ip: string | null): string {
   return rateLimitKey(namespace, ip ?? 'unknown')
 }
 
 // ---------------------------------------------------------------------------
-// Policies
+// Políticas
 // ---------------------------------------------------------------------------
 
 const MINUTE = 60_000
 const HOUR = 60 * MINUTE
 
 /**
- * Every limit in the product, in one place, so a call site cannot quietly
- * invent a looser one.
+ * Todos os limites do produto em um só lugar, para que nenhum ponto de chamada
+ * introduza silenciosamente um limite mais permissivo.
  */
 export const RATE_LIMITS = {
-  /** Per API key, for non-MCP API-key traffic. */
+  /** Por chave de API, para tráfego que não seja de MCP. */
   apiKey: { limit: 60, windowMs: MINUTE } as RateLimitPolicy,
-  /** Per API key, for MCP. Applied as the resolver's own bucket so one MCP request costs exactly one hit. */
+  /** Por chave de API para MCP. Aplicado no próprio grupo do resolvedor, para cada requisição MCP contar exatamente uma vez. */
   mcp: { limit: 120, windowMs: MINUTE } as RateLimitPolicy,
 
-  /** Per invoice/estimate public id, on the public payment endpoints. */
+  /** Por id público de fatura/orçamento, nos endpoints públicos de pagamento. */
   publicDocument: { limit: 10, windowMs: MINUTE } as RateLimitPolicy,
-  /** Per IP, on the public payment endpoints. Higher than the per-document cap because an office shares an IP. */
+  /** Por IP, nos endpoints públicos de pagamento. Maior que o limite por documento, pois um escritório compartilha o mesmo IP. */
   publicDocumentIp: { limit: 30, windowMs: MINUTE } as RateLimitPolicy,
 
-  /** Per email address, all sign-in/sign-up/reset attempts. */
+  /** Por endereço de e-mail, para todas as tentativas de entrar, cadastrar-se ou redefinir a senha. */
   authIdentifier: { limit: 10, windowMs: 15 * MINUTE } as RateLimitPolicy,
-  /** Per IP, all auth attempts. Caps credential spraying across rotated identifiers. */
+  /** Por IP, para todas as tentativas de autenticação. Limita ataques de tentativa de credenciais com identificadores alternados. */
   authIp: { limit: 30, windowMs: 15 * MINUTE } as RateLimitPolicy,
-  /** Per email address, FAILED attempts only. Trips a one-hour lockout on that account. */
+  /** Por endereço de e-mail, somente tentativas FALHAS. Ativa um bloqueio de uma hora para a conta. */
   authIdentifierLockout: { limit: 8, windowMs: HOUR } as RateLimitPolicy,
-  /** Per IP, FAILED attempts only. Trips a one-hour lockout on that source. */
+  /** Por IP, somente tentativas FALHAS. Ativa um bloqueio de uma hora para essa origem. */
   authIpLockout: { limit: 20, windowMs: HOUR } as RateLimitPolicy,
 
-  /** Per IP, on the support submit path. The RPC already caps per email address. */
+  /** Por IP, no envio de solicitação ao suporte. A RPC já limita por endereço de e-mail. */
   supportIp: { limit: 10, windowMs: HOUR } as RateLimitPolicy,
 
   /**
-   * Per IP, OAuth dynamic client registration. Registration is necessarily
-   * unauthenticated (an agent handed a URL has no credential yet), so this is
-   * the only thing standing between it and an unbounded row count. Twenty an
-   * hour is far more than any real client needs: one registration lasts.
+   * Por IP, para registro dinâmico de cliente OAuth. O registro é necessariamente
+   * não autenticado (um agente que recebeu uma URL ainda não tem credenciais),
+   * então este limite evita um número ilimitado de linhas. Vinte por hora é
+   * muito mais do que qualquer cliente real precisa: basta um registro.
    */
   oauthRegisterIp: { limit: 20, windowMs: HOUR } as RateLimitPolicy,
   /**
-   * Per IP, OAuth token endpoint. Covers code exchange and refresh. A single
-   * connect spends one, a refresh spends one, so sixty a minute only trips for
-   * something that is guessing.
+   * Por IP, no endpoint de token OAuth. Abrange a troca do código e a renovação.
+   * Uma conexão consome uma unidade, assim como cada renovação; portanto, sessenta
+   * por minuto só bloqueia atividades de tentativa e erro.
    */
   oauthTokenIp: { limit: 60, windowMs: MINUTE } as RateLimitPolicy,
 } as const

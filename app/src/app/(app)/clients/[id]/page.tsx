@@ -73,8 +73,8 @@ export default function ClientDetailPage() {
         setClient(clientData)
       }
 
-      // Computed from invoices by the client_financials view,
-      // replacing the clients.total_* columns that nothing maintained.
+      // Calculados a partir das faturas pela view client_financials,
+      // em substituição às colunas clients.total_* que não eram mantidas.
       const { data: financialsData } = await supabase
         .from('client_financials')
         .select('total_invoiced, total_paid, outstanding_balance')
@@ -106,8 +106,8 @@ export default function ClientDetailPage() {
         setEstimates(estimateData as Estimate[])
       }
 
-      // Voided payments are not money and are left out of every list by
-      // default; the invoice page shows them, struck through.
+      // Pagamentos estornados não contam como dinheiro e ficam fora de todas as listas
+      // por padrão; a página da fatura os mostra tachados.
       const { data: paymentData } = await supabase
         .from('payments')
         .select('*, invoice:invoices(invoice_number)')
@@ -130,10 +130,10 @@ export default function ClientDetailPage() {
     try {
       const { deleteClientAction } = await import('@/lib/actions/clients')
       await deleteClientAction(clientId)
-      toast.success('Client deleted')
+      toast.success('Cliente excluído')
       router.push('/clients')
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete client')
+      toast.error(error instanceof Error ? error.message : 'Não foi possível excluir o cliente')
       setIsDeleting(false)
     }
   }
@@ -161,9 +161,9 @@ export default function ClientDetailPage() {
       <div className="p-6 lg:p-8">
         <EmptyState
           icon={Building2}
-          title="Client not found"
-          description="The client you're looking for doesn't exist or has been deleted."
-          action={{ label: 'Back to Clients', href: '/clients' }}
+          title="Cliente não encontrado"
+          description="O cliente que você procura não existe ou foi excluído."
+          action={{ label: 'Voltar para clientes', href: '/clients' }}
         />
       </div>
     )
@@ -185,29 +185,29 @@ export default function ClientDetailPage() {
           onClick={() => setShowDeleteDialog(true)}
         >
           <Trash2 className="mr-2 h-4 w-4" />
-          Delete
+          Excluir
         </Button>
         <Button variant="outline" asChild>
           <Link href={`/clients/${clientId}/edit`}>
             <Edit className="mr-2 h-4 w-4" />
-            Edit
+            Editar
           </Link>
         </Button>
         <Button asChild>
           <Link href={`/invoices/new?client=${clientId}`}>
             <Plus className="mr-2 h-4 w-4" />
-            New Invoice
+            Nova fatura
           </Link>
         </Button>
       </PageHeader>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        {/* Left Column - Client Info */}
+        {/* Coluna esquerda - informações do cliente */}
         <div className="space-y-6">
-          {/* Contact Info */}
+          {/* Informações de contato */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Contact Information</CardTitle>
+              <CardTitle className="text-base">Informações de contato</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {client.email && (
@@ -254,49 +254,49 @@ export default function ClientDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Billing Info */}
+          {/* Informações de cobrança */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Billing Settings</CardTitle>
+              <CardTitle className="text-base">Configurações de cobrança</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Currency</span>
+                <span className="text-muted-foreground">Moeda</span>
                 <span className="font-medium">{client.currency}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Payment Terms</span>
-                <span className="font-medium">{client.payment_terms} days</span>
+                <span className="text-muted-foreground">Prazo de pagamento</span>
+                <span className="font-medium">{client.payment_terms} dias</span>
               </div>
               {client.tax_id && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Tax ID</span>
+                  <span className="text-muted-foreground">CNPJ</span>
                   <span className="font-medium">{client.tax_id}</span>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Stats */}
+          {/* Estatísticas */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Summary</CardTitle>
+              <CardTitle className="text-base">Resumo</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total Invoiced</span>
+                <span className="text-muted-foreground">Total faturado</span>
                 <span className="font-medium tabular-nums">
                   {formatCurrency(financials.total_invoiced, client.currency)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total Paid</span>
+                <span className="text-muted-foreground">Total pago</span>
                 <span className="font-medium tabular-nums text-green-600">
                   {formatCurrency(financials.total_paid, client.currency)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Outstanding ({client.currency} only)</span>
+                <span className="text-muted-foreground">Em aberto ({client.currency} apenas)</span>
                 <span className="font-medium tabular-nums text-amber-600">
                   {formatCurrency(financials.outstanding_balance, client.currency)}
                 </span>
@@ -304,11 +304,11 @@ export default function ClientDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Notes */}
+          {/* Observações */}
           {client.notes && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Internal Notes</CardTitle>
+                <CardTitle className="text-base">Observações internas</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">{client.notes}</p>
@@ -317,18 +317,18 @@ export default function ClientDetailPage() {
           )}
         </div>
 
-        {/* Right Column - Activity */}
+        {/* Coluna direita - atividade */}
         <div className="lg:col-span-2">
           <Tabs defaultValue="invoices">
             <TabsList>
               <TabsTrigger value="invoices">
-                Invoices ({invoices.length})
+                Faturas ({invoices.length})
               </TabsTrigger>
               <TabsTrigger value="estimates">
-                Estimates ({estimates.length})
+                Orçamentos ({estimates.length})
               </TabsTrigger>
               <TabsTrigger value="payments">
-                Payments ({payments.length})
+                Pagamentos ({payments.length})
               </TabsTrigger>
             </TabsList>
 
@@ -338,10 +338,10 @@ export default function ClientDetailPage() {
                   <CardContent className="py-12">
                     <EmptyState
                       icon={FileText}
-                      title="No invoices yet"
-                      description="Create your first invoice for this client"
+                      title="Nenhuma fatura cadastrada"
+                      description="Crie a primeira fatura para este cliente"
                       action={{
-                        label: 'Create Invoice',
+                        label: 'Criar fatura',
                         href: `/invoices/new?client=${clientId}`,
                       }}
                     />
@@ -364,7 +364,7 @@ export default function ClientDetailPage() {
                             <div>
                               <p className="font-medium">{invoice.invoice_number}</p>
                               <p className="text-sm text-muted-foreground">
-                                Due {format(parseDay(invoice.due_date), 'MMM d, yyyy')}
+                                Vence em {format(parseDay(invoice.due_date), 'MMM d, yyyy')}
                               </p>
                             </div>
                           </div>
@@ -393,10 +393,10 @@ export default function ClientDetailPage() {
                   <CardContent className="py-12">
                     <EmptyState
                       icon={FileText}
-                      title="No estimates yet"
-                      description="Create an estimate for this client"
+                      title="Nenhum orçamento cadastrado"
+                      description="Crie um orçamento para este cliente"
                       action={{
-                        label: 'Create Estimate',
+                        label: 'Criar orçamento',
                         href: `/estimates/new?client=${clientId}`,
                       }}
                     />
@@ -420,8 +420,8 @@ export default function ClientDetailPage() {
                               <p className="font-medium">{estimate.estimate_number}</p>
                               <p className="text-sm text-muted-foreground">
                                 {estimate.expiry_date
-                                  ? `Expires ${format(parseDay(estimate.expiry_date), 'MMM d, yyyy')}`
-                                  : `Issued ${format(parseDay(estimate.issue_date), 'MMM d, yyyy')}`}
+                                  ? `Vence em ${format(parseDay(estimate.expiry_date), 'MMM d, yyyy')}`
+                                  : `Emitida em ${format(parseDay(estimate.issue_date), 'MMM d, yyyy')}`}
                               </p>
                             </div>
                           </div>
@@ -450,8 +450,8 @@ export default function ClientDetailPage() {
                   <CardContent className="py-12">
                     <EmptyState
                       icon={DollarSign}
-                      title="No payments yet"
-                      description="Payments will appear here when invoices are paid"
+                      title="Nenhum pagamento registrado"
+                      description="Os pagamentos aparecerão aqui quando as faturas forem pagas"
                     />
                   </CardContent>
                 </Card>
@@ -493,15 +493,15 @@ export default function ClientDetailPage() {
         </div>
       </div>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Diálogo de confirmação de exclusão */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Client</DialogTitle>
+            <DialogTitle>Excluir cliente</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{client.name}&quot;? Their invoices
-              and payment history will be kept, but they will no longer appear
-              in your client list.
+              Tem certeza de que deseja excluir &quot;{client.name}&quot;? As faturas
+              e o histórico de pagamentos serão mantidos, mas o cliente não aparecerá mais
+              na sua lista de clientes.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -510,14 +510,14 @@ export default function ClientDetailPage() {
               onClick={() => setShowDeleteDialog(false)}
               disabled={isDeleting}
             >
-              Cancel
+              Cancelar
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
               disabled={isDeleting}
             >
-              Delete
+              Excluir
             </Button>
           </DialogFooter>
         </DialogContent>

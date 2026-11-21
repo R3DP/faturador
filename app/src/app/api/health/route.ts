@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic'
-/** Liveness only. Does not disclose credentials or claim database readiness. */
+/** Verifica apenas se o serviço está ativo. Não revela credenciais nem afirma que o banco está pronto. */
 export async function GET() {
   return Response.json(
     { status: 'ok' },

@@ -16,33 +16,33 @@ BEGIN
  VALUES(b,'30000000-0000-4000-8000-000000000001','Agreed pricing','USD',100,1.5,50) RETURNING id INTO p;
  r:=task_operation(b,request,'create',jsonb_build_object('policy_id',p,'title','Test task'));
  t:=(r->'task'->>'id')::uuid;
- IF task_operation(b,request,'create',jsonb_build_object('policy_id',p,'title','Test task'))<>r THEN RAISE EXCEPTION 'Task replay changed result'; END IF;
+ IF task_operation(b,request,'create',jsonb_build_object('policy_id',p,'title','Test task'))<>r THEN RAISE EXCEPTION 'A repetição da tarefa alterou o resultado'; END IF;
  PERFORM task_operation(b,gen_random_uuid(),'start',jsonb_build_object('task_id',t));
  PERFORM task_operation(b,gen_random_uuid(),'usage',jsonb_build_object('task_id',t,'provider','example','provider_request_id','req-1','cost',2,'currency','USD','source','Provider usage response'));
  BEGIN
    PERFORM task_operation(b,gen_random_uuid(),'usage',jsonb_build_object('task_id',t,'provider','example','provider_request_id','req-1','cost',2,'currency','USD','source','Provider usage response'));
-   RAISE EXCEPTION 'TEST FAILED duplicate usage accepted';
+   RAISE EXCEPTION 'TEST FAILED: foi aceita uma utilização duplicada';
  EXCEPTION WHEN unique_violation THEN NULL; END;
  BEGIN
    PERFORM task_operation(b,gen_random_uuid(),'usage',jsonb_build_object('task_id',t,'provider','example','provider_request_id','req-2','cost',2,'currency','EUR','source','Provider usage response'));
-   RAISE EXCEPTION 'TEST FAILED mixed currency accepted';
+   RAISE EXCEPTION 'TEST FAILED: foi aceita uma mistura de moedas';
  EXCEPTION WHEN raise_exception THEN IF SQLERRM NOT LIKE 'Usage currency%' THEN RAISE; END IF; END;
  BEGIN
    PERFORM task_operation(b,gen_random_uuid(),'usage',jsonb_build_object('task_id',t,'provider','example','provider_request_id','req-3','cost',100,'currency','USD','source','Provider usage response'));
-   RAISE EXCEPTION 'TEST FAILED budget exceeded';
+   RAISE EXCEPTION 'TEST FAILED: o limite do orçamento foi excedido';
  EXCEPTION WHEN raise_exception THEN IF SQLERRM NOT LIKE 'Usage would exceed%' THEN RAISE; END IF; END;
  r:=task_operation(b,gen_random_uuid(),'complete',jsonb_build_object('task_id',t));
- IF (r->>'usage_amount')::numeric<>3 THEN RAISE EXCEPTION 'Wrong usage markup'; END IF;
+ IF (r->>'usage_amount')::numeric<>3 THEN RAISE EXCEPTION 'Margem de utilização incorreta'; END IF;
  r:=task_operation(b,gen_random_uuid(),'invoice',jsonb_build_object('task_id',t));
- IF (r->'task'->>'invoice_id') IS NULL THEN RAISE EXCEPTION 'No draft invoice'; END IF;
- IF (SELECT total FROM invoices WHERE id=(r->'task'->>'invoice_id')::uuid)<>3 THEN RAISE EXCEPTION 'Incorrect task invoice'; END IF;
+ IF (r->'task'->>'invoice_id') IS NULL THEN RAISE EXCEPTION 'Nenhuma fatura de rascunho foi criada'; END IF;
+ IF (SELECT total FROM invoices WHERE id=(r->'task'->>'invoice_id')::uuid)<>3 THEN RAISE EXCEPTION 'Fatura da tarefa incorreta'; END IF;
  DELETE FROM invoices WHERE id=(r->'task'->>'invoice_id')::uuid;
- IF (SELECT status FROM work_tasks WHERE id=t)<>'completed' THEN RAISE EXCEPTION 'Deleted draft did not release task'; END IF;
+ IF (SELECT status FROM work_tasks WHERE id=t)<>'completed' THEN RAISE EXCEPTION 'A exclusão do rascunho não liberou a tarefa'; END IF;
  r:=task_operation(b,gen_random_uuid(),'invoice',jsonb_build_object('task_id',t));
- IF (r->'task'->>'invoice_id') IS NULL THEN RAISE EXCEPTION 'Released task could not be approved again'; END IF;
+ IF (r->'task'->>'invoice_id') IS NULL THEN RAISE EXCEPTION 'Não foi possível aprovar novamente a tarefa liberada'; END IF;
 
 END $$;
--- Simulate a crashed agent without waiting ten minutes in the test suite.
+-- Simula um agente interrompido sem esperar dez minutos na suíte de testes.
 DO $$
 DECLARE r jsonb; p uuid;
 BEGIN
@@ -58,8 +58,8 @@ DO $$
 DECLARE r jsonb; request uuid:=gen_random_uuid(); input jsonb:=jsonb_build_object('task_id',current_setting('billr.test_task_id'));
 BEGIN
  r:=task_operation('20000000-0000-4000-8000-000000000001',request,'heartbeat',input);
- IF (r->'task'->>'active_seconds')::bigint<>120 THEN RAISE EXCEPTION 'Expired lease charged more than 120 seconds'; END IF;
- IF task_operation('20000000-0000-4000-8000-000000000001',request,'heartbeat',input)<>r THEN RAISE EXCEPTION 'Heartbeat replay changed cost'; END IF;
+ IF (r->'task'->>'active_seconds')::bigint<>120 THEN RAISE EXCEPTION 'A concessão expirada cobrou mais de 120 segundos'; END IF;
+ IF task_operation('20000000-0000-4000-8000-000000000001',request,'heartbeat',input)<>r THEN RAISE EXCEPTION 'A repetição do heartbeat alterou o custo'; END IF;
  PERFORM task_operation('20000000-0000-4000-8000-000000000001',gen_random_uuid(),'pause',input);
 END $$;
 RESET ROLE;
@@ -69,6 +69,6 @@ DO $$
 DECLARE r jsonb;
 BEGIN
  r:=task_operation('20000000-0000-4000-8000-000000000001',gen_random_uuid(),'complete',jsonb_build_object('task_id',current_setting('billr.test_task_id')));
- IF (r->'task'->>'active_seconds')::bigint<>120 THEN RAISE EXCEPTION 'Paused time was billed'; END IF;
+ IF (r->'task'->>'active_seconds')::bigint<>120 THEN RAISE EXCEPTION 'O tempo pausado foi faturado'; END IF;
 END $$;
 ROLLBACK;

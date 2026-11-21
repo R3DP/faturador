@@ -1,15 +1,15 @@
 'use client'
 
 /**
- * Fetches the reports payload for the ACTIVE business.
+ * Busca os dados do relatório da empresa ATIVA.
  *
- * Scoping: the business comes from useBusiness() (the same context every other
- * page in (app) uses) and is passed to the RPC, which re-checks membership
- * server-side before it reads a row. Nothing here queries across businesses.
+ * Escopo: a empresa vem de useBusiness() (o mesmo contexto usado pelas demais
+ * páginas em (app)) e é enviada à chamada RPC, que verifica novamente a associação
+ * no servidor antes de ler os dados. Nenhuma consulta aqui cruza empresas.
  *
- * Aggregation: one round trip to get_report_summary. The heavy sums, the time
- * series and the group-bys happen in Postgres; only the open-invoice rows come
- * back raw, because the aging report needs them for drill-down anyway.
+ * Agregação: uma única chamada a get_report_summary. As somas mais pesadas, a série temporal
+ * e os agrupamentos são processados no Postgres; somente as faturas em aberto retornam
+ * sem agregação, pois o relatório de vencimentos precisa delas para detalhar os dados.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -21,14 +21,14 @@ export interface UseReportDataArgs {
   range: ReportRange
   previousRange: ReportRange | null
   bucket: BucketUnit
-  /** Null lets the server fall back to the business's default currency. */
+  /** Nulo permite que o servidor use a moeda padrão da empresa. */
   currency: string | null
 }
 
 export interface UseReportDataResult {
   data: ReportData | null
   isLoading: boolean
-  /** True while refetching with a payload already on screen, so charts can hold their frame. */
+  /** Verdadeiro durante uma nova busca com dados já exibidos, para manter os gráficos estáveis. */
   isRefreshing: boolean
   error: string | null
   refresh: () => void
@@ -85,13 +85,13 @@ export function useReportData({
         if (cancelled) return
         if (rpcError) {
           console.error('useReportData:', rpcError)
-          // Surface the underlying reason. A generic string here meant a
-          // failure could not be diagnosed without database access, which is
-          // the wrong trade for an operator looking at their own account.
+          // Exiba o motivo original. Uma mensagem genérica aqui impedia
+          // diagnosticar a falha sem acessar o banco de dados, o que não é adequado
+          // para uma pessoa que está consultando a própria conta.
           setError(
             rpcError.message
-              ? `Could not load reports: ${rpcError.message}`
-              : 'Could not load reports. Try again in a moment.',
+              ? `Não foi possível carregar os relatórios: ${rpcError.message}`
+              : 'Não foi possível carregar os relatórios. Tente novamente em instantes.',
           )
           return
         }
@@ -104,8 +104,8 @@ export function useReportData({
         const detail = caught instanceof Error ? caught.message : ''
         setError(
           detail
-            ? `Could not load reports: ${detail}`
-            : 'Could not load reports. Try again in a moment.',
+            ? `Não foi possível carregar os relatórios: ${detail}`
+            : 'Não foi possível carregar os relatórios. Tente novamente em instantes.',
         )
       } finally {
         if (!cancelled) {
@@ -119,9 +119,9 @@ export function useReportData({
     return () => {
       cancelled = true
     }
-    // `key` collapses every input that should trigger a refetch; the range and
-    // previousRange objects are rebuilt each render, so depending on them
-    // directly would loop.
+    // `key` reúne todas as entradas que devem iniciar uma nova busca. O intervalo e
+    // o objeto previousRange são recriados a cada renderização; depender deles
+    // diretamente causaria um loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
 

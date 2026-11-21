@@ -4,11 +4,11 @@ import type { Database } from '@/types/database'
 import { amountToMinorUnits } from '@/lib/stripe/money'
 
 /**
- * One deliberately vague message for every "we will not charge this card"
- * outcome. The payer is an anonymous visitor, so the reason must not leak.
+ * Uma mensagem intencionalmente genérica para qualquer situação em que
+ * não faremos a cobrança neste cartão. Quem paga é um visitante anônimo; por isso, o motivo não deve ser revelado.
  */
 export const NOT_PAYABLE =
-  'This invoice cannot be paid online right now. Please use the payment instructions on the invoice, or contact the sender.'
+  'Esta fatura não pode ser paga online neste momento. Use as instruções de pagamento da fatura ou entre em contato com quem a enviou.'
 
 const PAYABLE_COLUMNS =
   'id, business_id, invoice_number, status, currency, balance_due, stripe_payment_intent_id'
@@ -19,7 +19,7 @@ interface PayableInvoice {
   invoice_number: string
   status: string
   currency: string
-  /** Server-authoritative outstanding amount in major units. */
+  /** Valor pendente autoritativo do servidor, em unidades principais da moeda. */
   balanceDue: number
   stripe_payment_intent_id: string | null
 }
@@ -29,10 +29,10 @@ export type PayableResult =
   | { ok: false; status: number; error: string }
 
 /**
- * Every check that must pass before Billr creates a charge for a public
- * invoice. Reads the invoice by its own unguessable public_id (never a
- * caller-supplied internal id) and re-derives the amount from that row rather
- * than trusting anything the browser sent.
+ * Todas as verificações que precisam ser aprovadas antes de o Faturador cobrar
+ * uma fatura pública. Busca a fatura pelo próprio public_id imprevisível (nunca
+ * por um id interno fornecido por quem chama) e recalcula o valor a partir dessa
+ * linha, em vez de confiar em qualquer dado enviado pelo navegador.
  */
 export async function loadPayableInvoice(
   db: SupabaseClient<Database>,
@@ -45,7 +45,7 @@ export async function loadPayableInvoice(
     .maybeSingle()
 
   if (error) return { ok: false, status: 503, error: NOT_PAYABLE }
-  if (!invoice) return { ok: false, status: 404, error: 'Invoice not found.' }
+  if (!invoice) return { ok: false, status: 404, error: 'Fatura não encontrada.' }
   if (['draft', 'cancelled', 'paid'].includes(invoice.status))
     return { ok: false, status: 409, error: NOT_PAYABLE }
 

@@ -7,7 +7,7 @@ import type { Database } from '@/types/database'
 
 export type ItemRow = Database['public']['Tables']['items']['Row']
 
-/** A line with every blank filled in, ready for the shared totals math. */
+/** Linha com todos os campos preenchidos, pronta para o cálculo compartilhado dos totais. */
 export interface ResolvedLineItem extends BuildLineItem {
   description: string
 }
@@ -15,14 +15,14 @@ export interface ResolvedLineItem extends BuildLineItem {
 const ITEM_LOOKUP_LIMIT = 5
 
 /**
- * Shared line-item input schema for create_invoice / update_draft_invoice /
+ * Esquema compartilhado de entrada de itens de linha para create_invoice / update_draft_invoice /
  * create_estimate / update_draft_estimate.
  *
- * A line can be written out longhand (description + quantity + rate) or it can
- * point at a saved catalog item by id or name, in which case the item supplies
- * whatever the caller left out. That is what lets an agent turn "bill 3 hours
- * of Consulting" into a correctly priced line without the caller knowing the
- * stored rate.
+ * Um item pode ser informado por completo (description + quantity + rate) ou pode
+ * apontar para um item salvo no catálogo por ID ou nome; nesse caso, o item fornece
+ * os campos que não foram informados. Assim, um agente pode transformar "cobrar 3 horas
+ * de consultoria" em um item com o preço correto, sem que quem chamou saiba a
+ * tarifa armazenada.
  */
 export const lineItemInput = z.object({
   description: z
@@ -31,42 +31,42 @@ export const lineItemInput = z.object({
     .max(500)
     .optional()
     .describe(
-      'Line item description. Required unless item_id or item_name is given, in which case it defaults to the saved item\'s description (or its name if it has none).'
+      'Descrição do item de linha. Obrigatória, a menos que item_id ou item_name seja informado; nesse caso, usa a descrição do item salvo (ou o nome, se não houver descrição).'
     ),
-  quantity: z.number().positive().max(99999999).multipleOf(0.000001).optional().describe('Quantity (must be > 0). Defaults to 1.'),
+  quantity: z.number().positive().max(99999999).multipleOf(0.000001).optional().describe('Quantidade (deve ser > 0). O padrão é 1.'),
   rate: z
     .number()
     .min(0).max(99999999).multipleOf(0.000001)
     .optional()
     .describe(
-      'Rate per unit. Required unless item_id or item_name is given, in which case it defaults to the saved item\'s rate. Pass it explicitly to override the saved rate for this line only.'
+      'Valor por unidade. Obrigatório, a menos que item_id ou item_name seja informado; nesse caso, usa o valor do item salvo. Informe-o para substituir o valor salvo somente neste item de linha.'
     ),
   item_id: z
     .string()
     .uuid()
     .optional()
-    .describe('Id of a saved item (from list_items) to price this line from. Takes precedence over item_name.'),
+    .describe('ID de um item salvo (obtido com list_items) usado para definir o preço deste item de linha. Tem prioridade sobre item_name.'),
   item_name: z
     .string()
     .max(200)
     .optional()
     .describe(
-      'Exact (case-insensitive) name of a saved item to price this line from, e.g. "Consulting". Use list_items first if you are unsure of the exact name.'
+      'Nome exato (sem distinção entre maiúsculas e minúsculas) de um item salvo usado para definir o preço deste item de linha, por exemplo, "Consultoria". Use list_items antes se não tiver certeza do nome exato.'
     ),
 })
 
 export type LineItemInput = z.infer<typeof lineItemInput>
 
 /**
- * Resolves caller-supplied lines into the plain { description, quantity, rate }
- * shape the shared totals math consumes, filling in blanks from the saved item
- * catalog where a line references one.
+ * Converte os itens de linha informados em { description, quantity, rate },
+ * o formato simples usado pelo cálculo compartilhado dos totais, preenchendo campos vazios com dados do item salvo
+ * no catálogo quando houver uma referência.
  *
- * Scoping: the catalog fetch is filtered to `resolvedBusinessId`, which the
- * caller must already have obtained from `ctx.db.resolveBusinessId`.
+ * Escopo: a consulta ao catálogo é filtrada por `resolvedBusinessId`, que quem chama
+ * já deve ter obtido de `ctx.db.resolveBusinessId`.
  *
- * Throws ScopeError with an instructive message when a referenced item does not
- * exist, is ambiguous, or when a line ends up without a description or rate.
+ * Lança ScopeError com uma mensagem explicativa quando o item referenciado não
+ * existe, é ambíguo ou quando um item de linha fica sem descrição ou valor.
  */
 export async function resolveLineItems(
   ctx: McpCtx,
@@ -78,7 +78,7 @@ export async function resolveLineItems(
 
   const resolved: ResolvedLineItem[] = []
   for (const [index, line] of lines.entries()) {
-    const position = `line ${index + 1}`
+    const position = `item de linha ${index + 1}`
     let item: ItemRow | null = null
 
     if (needsCatalog && (line.item_id || line.item_name)) {
@@ -91,12 +91,12 @@ export async function resolveLineItems(
 
     if (!description) {
       throw new ScopeError(
-        `Missing description on ${position}. Provide description, or reference a saved item with item_id / item_name.`
+        `Descrição ausente no ${position}. Informe description ou faça referência a um item salvo com item_id / item_name.`
       )
     }
     if (rate === undefined) {
       throw new ScopeError(
-        `Missing rate on ${position}. Provide rate, or reference a saved item with item_id / item_name so the saved rate can be used.`
+        `Valor ausente no ${position}. Informe rate ou faça referência a um item salvo com item_id / item_name para usar o valor armazenado.`
       )
     }
 
@@ -107,17 +107,17 @@ export async function resolveLineItems(
 }
 
 /**
- * Looks up one saved item by id or by exact (case-insensitive) name within a
- * business. Mirrors resolveClient's behavior: exact match only, ambiguity is an
- * error rather than a guess, and a miss suggests near matches so the caller can
- * correct the name instead of retrying blind.
+ * Busca um item salvo por ID ou pelo nome exato (sem distinção entre maiúsculas e minúsculas) em uma
+ * empresa. Segue o comportamento de resolveClient: somente correspondência exata; ambiguidades são
+ * tratadas como erro, sem tentar adivinhar; se não houver correspondência, sugere nomes parecidos para que quem chamou possa
+ * corrigir o nome em vez de tentar novamente às cegas.
  */
 export async function resolveItem(
   ctx: McpCtx,
   resolvedBusinessId: string,
   itemId: string | undefined,
   itemName: string | undefined,
-  position = 'this line'
+  position = 'este item de linha'
 ): Promise<ItemRow> {
   if (itemId) {
     const { data, error } = await ctx.db.svc
@@ -129,16 +129,16 @@ export async function resolveItem(
 
     if (error) {
       console.error('resolveItem (by id):', error)
-      throw new Error('Could not look up saved item.')
+      throw new Error('Não foi possível buscar o item salvo.')
     }
     if (!data) {
-      throw new ScopeError(`No saved item ${itemId} in this business (${position}). Call list_items to see what exists.`)
+      throw new ScopeError(`Não há item salvo ${itemId} nesta empresa (${position}). Chame list_items para consultar os itens existentes.`)
     }
     return data
   }
 
   if (!itemName) {
-    throw new ScopeError(`Provide item_id or item_name to identify the saved item for ${position}.`)
+    throw new ScopeError(`Informe item_id ou item_name para identificar o item salvo no ${position}.`)
   }
 
   const escaped = escapeLike(itemName)
@@ -151,7 +151,7 @@ export async function resolveItem(
 
   if (error) {
     console.error('resolveItem (exact):', error)
-    throw new Error('Could not look up saved item.')
+    throw new Error('Não foi possível buscar o item salvo.')
   }
 
   if (exact && exact.length === 1) {
@@ -160,7 +160,7 @@ export async function resolveItem(
 
   if (exact && exact.length > 1) {
     throw new ScopeError(
-      `Multiple saved items named "${itemName}" exist in this business; pass item_id to disambiguate: ${exact
+      `Há vários itens salvos chamados "${itemName}" nesta empresa; informe item_id para desambiguar: ${exact
         .map((i) => `"${i.name}" (${i.id})`)
         .join(', ')}.`
     )
@@ -175,13 +175,13 @@ export async function resolveItem(
 
   if (close && close.length > 0) {
     throw new ScopeError(
-      `No saved item named "${itemName}" found in this business. Did you mean: ${close
+      `Nenhum item salvo chamado "${itemName}" foi encontrado nesta empresa. Você quis dizer: ${close
         .map((i) => `"${i.name}" (${i.id})`)
         .join(', ')}?`
     )
   }
 
   throw new ScopeError(
-    `No saved item named "${itemName}" found in this business. Call list_items to see the catalog, or create_item to add it.`
+    `Nenhum item salvo chamado "${itemName}" foi encontrado nesta empresa. Chame list_items para consultar o catálogo ou create_item para adicioná-lo.`
   )
 }

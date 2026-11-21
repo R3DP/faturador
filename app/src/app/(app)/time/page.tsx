@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import {
   Plus,
   Search,
@@ -99,7 +100,7 @@ export default function TimePage() {
     return matchesSearch && matchesClient && matchesBilled
   })
 
-  // Calculate totals
+  // Calcula os totais
   const totalHours = filteredEntries.reduce((sum, e) => sum + entrySeconds(e) / 3600, 0)
   const billableHours = filteredEntries
     .filter((e) => e.is_billable && !e.is_billed)
@@ -109,7 +110,7 @@ export default function TimePage() {
     .reduce((sum, e) => sum + (e.amount ?? 0), 0)
 
   const formatCurrency = (amount: number, currency = currentBusiness?.default_currency || 'USD') => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency,
     }).format(amount)
@@ -137,18 +138,18 @@ export default function TimePage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Time Tracking"
-        description="Track time spent on client projects"
+        title="Controle de horas"
+        description="Acompanhe o tempo dedicado aos projetos dos clientes"
       >
         <Button asChild>
           <Link href="/time/new">
             <Plus className="mr-2 h-4 w-4" />
-            Log Time
+            Registrar horas
           </Link>
         </Button>
       </PageHeader>
 
-      {/* Stats */}
+      {/* Estatísticas */}
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="pt-6">
@@ -157,7 +158,7 @@ export default function TimePage() {
                 <Clock className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Hours</p>
+                <p className="text-sm text-muted-foreground">Total de horas</p>
                 <p className="text-2xl font-bold tabular-nums">{totalHours.toFixed(1)}</p>
               </div>
             </div>
@@ -170,7 +171,7 @@ export default function TimePage() {
                 <Clock className="h-5 w-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Unbilled Hours</p>
+                <p className="text-sm text-muted-foreground">Horas não faturadas</p>
                 <p className="text-2xl font-bold tabular-nums">{billableHours.toFixed(1)}</p>
               </div>
             </div>
@@ -183,7 +184,7 @@ export default function TimePage() {
                 <DollarSign className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Unbilled Amount</p>
+                <p className="text-sm text-muted-foreground">Valor não faturado</p>
                 <p className="text-2xl font-bold tabular-nums">{formatCurrency(billableAmount)}</p>
               </div>
             </div>
@@ -191,12 +192,12 @@ export default function TimePage() {
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Filtros */}
       <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1 sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search time entries..."
+            placeholder="Buscar lançamentos de horas..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -204,10 +205,10 @@ export default function TimePage() {
         </div>
         <Select value={clientFilter} onValueChange={setClientFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All clients" />
+            <SelectValue placeholder="Todos os clientes" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Clients</SelectItem>
+            <SelectItem value="all">Todos os clientes</SelectItem>
             {uniqueClients.map((client) => (
               <SelectItem key={client.id} value={client.id}>
                 {client.name}
@@ -217,17 +218,17 @@ export default function TimePage() {
         </Select>
         <Select value={billedFilter} onValueChange={setBilledFilter}>
           <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="All" />
+            <SelectValue placeholder="Todos" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="unbilled">Unbilled</SelectItem>
-            <SelectItem value="billed">Billed</SelectItem>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="unbilled">Não faturadas</SelectItem>
+            <SelectItem value="billed">Faturado</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Time Entries */}
+      {/* Lançamentos de tempo */}
       <div className="mt-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -238,15 +239,15 @@ export default function TimePage() {
             <CardContent className="py-12">
               <EmptyState
                 icon={Clock}
-                title={searchQuery || clientFilter !== 'all' ? 'No time entries found' : 'No time logged yet'}
+                title={searchQuery || clientFilter !== 'all' ? 'Nenhum lançamento de horas encontrado' : 'Nenhuma hora registrada'}
                 description={
                   searchQuery || clientFilter !== 'all'
-                    ? 'Try adjusting your filters'
-                    : 'Start tracking time to bill clients accurately'
+                    ? 'Ajuste os filtros da busca'
+                    : 'Registre o tempo trabalhado para faturar seus clientes com precisão.'
                 }
                 action={
                   !searchQuery && clientFilter === 'all'
-                    ? { label: 'Log Time', href: '/time/new' }
+                    ? { label: 'Registrar horas', href: '/time/new' }
                     : undefined
                 }
               />
@@ -258,12 +259,12 @@ export default function TimePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Client / Project</TableHead>
-                    <TableHead className="text-right">Hours</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Cliente / Projeto</TableHead>
+                    <TableHead className="text-right">Horas</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead>Situação</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -271,7 +272,7 @@ export default function TimePage() {
                   {filteredEntries.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell className="font-medium">
-                        {format(parseDay(entry.date), 'MMM d, yyyy')}
+                        {format(parseDay(entry.date), 'd MMM yyyy', { locale: ptBR })}
                       </TableCell>
                       <TableCell className="max-w-xs truncate">
                         {entry.description}
@@ -303,21 +304,21 @@ export default function TimePage() {
                       </TableCell>
                       <TableCell>
                         {!entry.is_billable ? (
-                          <Badge variant="secondary">Non-billable</Badge>
+                          <Badge variant="secondary">Não faturável</Badge>
                         ) : entry.is_billed ? (
                           <Badge variant="secondary" className="bg-green-100 text-green-700">
-                            Billed
+                            Faturado
                           </Badge>
                         ) : (
                           <Badge variant="secondary" className="bg-amber-100 text-amber-700">
-                            Unbilled
+                            Não faturadas
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button aria-label="Abrir ações do lançamento de horas" variant="ghost" size="icon">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -325,7 +326,7 @@ export default function TimePage() {
                             <DropdownMenuItem asChild>
                               <Link href={`/time/${entry.id}`}>
                                 <Pencil className="mr-2 h-4 w-4" />
-                                Edit
+                                Editar
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
@@ -333,7 +334,7 @@ export default function TimePage() {
                               className="text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              Excluir
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -347,21 +348,21 @@ export default function TimePage() {
         )}
       </div>
 
-      {/* Delete Confirmation */}
+      {/* Confirmação de exclusão */}
       <Dialog open={!!deleteEntry} onOpenChange={() => setDeleteEntry(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Time Entry</DialogTitle>
+            <DialogTitle>Excluir lançamento de horas</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this time entry? This action cannot be undone.
+              Tem certeza de que deseja excluir este lançamento de horas? Esta ação não pode ser desfeita.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteEntry(null)}>
-              Cancel
+              Cancelar
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
-              Delete
+              Excluir
             </Button>
           </DialogFooter>
         </DialogContent>

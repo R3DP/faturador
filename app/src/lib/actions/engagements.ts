@@ -8,14 +8,15 @@ import { BILLING_MODES, DUE_RULES, MAX_ENTRIES } from '@/lib/engagements/schedul
 import { failure } from './result'
 
 /**
- * Engagement writes from the browser.
+ * Gravações de contratos iniciadas pelo navegador.
  *
- * Every one of them is a thin wrapper around a SECURITY DEFINER RPC. The rules live there, not here: the schedule is expanded in
- * SQL so the entries always add up, request_id makes a retry a replay rather
- * than a second write, and billed money is refused by the database whatever
- * this file does.
+ * Cada uma é um wrapper fino em torno de uma RPC SECURITY DEFINER. As regras
+ * ficam lá, não aqui: a agenda é expandida em SQL para que os lançamentos sempre
+ * fechem, request_id faz uma nova tentativa reproduzir a operação em vez de
+ * gravá-la de novo, e o banco recusa valores já faturados independentemente
+ * do que este arquivo faça.
  *
- * What this file adds is input validation and a message a person can read.
+ * Este arquivo acrescenta validação de entrada e uma mensagem compreensível.
  */
 
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -49,7 +50,7 @@ export type EngagementWriteResult =
   | { ok: true; engagementId: string; warning?: string | null }
   | { error: string }
 
-/** The shape every engagement RPC answers with. */
+/** Formato da resposta de cada RPC de contrato. */
 interface EngagementRpcResult {
   engagement: { id: string }
   warning?: string | null
@@ -61,7 +62,7 @@ function rpcFailure(error: { message?: string } | null, fallback: string): { err
   return { error: message ?? fallback }
 }
 
-/** A thrown failure (such as a zod refusal) as something to show. */
+/** Converte uma falha lançada (como uma recusa do zod) em algo que possa ser exibido. */
 function thrown(error: unknown, fallback: string): { error: string } {
   const result = failure(error, fallback)
   return 'error' in result ? result : { error: fallback }
@@ -98,20 +99,20 @@ export async function createEngagementAction(
       p_source_estimate_id: data.source_estimate_id ?? undefined,
     })
 
-    if (error || !result) return rpcFailure(error, 'Could not create that engagement.')
+    if (error || !result) return rpcFailure(error, 'Não foi possível criar esse contrato.')
 
     const created = result as unknown as EngagementRpcResult
     revalidateEngagement(created.engagement.id)
     return { ok: true, engagementId: created.engagement.id }
   } catch (error) {
-    return thrown(error, 'Could not create that engagement.')
+    return thrown(error, 'Não foi possível criar esse contrato.')
   }
 }
 
 /**
- * Start, pause, complete or cancel. Completing an engagement with money still
- * unbilled is allowed and returns the warning the database produced, so the
- * page can say how much is left rather than closing it silently.
+ * Iniciar, pausar, concluir ou cancelar. É permitido concluir um contrato
+ * com valores ainda não faturados; a ação retorna o aviso do banco para que a
+ * página informe quanto falta, em vez de encerrá-lo sem aviso.
  */
 export async function setEngagementStatusAction(
   engagementId: string,
@@ -127,7 +128,7 @@ export async function setEngagementStatusAction(
       p_status: status,
     })
 
-    if (error || !result) return rpcFailure(error, 'Could not change that engagement.')
+    if (error || !result) return rpcFailure(error, 'Não foi possível alterar esse contrato.')
 
     revalidateEngagement(engagementId)
     return {
@@ -136,7 +137,7 @@ export async function setEngagementStatusAction(
       warning: (result as unknown as EngagementRpcResult).warning ?? null,
     }
   } catch (error) {
-    return thrown(error, 'Could not change that engagement.')
+    return thrown(error, 'Não foi possível alterar esse contrato.')
   }
 }
 
@@ -152,13 +153,13 @@ export async function markEntryCompleteAction(
       p_entry_id: z.string().uuid().parse(entryId),
     })
 
-    if (error || !result) return rpcFailure(error, 'Could not mark that entry complete.')
+    if (error || !result) return rpcFailure(error, 'Não foi possível marcar esse lançamento como concluído.')
 
     const done = result as unknown as EngagementRpcResult
     revalidateEngagement(done.engagement.id)
     return { ok: true, engagementId: done.engagement.id }
   } catch (error) {
-    return thrown(error, 'Could not mark that entry complete.')
+    return thrown(error, 'Não foi possível marcar esse lançamento como concluído.')
   }
 }
 
@@ -176,13 +177,13 @@ export async function waiveEntryAction(
       p_reason: z.string().trim().min(1).max(2000).parse(reason),
     })
 
-    if (error || !result) return rpcFailure(error, 'Could not waive that entry.')
+    if (error || !result) return rpcFailure(error, 'Não foi possível dispensar esse lançamento.')
 
     const done = result as unknown as EngagementRpcResult
     revalidateEngagement(done.engagement.id)
     return { ok: true, engagementId: done.engagement.id }
   } catch (error) {
-    return thrown(error, 'Could not waive that entry.')
+    return thrown(error, 'Não foi possível dispensar esse lançamento.')
   }
 }
 
@@ -195,15 +196,15 @@ const conversionInput = z.object({
 export type EngagementConversionInput = z.input<typeof conversionInput>
 
 /**
- * Turns an accepted estimate into the agreement it was quoting.
+ * Converte um orçamento aceito no contrato que ele descrevia.
  *
- * The client, the total and the currency are read off the estimate inside the
- * RPC and are deliberately not parameters here: a conversion must never be a
- * place a price quietly changes. All this passes is the SHAPE of the schedule.
+ * O cliente, o total e a moeda são obtidos do orçamento dentro da RPC e, de
+ * propósito, não são parâmetros desta action: a conversão nunca deve permitir
+ * que um preço mude sem aviso. Ela envia somente o FORMATO da agenda.
  *
- * The new engagement is a draft. Accepting a quote is not the same event as
- * starting the work, and starting an engagement is what makes its deposit
- * billable, so that stays a separate, deliberate click.
+ * O novo contrato começa como rascunho. Aceitar um orçamento não é o mesmo
+ * que iniciar o trabalho; é iniciar o contrato que torna a entrada faturável.
+ * Por isso, essa etapa exige um clique separado e intencional.
  */
 export async function convertEstimateToEngagementAction(
   estimateId: string,
@@ -222,7 +223,7 @@ export async function convertEstimateToEngagementAction(
       p_installments: data.installments,
     })
 
-    if (error || !result) return rpcFailure(error, 'Could not turn that estimate into an engagement.')
+    if (error || !result) return rpcFailure(error, 'Não foi possível converter esse orçamento em contrato.')
 
     const created = result as unknown as EngagementRpcResult
     revalidateEngagement(created.engagement.id)
@@ -230,6 +231,6 @@ export async function convertEstimateToEngagementAction(
     revalidatePath(`/estimates/${estimateId}`)
     return { ok: true, engagementId: created.engagement.id }
   } catch (error) {
-    return thrown(error, 'Could not turn that estimate into an engagement.')
+    return thrown(error, 'Não foi possível converter esse orçamento em contrato.')
   }
 }

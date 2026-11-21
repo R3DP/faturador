@@ -6,50 +6,50 @@ import {
   isValidKeyFormat,
 } from '@/lib/api-keys/crypto'
 
-describe('api key crypto', () => {
-  it('generates billr_sk_ + 48 hex chars', () => {
+describe('criptografia de chaves de API', () => {
+  it('gera billr_sk_ seguido de 48 caracteres hexadecimais', () => {
     const { secret } = generateApiKey()
     expect(secret).toMatch(/^billr_sk_[0-9a-f]{48}$/)
   })
 
-  it('generates unique secrets', () => {
+  it('gera segredos únicos', () => {
     expect(generateApiKey().secret).not.toBe(generateApiKey().secret)
   })
 
-  it('hash is deterministic sha256 hex of the secret', () => {
+  it('o hash é o SHA-256 hexadecimal determinístico do segredo', () => {
     const { secret, hash } = generateApiKey()
     expect(hash).toBe(hashApiKey(secret))
     expect(hash).toMatch(/^[0-9a-f]{64}$/)
   })
 
-  it('prefix is the first 12 chars of the secret', () => {
+  it('o prefixo corresponde aos 12 primeiros caracteres do segredo', () => {
     const { secret, prefix } = generateApiKey()
     expect(prefix).toBe(secret.slice(0, 12))
     expect(prefix).toMatch(/^billr_sk_[0-9a-f]{3}$/)
   })
 
-  it('matches the golden-vector hash for a known input', () => {
+  it('corresponde ao hash de referência para uma entrada conhecida', () => {
     expect(hashApiKey('billr_sk_' + 'a'.repeat(48))).toBe(
       'a1dde26e4b0f73d5b4a8f12fe23b19310b9def53437dd11ae97c898c65e04313'
     )
   })
 
-  it('validates key format', () => {
+  it('valida o formato da chave', () => {
     expect(isValidKeyFormat('billr_sk_' + 'a'.repeat(48))).toBe(true)
     expect(isValidKeyFormat('billr_sk_short')).toBe(false)
     expect(isValidKeyFormat('sk_' + 'a'.repeat(48))).toBe(false)
   })
 
-  it('mints OAuth access tokens in the same shape under a billr_at_ prefix', () => {
+  it('gera tokens de acesso OAuth no mesmo formato, com o prefixo billr_at_', () => {
     const { secret, hash, prefix } = generateAccessToken()
     expect(secret).toMatch(/^billr_at_[0-9a-f]{48}$/)
     expect(hash).toBe(hashApiKey(secret))
     expect(prefix).toBe(secret.slice(0, 12))
-    // resolveApiKey gates on this, so an OAuth token must pass it.
+    // resolveApiKey usa esta validação como barreira, portanto um token OAuth precisa passar.
     expect(isValidKeyFormat(secret)).toBe(true)
   })
 
-  it('still rejects anything that is neither prefix', () => {
+  it('continua rejeitando valores que não usam nenhum dos prefixos', () => {
     expect(isValidKeyFormat('billr_rt_' + 'a'.repeat(48))).toBe(false)
     expect(isValidKeyFormat('billr_at_' + 'A'.repeat(48))).toBe(false)
   })

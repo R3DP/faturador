@@ -1,5 +1,5 @@
-// Checks a machine before installing Billr. Uses only Node built-ins, so it
-// runs before `npm ci`. Prints PASS, WARN or FAIL per check; exits 1 on FAIL.
+// Verifica a máquina antes de instalar o Faturador. Usa apenas recursos internos do Node, então
+// roda antes de `npm ci`. Exibe PASS, WARN ou FAIL para cada verificação; termina com código 1 em FAIL.
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { connect, createServer } from 'node:net'
@@ -7,9 +7,9 @@ import { resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 export const MIN_NODE_MAJOR = 22
-/** The Supabase CLI version CI tests the migrations with. */
+/** Versão da CLI do Supabase usada pelo CI para testar as migrações. */
 export const MIN_SUPABASE_CLI = '2.67.1'
-/** Memory Docker needs to build the production image (see docs/self-hosting.md). */
+/** Memória necessária para o Docker compilar a imagem de produção (consulte docs/self-hosting.md). */
 export const BUILD_MEMORY_BYTES = 4 * 1024 ** 3
 
 export function compareVersions(a, b) {
@@ -29,7 +29,7 @@ export function checkNode(version = process.versions.node) {
     : {
         status: 'fail',
         name: 'Node.js',
-        detail: `v${version} found; install Node.js ${MIN_NODE_MAJOR} or newer (the repository's .nvmrc names it)`,
+        detail: `v${version} encontrada; instale o Node.js ${MIN_NODE_MAJOR} ou mais recente (a versão está indicada no .nvmrc do repositório)`,
       }
 }
 
@@ -41,7 +41,7 @@ export function checkDocker(run) {
     return {
       status: 'fail',
       name: 'Docker',
-      detail: 'not running or not installed; start Docker Desktop (or the Docker daemon) and run this again',
+      detail: 'não está em execução ou não está instalado; inicie o Docker Desktop (ou o daemon do Docker) e execute novamente',
     }
   }
   const [version, memory] = output.split(' ')
@@ -50,9 +50,9 @@ export function checkDocker(run) {
     return {
       status: 'warn',
       name: 'Docker',
-      detail: `running (${version}) with ${(bytes / 1024 ** 3).toFixed(1)} GB; local development works, but give Docker at least 4 GB before building the production image`,
+      detail: `em execução (${version}) com ${(bytes / 1024 ** 3).toFixed(1)} GB; o desenvolvimento local funciona, mas aloque ao Docker pelo menos 4 GB antes de compilar a imagem de produção`,
     }
-  return { status: 'pass', name: 'Docker', detail: `running (${version})` }
+  return { status: 'pass', name: 'Docker', detail: `em execução (${version})` }
 }
 
 export function checkSupabaseCli(run, cli = 'supabase') {
@@ -63,15 +63,15 @@ export function checkSupabaseCli(run, cli = 'supabase') {
     return {
       status: 'fail',
       name: 'Supabase CLI',
-      detail: 'not found; install it: https://supabase.com/docs/guides/local-development/cli/getting-started',
+      detail: 'não encontrada; instale-a: https://supabase.com/docs/guides/local-development/cli/getting-started',
     }
   }
   const version = output.match(/\d+\.\d+\.\d+/)?.[0]
   if (!version)
-    return { status: 'warn', name: 'Supabase CLI', detail: `could not read a version from "${output.trim()}"` }
+    return { status: 'warn', name: 'Supabase CLI', detail: `não foi possível ler uma versão de "${output.trim()}"` }
   return compareVersions(version, MIN_SUPABASE_CLI) >= 0
     ? { status: 'pass', name: 'Supabase CLI', detail: `v${version}` }
-    : { status: 'fail', name: 'Supabase CLI', detail: `v${version} found; update to ${MIN_SUPABASE_CLI} or newer` }
+    : { status: 'fail', name: 'Supabase CLI', detail: `v${version} encontrada; atualize para ${MIN_SUPABASE_CLI} ou mais recente` }
 }
 
 function canConnect(port) {
@@ -99,9 +99,9 @@ function canListen(port) {
 }
 
 /**
- * Free means nothing answers on it and we can bind it. The connect probe
- * matters on macOS, where binding 127.0.0.1 can succeed while Docker holds
- * the same port on 0.0.0.0.
+ * Uma porta livre não responde a conexões e pode ser associada. A verificação de conexão
+ * é importante no macOS, onde associar 127.0.0.1 pode funcionar enquanto o Docker mantém
+ * a mesma porta em 0.0.0.0.
  */
 export async function portFree(port) {
   if (await canConnect(port)) return false
@@ -116,18 +116,18 @@ export async function checkPorts({ appPort, dbBase, isFree = portFree, envExists
   const fixes = []
   if (busy.includes(appPort))
     fixes.push(
-      `set BILLR_LOCAL_APP_PORT for the app (${appPort} is busy), for example BILLR_LOCAL_APP_PORT=${appPort + 10} npm run doctor, then the same prefix on npm run setup:local`,
+      `defina BILLR_LOCAL_APP_PORT para o app (${appPort} está ocupado), por exemplo BILLR_LOCAL_APP_PORT=${appPort + 10} npm run doctor, e use o mesmo prefixo em npm run setup:local`,
     )
   if (busy.some((port) => port !== appPort))
-    fixes.push(`set BILLR_LOCAL_DB_PORT for the database (it uses ${first}-${first + 9}; busy: ${busy.filter((port) => port !== appPort).join(', ')})`)
+    fixes.push(`defina BILLR_LOCAL_DB_PORT para o banco de dados (ele usa ${first}-${first + 9}; ocupadas: ${busy.filter((port) => port !== appPort).join(', ')})`)
   if (!busy.length)
-    return { status: 'pass', name: 'Ports', detail: `${appPort} and ${first}-${first + 9} are free` }
+    return { status: 'pass', name: 'Portas', detail: `${appPort} e ${first}-${first + 9} estão livres` }
   return {
     status: envExists ? 'warn' : 'fail',
-    name: 'Ports',
+    name: 'Portas',
     detail: envExists
-      ? `in use: ${busy.join(', ')}. Expected if your Billr dev server or local database is already running.`
-      : `in use: ${busy.join(', ')}. Stop whatever holds them, or choose other ports for setup:local: ${fixes.join('; ')}.`,
+      ? `em uso: ${busy.join(', ')}. É esperado se o servidor de desenvolvimento do Faturador ou o banco de dados local já estiver em execução.`
+      : `em uso: ${busy.join(', ')}. Pare o processo que as ocupa ou escolha outras portas para setup:local: ${fixes.join('; ')}.`,
   }
 }
 
@@ -136,9 +136,9 @@ export function checkEnvFile(envExists) {
     ? {
         status: 'warn',
         name: '.env.local',
-        detail: 'already exists, so setup:local will refuse to overwrite it. Expected if you already ran setup:local.',
+        detail: 'já existe, então setup:local se recusará a sobrescrevê-lo. É esperado se você já executou setup:local.',
       }
-    : { status: 'pass', name: '.env.local', detail: 'not created yet; setup:local will write it' }
+    : { status: 'pass', name: '.env.local', detail: 'ainda não foi criado; setup:local o criará' }
 }
 
 const LABEL = { pass: 'PASS', warn: 'WARN', fail: 'FAIL' }
@@ -146,7 +146,7 @@ const LABEL = { pass: 'PASS', warn: 'WARN', fail: 'FAIL' }
 export function report(results) {
   const ok = !results.some((result) => result.status === 'fail')
   const lines = results.map((result) => `${LABEL[result.status]}  ${result.name}: ${result.detail}`)
-  lines.push(ok ? 'Ready. Next: npm ci, then npm run setup:local.' : 'Fix the FAIL lines above, then run npm run doctor again.')
+  lines.push(ok ? 'Pronto. Em seguida: npm ci e depois npm run setup:local.' : 'Corrija as linhas FAIL acima e execute npm run doctor novamente.')
   return { text: lines.join('\n'), ok }
 }
 

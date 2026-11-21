@@ -1,10 +1,11 @@
 /**
- * Derived report figures: profit and loss, the revenue series, client
- * concentration, expense mix and the time summary. Pure - no React, no I/O.
+ * Indicadores derivados dos relatórios: lucros e perdas, série de receitas,
+ * concentração de clientes, composição de despesas e resumo de horas. Funções
+ * puras, sem React nem entrada/saída.
  *
- * Every function here takes already-parsed ReportData (numbers, not database
- * strings) and returns display-ready numbers. Money is accumulated at full
- * precision and rounded once at the end of each total.
+ * Todas as funções recebem ReportData já analisado (números, não strings do
+ * banco de dados) e retornam números prontos para exibição. Valores monetários
+ * são acumulados com precisão total e arredondados uma única vez ao final de cada total.
  */
 
 import {
@@ -18,24 +19,25 @@ import { formatBucketLabel, type BucketUnit } from '@/lib/reports/date-ranges'
 import type { CategoryTotal, ClientTotal, ReportData } from '@/lib/reports/types'
 
 /**
- * Accrual counts revenue when it is invoiced; cash counts it when the money
- * lands. Freelancers usually file cash-basis and plan accrual-basis, so the
- * page offers both rather than picking one and being wrong for half the users.
+ * O regime de competência contabiliza a receita quando é faturada; o regime de
+ * caixa, quando o dinheiro é recebido. Profissionais autônomos costumam declarar
+ * pelo regime de caixa e planejar pelo de competência, então a página oferece
+ * ambos em vez de escolher um e errar para parte das pessoas.
  */
 export type PnlBasis = 'accrual' | 'cash'
 
 const EXPENSE_CATEGORY_LABELS: Record<string, string> = {
-  office: 'Office',
-  travel: 'Travel',
-  meals: 'Meals',
-  supplies: 'Supplies',
-  utilities: 'Utilities',
+  office: 'Escritório',
+  travel: 'Viagem',
+  meals: 'Alimentação',
+  supplies: 'Suprimentos',
+  utilities: 'Contas e serviços',
   software: 'Software',
   marketing: 'Marketing',
-  professional: 'Professional services',
-  insurance: 'Insurance',
-  mileage: 'Mileage',
-  other: 'Other',
+  professional: 'Serviços profissionais',
+  insurance: 'Seguros',
+  mileage: 'Quilometragem',
+  other: 'Outros',
 }
 
 export function expenseCategoryLabel(category: string): string {
@@ -46,7 +48,7 @@ interface PnlLine {
   category: string
   label: string
   amount: number
-  /** Share of total expenses, 0-100. */
+  /** Participação no total de despesas, de 0 a 100. */
   share: number
   count: number
 }
@@ -56,7 +58,7 @@ export interface PnlReport {
   revenue: number
   expenses: number
   profit: number
-  /** Profit as a share of revenue, 0-100. Null when there was no revenue. */
+  /** Lucro como percentual da receita, de 0 a 100. Null quando não houve receita. */
   margin: number | null
   previousRevenue: number
   previousExpenses: number
@@ -73,8 +75,8 @@ export function buildPnl(data: ReportData, basis: PnlBasis): PnlReport {
   const previousRevenue = basis === 'cash' ? data.previous.collected : data.previous.invoiced
   const previousExpenses = data.previous.expenses
 
-  // Round the inputs (already period totals from Postgres) once, then take the
-  // single subtraction. No intermediate rounding between the two.
+  // Arredonda uma vez os valores de entrada (totais do período vindos do Postgres)
+  // e então faz uma única subtração. Não há arredondamento intermediário.
   const profit = roundMoney(revenue - expenses)
   const previousProfit = roundMoney(previousRevenue - previousExpenses)
 
@@ -111,18 +113,19 @@ export interface RevenuePoint {
   invoiced: number
   collected: number
   expenses: number
-  /** Same-index point from the comparison period, present only when comparing. */
+  /** Ponto na mesma posição do período de comparação, presente somente quando há comparação. */
   previousInvoiced?: number
   previousCollected?: number
   previousLabel?: string
 }
 
 /**
- * The revenue-over-time series. When comparison is on, the previous period's
- * buckets are aligned BY POSITION (first bucket to first bucket), not by date,
- * so a 30-day window compares day 1 to day 1 even when the months differ in
- * length. The previous bucket's own label rides along so the tooltip can name
- * the date it is actually showing rather than implying the dates match.
+ * Série de receitas ao longo do tempo. Quando a comparação está ativada, os
+ * agrupamentos do período anterior são alinhados POR POSIÇÃO (primeiro com
+ * primeiro), não pela data. Assim, um intervalo de 30 dias compara o dia 1 com
+ * o dia 1 mesmo que os meses tenham durações diferentes. O rótulo do agrupamento
+ * anterior acompanha o ponto para que a dica mostre a data real, sem sugerir que
+ * as datas coincidem.
  */
 export function buildRevenueSeries(data: ReportData, compare: boolean): RevenuePoint[] {
   const bucket: BucketUnit = data.bucket
@@ -146,17 +149,17 @@ export function buildRevenueSeries(data: ReportData, compare: boolean): RevenueP
 }
 
 interface TopClientRow extends ClientTotal {
-  /** Share of the period's total invoiced revenue, 0-100. */
+  /** Participação na receita total faturada do período, de 0 a 100. */
   share: number
 }
 
 export interface TopClientsReport {
   rows: TopClientRow[]
-  /** Total invoiced across ALL clients in the period, not just the listed ones. */
+  /** Total faturado para TODOS os clientes no período, não apenas os listados. */
   totalInvoiced: number
-  /** Share held by the single largest client, 0-100. The concentration risk figure. */
+  /** Participação do maior cliente, de 0 a 100. Indicador de risco de concentração. */
   topShare: number
-  /** Share held by the top three, 0-100. */
+  /** Participação dos três maiores, de 0 a 100. */
   topThreeShare: number
 }
 
@@ -192,10 +195,10 @@ export interface TimeReport {
   unbilledHours: number
   unbilledValue: number
   billableValue: number
-  /** Billable share of logged hours, 0-100. */
+  /** Percentual das horas registradas que são faturáveis, de 0 a 100. */
   billableRate: number
   entryCount: number
-  /** Effective rate on billable time, or null when no billable hours were logged. */
+  /** Tarifa efetiva sobre horas faturáveis, ou null quando não houver horas faturáveis registradas. */
   effectiveHourlyRate: number | null
 }
 
@@ -224,10 +227,10 @@ export interface ExpenseSlice {
 }
 
 /**
- * Expense mix, capped at `limit` slices with the tail folded into "Other".
- * The cap is a color rule as much as a layout one: past the palette's slots a
- * chart starts inventing hues that are indistinguishable under colour-vision
- * deficiency, so the tail folds instead.
+ * Composição de despesas, limitada a `limit` fatias, com o excedente agrupado em
+ * "Outros". O limite é tanto uma regra de cores quanto de layout: além das
+ * opções da paleta, o gráfico inventaria tons indistinguíveis para pessoas com
+ * deficiência na visão de cores; por isso, o excedente é agrupado.
  */
 export function buildExpenseBreakdown(data: ReportData, limit = 6): ExpenseSlice[] {
   const total = data.current.expenses
@@ -262,7 +265,7 @@ export function buildExpenseBreakdown(data: ReportData, limit = 6): ExpenseSlice
     })),
     {
       category: '__other__',
-      label: `Other (${tail.length} categories)`,
+      label: `Outros (${tail.length} categorias)`,
       amount: tailAmount,
       share: percentOf(tailAmount, total),
       count: tailCount,
@@ -275,7 +278,7 @@ export interface HeadlineStat {
   label: string
   value: number
   delta: Delta | null
-  /** Whether an increase is a good thing, so the delta can be coloured honestly. */
+  /** Indica se um aumento é positivo, para que a variação receba uma cor adequada. */
   upIsGood: boolean
 }
 
@@ -289,28 +292,28 @@ export function buildHeadlineStats(
   return [
     {
       id: 'collected',
-      label: 'Collected',
+      label: 'Recebido',
       value: roundMoney(data.current.collected),
       delta: compare ? computeDelta(data.current.collected, data.previous.collected) : null,
       upIsGood: true,
     },
     {
       id: 'invoiced',
-      label: 'Invoiced',
+      label: 'Faturado',
       value: roundMoney(data.current.invoiced),
       delta: compare ? computeDelta(data.current.invoiced, data.previous.invoiced) : null,
       upIsGood: true,
     },
     {
       id: 'outstanding',
-      label: 'Outstanding',
+      label: 'Em aberto',
       value: roundMoney(outstanding),
       delta: null,
       upIsGood: false,
     },
     {
       id: 'profit',
-      label: basis === 'cash' ? 'Profit (cash)' : 'Profit (accrual)',
+      label: basis === 'cash' ? 'Lucro (regime de caixa)' : 'Lucro (regime de competência)',
       value: pnl.profit,
       delta: compare ? pnl.profitDelta : null,
       upIsGood: true,

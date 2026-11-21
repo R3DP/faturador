@@ -2,13 +2,13 @@ import { DOCS_URL, appOrigin, mcpUrl } from '@/lib/deployment'
 import { OAUTH_SCOPES } from './scopes'
 
 /**
- * Discovery documents for the MCP authorization spec (2025-06-18).
+ * Documentos de descoberta para a especificação de autorização MCP (2025-06-18).
  *
- * The resource is https://<origin>/api/mcp, so RFC 9728's path-suffix form
- * applies: https://<origin>/.well-known/oauth-protected-resource/api/mcp
+ * O recurso é https://<origin>/api/mcp, portanto aplica-se o formato de sufixo
+ * de caminho da RFC 9728: https://<origin>/.well-known/oauth-protected-resource/api/mcp
  *
- * The authorization server is the app origin: consent needs the signed-in
- * session, and the session cookie lives on the app origin.
+ * O servidor de autorização é a origem do app: o consentimento precisa da sessão
+ * autenticada, e o cookie de sessão pertence à origem do app.
  */
 
 const OAUTH_ENDPOINT_PATHS = {
@@ -39,7 +39,7 @@ export interface AuthorizationServerMetadata {
   code_challenge_methods_supported: string[]
   scopes_supported: string[]
   authorization_response_iss_parameter_supported: boolean
-  /** RFC 8707: the token endpoint accepts and checks `resource`. */
+  /** RFC 8707: o endpoint de token aceita e verifica `resource`. */
   resource_indicators_supported: boolean
   service_documentation?: string
 }
@@ -64,8 +64,8 @@ export function authorizationServerMetadata(): AuthorizationServerMetadata {
     response_types_supported: ['code'],
     response_modes_supported: ['query'],
     grant_types_supported: ['authorization_code', 'refresh_token'],
-    // Public clients only. There is no place to keep a secret in a desktop
-    // agent or a CLI, so PKCE is the proof instead.
+    // Apenas clientes públicos. Não há como guardar um segredo em um agente de
+    // desktop ou CLI, então o PKCE serve como prova.
     token_endpoint_auth_methods_supported: ['none'],
     code_challenge_methods_supported: ['S256'],
     scopes_supported: [...OAUTH_SCOPES],
@@ -76,8 +76,8 @@ export function authorizationServerMetadata(): AuthorizationServerMetadata {
 }
 
 /**
- * The path portion of the MCP resource, without a trailing slash. "" when the
- * resource is a bare origin.
+ * A parte do caminho do recurso MCP, sem barra final. "" quando o recurso
+ * é apenas uma origem.
  */
 export function mcpResourcePath(): string {
   const path = new URL(mcpUrl()).pathname.replace(/\/+$/, '')
@@ -85,8 +85,8 @@ export function mcpResourcePath(): string {
 }
 
 /**
- * Absolute URL of this installation's protected-resource metadata, as sent in
- * WWW-Authenticate: the RFC 9728 path-suffix form on the app origin.
+ * URL absoluta dos metadados do recurso protegido desta instalação, enviada em
+ * WWW-Authenticate: o formato de sufixo de caminho da RFC 9728 na origem do app.
  */
 export function protectedResourceMetadataUrl(): string {
   const resource = new URL(mcpUrl())
@@ -95,26 +95,26 @@ export function protectedResourceMetadataUrl(): string {
 }
 
 /**
- * True when `suffix` (the catch-all segments after
- * /.well-known/oauth-protected-resource) addresses this installation's MCP
- * server. A mismatch must 404 rather than hand back metadata for a resource
- * this server does not protect.
+ * Retorna true quando `suffix` (os segmentos abrangidos após
+ * /.well-known/oauth-protected-resource) aponta para o servidor MCP desta
+ * instalação. Em caso de divergência, deve retornar 404 em vez de fornecer
+ * metadados de um recurso que este servidor não protege.
  */
 export function matchesResourceSuffix(segments: string[] | undefined): boolean {
   const requested = `/${(segments ?? []).join('/')}`.replace(/\/+$/, '')
   return (requested === '' ? '' : requested) === mcpResourcePath()
 }
 
-/** Response helper: discovery documents are public, cacheable, and CORS-open. */
+/** Auxiliar de resposta: documentos de descoberta são públicos, armazenáveis em cache e permitem CORS. */
 export function metadataResponse(body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status: 200,
     headers: {
       'Content-Type': 'application/json',
-      // Public, non-secret documents. Clients fetch them on every connect.
+      // Documentos públicos, sem segredos. Os clientes os buscam a cada conexão.
       'Cache-Control': 'public, max-age=300',
-      // Browser-based MCP clients read these cross-origin before any token
-      // exists; there is nothing here to protect.
+      // Clientes MCP executados no navegador leem estes documentos entre origens
+      // antes de existir qualquer token; não há nada a proteger aqui.
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'Authorization, Content-Type, MCP-Protocol-Version',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',

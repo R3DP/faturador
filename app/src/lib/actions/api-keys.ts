@@ -17,12 +17,12 @@ export async function createApiKeyAction(
 ): Promise<{ secret: string } | { error: string }> {
   const supabase = await createClient()
   const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) return { error: 'Not signed in' }
-  if (!Object.hasOwn(KEY_PROFILES, profile)) return { error: 'Invalid permission profile' }
-  if (label.length > 200) return { error: 'Label is too long' }
-  if (!label.trim()) return { error: 'Label is required' }
+  if (!auth.user) return { error: 'Sessão não iniciada' }
+  if (!Object.hasOwn(KEY_PROFILES, profile)) return { error: 'Perfil de permissões inválido' }
+  if (label.length > 200) return { error: 'O rótulo é longo demais' }
+  if (!label.trim()) return { error: 'O rótulo é obrigatório' }
 
-  // Validate business access before inserting
+  // Valida o acesso à empresa antes de inserir
   if (businessId) {
     const { data: member } = await supabase
       .from('business_members')
@@ -30,7 +30,7 @@ export async function createApiKeyAction(
       .eq('user_id', auth.user.id)
       .eq('business_id', businessId)
       .maybeSingle()
-    if (!member) return { error: 'You do not have access to that business' }
+    if (!member) return { error: 'Você não tem acesso a essa empresa' }
   }
 
   const { secret, hash, prefix } = generateApiKey()
@@ -45,11 +45,11 @@ export async function createApiKeyAction(
   })
   if (error) {
     console.error('createApiKeyAction:', error)
-    return { error: 'Could not create key' }
+    return { error: 'Não foi possível criar a chave' }
   }
 
   revalidatePath('/agents')
-  return { secret } // shown once; only the hash is stored
+  return { secret } // exibido uma única vez; somente o hash é armazenado
 }
 
 export async function revokeApiKeyAction(
@@ -57,7 +57,7 @@ export async function revokeApiKeyAction(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
   const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) return { success: false, error: 'Not signed in' }
+  if (!auth.user) return { success: false, error: 'Sessão não iniciada' }
 
   const { data, error } = await supabase
     .from('api_keys')
@@ -68,17 +68,17 @@ export async function revokeApiKeyAction(
     .select('id')
   if (error) {
     console.error('revokeApiKeyAction:', error)
-    return { success: false, error: 'Could not revoke key' }
+    return { success: false, error: 'Não foi possível revogar a chave' }
   }
-  if (!data?.length) return { success: false, error: 'Key not found or already revoked' }
+  if (!data?.length) return { success: false, error: 'Chave não encontrada ou já revogada' }
   revalidatePath('/agents')
   return { success: true }
 }
 
-// Manual keys only. OAuth access tokens are api_keys rows too (kind='oauth'),
-// and without this filter every approved MCP connection would show up in the
-// hand-made key list with a Revoke button that leaves its refresh token alive.
-// They get their own list via listOauthConnectionsAction.
+// Somente chaves manuais. Tokens de acesso OAuth também são linhas em api_keys (kind='oauth'),
+// e sem este filtro toda conexão MCP aprovada apareceria na lista de chaves
+// criadas manualmente com um botão Revogar que manteria ativo o token de atualização.
+// Elas têm uma lista própria por meio de listOauthConnectionsAction.
 export async function listApiKeysAction() {
   const supabase = await createClient()
   const { data } = await supabase
@@ -101,7 +101,7 @@ export async function revokeOauthConnectionAction(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
   const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) return { success: false, error: 'Not signed in' }
+  if (!auth.user) return { success: false, error: 'Sessão não iniciada' }
 
   const result = await revokeOauthConnection(auth.user.id, keyId)
   if (result.success) revalidatePath('/agents')

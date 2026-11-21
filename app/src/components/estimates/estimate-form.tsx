@@ -5,6 +5,7 @@ import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format, addDays } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { CalendarIcon, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -43,18 +44,18 @@ import type {
 import { parseDay } from '@/lib/dates'
 
 const lineItemSchema = z.object({
-  description: z.string().min(1, 'Description is required'),
-  quantity: z.coerce.number().min(0.01, 'Quantity must be greater than 0'),
-  rate: z.coerce.number().min(0, 'Rate must be positive'),
+  description: z.string().min(1, 'A descrição é obrigatória'),
+  quantity: z.coerce.number().min(0.01, 'A quantidade deve ser maior que zero'),
+  rate: z.coerce.number().min(0, 'O valor deve ser positivo'),
 })
 
 const estimateSchema = z.object({
-  client_id: z.string().min(1, 'Please select a client'),
+  client_id: z.string().min(1, 'Selecione um cliente'),
   issue_date: z.date(),
   expiry_date: z.date(),
   notes: z.string().optional(),
   terms: z.string().optional(),
-  line_items: z.array(lineItemSchema).min(1, 'Add at least one line item'),
+  line_items: z.array(lineItemSchema).min(1, 'Adicione pelo menos um item'),
 })
 
 type EstimateFormData = z.infer<typeof estimateSchema>
@@ -114,8 +115,8 @@ export function EstimateForm({
     },
   })
 
-  // Keep the form's line_items in sync with the editor state so zod
-  // validation runs against the current items on submit
+  // Manter line_items sincronizado com o estado do editor para que o zod
+  // valide os itens atuais ao enviar o formulário
   useEffect(() => {
     form.setValue(
       'line_items',
@@ -171,7 +172,7 @@ export function EstimateForm({
   const total = subtotal
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: business.default_currency,
     }).format(amount)
@@ -193,9 +194,9 @@ export function EstimateForm({
         className="space-y-6"
       >
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
-          {/* Main Content */}
+          {/* Conteúdo principal */}
           <div className="min-w-0 space-y-6">
-            {/* Client Selection */}
+            {/* Seleção de cliente */}
             <Card>
               <CardContent className="pt-6">
                 <FormField
@@ -203,14 +204,14 @@ export function EstimateForm({
                   name="client_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Client</FormLabel>
+                      <FormLabel>Cliente</FormLabel>
                       <Select
                         value={field.value}
                         onValueChange={field.onChange}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a client" />
+                            <SelectValue placeholder="Selecione um cliente" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -228,15 +229,15 @@ export function EstimateForm({
               </CardContent>
             </Card>
 
-            {/* Line items */}
+            {/* Itens */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Line items</CardTitle>
+                <CardTitle>Itens</CardTitle>
                 {items.length > 0 && (
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" size="sm">
-                        Add from catalog
+                        Adicionar do catálogo
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-64" align="end">
@@ -262,15 +263,15 @@ export function EstimateForm({
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {/* Header */}
+                  {/* Cabeçalho */}
                   <div className="hidden grid-cols-[minmax(0,1fr)_72px_100px_120px] gap-4 text-xs font-medium text-muted-foreground sm:grid">
-                    <div className="min-w-0">Description</div>
-                    <div className="text-right">Qty</div>
-                    <div className="text-right">Rate</div>
-                    <div className="text-right">Amount</div>
+                    <div className="min-w-0">Descrição</div>
+                    <div className="text-right">Qtd.</div>
+                    <div className="text-right">Valor</div>
+                    <div className="text-right">Valor total</div>
                   </div>
 
-                  {/* Items */}
+                  {/* Itens */}
                   {lineItems.map((item) => (
                     <div
                       key={item.id}
@@ -278,8 +279,8 @@ export function EstimateForm({
                     >
                       <div className="col-span-12 min-w-0 sm:col-span-1">
                         <Input
-                          aria-label="Line item description"
-                          placeholder="Description"
+                          aria-label="Descrição do item"
+                          placeholder="Descrição"
                           value={item.description}
                           onChange={(e) =>
                             updateLineItem(
@@ -292,13 +293,13 @@ export function EstimateForm({
                       </div>
                       <div className="col-span-3 min-w-0 sm:col-span-1">
                         <span className="mb-2 block text-xs text-zinc-500 sm:hidden">
-                          Quantity
+                          Quantidade
                         </span>
                         <Input
                           type="number"
                           min="0.01"
                           step="0.01"
-                          aria-label="Quantity"
+                          aria-label="Quantidade"
                           value={item.quantity}
                           onChange={(e) =>
                             updateLineItem(
@@ -312,13 +313,13 @@ export function EstimateForm({
                       </div>
                       <div className="col-span-3 min-w-0 sm:col-span-1">
                         <span className="mb-2 block text-xs text-zinc-500 sm:hidden">
-                          Rate
+                          Valor
                         </span>
                         <Input
                           type="number"
                           min="0"
                           step="0.01"
-                          aria-label="Rate"
+                          aria-label="Valor unitário"
                           value={item.rate}
                           onChange={(e) =>
                             updateLineItem(
@@ -338,7 +339,7 @@ export function EstimateForm({
                           type="button"
                           variant="ghost"
                           size="icon"
-                          aria-label="Remove line item"
+                          aria-label="Remover item"
                           onClick={() => removeLineItem(item.id)}
                           disabled={lineItems.length === 1}
                         >
@@ -355,18 +356,18 @@ export function EstimateForm({
                     className="w-full"
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Line Item
+                    Adicionar item
                   </Button>
                 </div>
 
                 {form.formState.errors.line_items && (
                   <p className="mt-2 text-sm text-destructive">
                     {form.formState.errors.line_items.message ||
-                      'Each line item needs a description'}
+                      'Cada item precisa de uma descrição'}
                   </p>
                 )}
 
-                {/* Totals */}
+                {/* Totais */}
                 <div className="mt-6 flex justify-end">
                   <div className="w-64 space-y-2">
                     <div className="flex justify-between text-sm">
@@ -387,7 +388,7 @@ export function EstimateForm({
               </CardContent>
             </Card>
 
-            {/* Notes & Terms */}
+            {/* Observações & Termos */}
             <Card>
               <CardContent className="pt-6">
                 <div className="grid gap-6 sm:grid-cols-2">
@@ -396,10 +397,10 @@ export function EstimateForm({
                     name="notes"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Notes</FormLabel>
+                        <FormLabel>Observações</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Notes visible to client"
+                            placeholder="Observações visíveis ao cliente"
                             rows={4}
                             {...field}
                           />
@@ -413,10 +414,10 @@ export function EstimateForm({
                     name="terms"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Terms & Conditions</FormLabel>
+                        <FormLabel>Termos e condições</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Terms and conditions"
+                            placeholder="Termos e condições"
                             rows={4}
                             {...field}
                           />
@@ -430,9 +431,9 @@ export function EstimateForm({
             </Card>
           </div>
 
-          {/* Sidebar */}
+          {/* Barra lateral */}
           <div className="space-y-6">
-            {/* Dates */}
+            {/* Datas */}
             <Card>
               <CardContent className="pt-6 space-y-4">
                 <FormField
@@ -440,7 +441,7 @@ export function EstimateForm({
                   name="issue_date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Estimate Date</FormLabel>
+                      <FormLabel>Data do orçamento</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -453,9 +454,9 @@ export function EstimateForm({
                             >
                               <CalendarIcon className="mr-2 h-4 w-4" />
                               {field.value ? (
-                                format(field.value, 'PPP')
+                                format(field.value, 'PPP', { locale: ptBR })
                               ) : (
-                                <span>Pick a date</span>
+                                <span>Escolha uma data</span>
                               )}
                             </Button>
                           </FormControl>
@@ -479,7 +480,7 @@ export function EstimateForm({
                   name="expiry_date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Valid Until</FormLabel>
+                      <FormLabel>Válido até</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -492,9 +493,9 @@ export function EstimateForm({
                             >
                               <CalendarIcon className="mr-2 h-4 w-4" />
                               {field.value ? (
-                                format(field.value, 'PPP')
+                                format(field.value, 'PPP', { locale: ptBR })
                               ) : (
-                                <span>Pick a date</span>
+                                <span>Escolha uma data</span>
                               )}
                             </Button>
                           </FormControl>
@@ -515,7 +516,7 @@ export function EstimateForm({
               </CardContent>
             </Card>
 
-            {/* Actions */}
+            {/* Ações */}
             <Card>
               <CardContent className="pt-6 space-y-3">
                 <Button
@@ -524,7 +525,7 @@ export function EstimateForm({
                   disabled={isSubmitting}
                   onClick={() => setSubmitType('sent')}
                 >
-                  Save & Send
+                  Salvar e enviar
                 </Button>
                 <Button
                   type="submit"
@@ -533,7 +534,7 @@ export function EstimateForm({
                   disabled={isSubmitting}
                   onClick={() => setSubmitType('draft')}
                 >
-                  Save as Draft
+                  Salvar como rascunho
                 </Button>
                 <Button
                   type="button"
@@ -542,7 +543,7 @@ export function EstimateForm({
                   onClick={onCancel}
                   disabled={isSubmitting}
                 >
-                  Cancel
+                  Cancelar
                 </Button>
               </CardContent>
             </Card>

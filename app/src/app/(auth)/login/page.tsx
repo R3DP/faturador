@@ -16,8 +16,8 @@ import { safeAuthRedirect } from '@/lib/auth/redirect'
 import { ACCESS_CHECK_FAILED_MESSAGE, SIGNUP_CLOSED_MESSAGE } from '@/lib/auth/signup-closed'
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email('Informe um endereço de e-mail válido'),
+  password: z.string().min(1, 'A senha é obrigatória'),
 })
 
 type LoginForm = z.infer<typeof loginSchema>
@@ -47,16 +47,16 @@ function LoginPageInner() {
   async function onSubmit(data: LoginForm) {
     setError(null)
 
-    // Goes through a server action rather than calling Supabase from the
-    // browser, so the attempt passes a rate limit and abuse lockout we control
-    // (src/lib/auth/guard.ts) before it reaches the auth provider.
+    // Passa por uma ação de servidor em vez de chamar o Supabase pelo
+    // navegador, para que a tentativa passe pelo limite de requisições e bloqueio contra abuso que controlamos
+    // (src/lib/auth/guard.ts) antes de chegar ao provedor de autenticação.
     const result = await signInAction({
       email: data.email,
       password: data.password,
     })
 
     if (!result.success) {
-      setError(result.error ?? 'Could not sign in. Please try again.')
+      setError(result.error ?? 'Não foi possível entrar. Tente novamente.')
       return
     }
 
@@ -68,10 +68,10 @@ function LoginPageInner() {
     <div className="w-full max-w-sm">
       <div className="text-center">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          Welcome back
+          Boas-vindas de volta
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Sign in to your account to continue
+          Entre na sua conta para continuar
         </p>
       </div>
 
@@ -80,7 +80,7 @@ function LoginPageInner() {
           role="alert"
           className="mt-5 rounded-lg bg-destructive/5 p-3 text-sm text-destructive"
         >
-          Sign-in was cancelled or the link expired. Please try again.
+          A entrada foi cancelada ou o link expirou. Tente novamente.
         </p>
       )}
       {searchParams.get('error') === 'signup_closed' && (
@@ -102,7 +102,7 @@ function LoginPageInner() {
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">E-mail</Label>
           <Input
             id="email"
             type="email"
@@ -117,12 +117,12 @@ function LoginPageInner() {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Senha</Label>
             <Link
               href="/forgot-password"
               className="text-sm text-primary hover:underline"
             >
-              Forgot password?
+              Esqueceu a senha?
             </Link>
           </div>
           <Input
@@ -141,14 +141,14 @@ function LoginPageInner() {
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Sign in
+          Entrar
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{' '}
+        Ainda não tem uma conta?{' '}
         <Link href="/signup" className="text-primary hover:underline">
-          Sign up
+          Criar conta
         </Link>
       </p>
     </div>

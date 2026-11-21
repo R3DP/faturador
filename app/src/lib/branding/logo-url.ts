@@ -1,33 +1,34 @@
 /**
- * Where a business logo may live.
+ * Onde o logotipo de uma empresa pode ficar.
  *
- * `businesses.logo_url` is written by the branding settings action and then
- * read back in three places that are not all equally forgiving: an `<img src>`
- * on the invoice page and both public document pages, and a server-side
- * `fetch` in the PDF renderer that is reachable UNAUTHENTICATED through
+ * `businesses.logo_url` é gravado pela ação de configurações da marca e depois
+ * lido de volta em três lugares que não são igualmente permissivos: um `<img src>`
+ * na página da fatura e nas duas páginas públicas de documentos, e um `fetch`
+ * no servidor, no renderizador de PDF, que pode ser acessado SEM AUTENTICAÇÃO por
  * `/api/public/invoices/[publicId]/pdf`.
  *
- * The application audit recorded two findings against that (Low-2 and Low-3):
- * `z.string().url()` accepts `javascript:`, `data:` and `file:` in zod 4, and
- * the PDF route will fetch any public `https` host an owner names, which makes
- * it a request amplifier and puts an attacker-chosen origin inside a document
- * the business sends to its own clients.
+ * A auditoria da aplicação registrou duas constatações sobre isso (Low-2 e Low-3):
+ * `z.string().url()` aceita `javascript:`, `data:` e `file:` no zod 4, e a rota de PDF
+ * busca qualquer host público `https` indicado pelo proprietário, o que amplifica
+ * requisições e insere uma origem escolhida por um invasor em um documento que
+ * a empresa envia aos próprios clientes.
  *
- * Both are closed the same way: a logo is only ever the installation's own
- * Supabase storage origin, which is also the only origin the branding page can
- * upload to. Everything is derived from `NEXT_PUBLIC_SUPABASE_URL`, so a
- * install validates against its own database.
+ * Os dois problemas são resolvidos da mesma forma: o logotipo só pode usar a
+ * origem de armazenamento do Supabase da própria instalação, que também é a
+ * única origem para a qual a página de identidade visual pode enviar arquivos.
+ * Tudo deriva de `NEXT_PUBLIC_SUPABASE_URL`, então cada instalação valida usando
+ * seu próprio banco de dados.
  */
 
-/** Public objects are served from this path prefix by Supabase Storage. */
+/** O Supabase Storage serve objetos públicos a partir deste prefixo de caminho. */
 const PUBLIC_OBJECT_PREFIX = '/storage/v1/object/public/'
 
-/** The one bucket a logo is uploaded to. */
+/** O único bucket para o qual um logotipo é enviado. */
 const LOGO_BUCKET = 'logos'
 
 export const MAX_LOGO_URL_LENGTH = 2000
 
-/** The configured Supabase origin, or null when nothing usable is configured. */
+/** A origem configurada do Supabase, ou null se não houver configuração utilizável. */
 export function supabaseStorageOrigin(): string | null {
   const raw = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
   if (!raw) return null
@@ -41,14 +42,14 @@ export function supabaseStorageOrigin(): string | null {
 }
 
 /**
- * True when `value` is a logo this installation is willing to render or fetch.
+ * Retorna true quando `value` é um logotipo que esta instalação pode exibir ou buscar.
  *
- * https is required, with one deliberate exception: the Supabase CLI's local
- * stack is served over plain http on loopback, and refusing that would make the
- * branding page unusable in development for no security gain (the origin still
- * has to match, so nothing else becomes reachable). An installation
- * configured with an https Supabase URL can never take http here,
- * because the origin comparison already fails on the scheme.
+ * Exige-se https, com uma exceção intencional: a pilha local da CLI do Supabase
+ * é servida por http simples em loopback, e recusá-la tornaria a página de
+ * identidade visual inutilizável durante o desenvolvimento sem ganho de
+ * segurança (a origem ainda precisa corresponder, então nada mais fica
+ * acessível). Uma instalação configurada com uma URL https do Supabase nunca
+ * aceitará http aqui, pois a comparação de origem já falha por causa do esquema.
  */
 export function isAllowedLogoUrl(value: unknown): value is string {
   if (typeof value !== 'string' || !value || value.length > MAX_LOGO_URL_LENGTH) return false
@@ -60,13 +61,13 @@ export function isAllowedLogoUrl(value: unknown): value is string {
   } catch {
     return false
   }
-  // Origin carries the scheme, the host and the port, so this single
-  // comparison is what refuses javascript:, data:, file: and every other host.
+  // A origem contém o esquema, o host e a porta; portanto, esta única comparação
+  // recusa javascript:, data:, file: e qualquer outro host.
   if (parsed.origin !== origin) return false
   if (parsed.username || parsed.password) return false
   return parsed.pathname.startsWith(`${PUBLIC_OBJECT_PREFIX}${LOGO_BUCKET}/`)
 }
 
-/** Message shown to a person, and recorded in the branding action's tests. */
+/** Mensagem exibida à pessoa e registrada nos testes da ação de identidade visual. */
 export const LOGO_URL_MESSAGE =
-  'A logo must be uploaded to this installation and served from its own storage.'
+  'O logotipo deve ser enviado para esta instalação e servido pelo armazenamento dela.'

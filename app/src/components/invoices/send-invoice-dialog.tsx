@@ -16,6 +16,11 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { sendInvoiceAction, sendEstimateAction } from '@/lib/actions/send-invoice'
+import {
+  buildDefaultSendMessage,
+  buildSendSuccessMessage,
+  getSendDocumentCopy,
+} from '@/lib/invoices/send-document-copy'
 import { parseDay } from '@/lib/dates'
 
 interface SendInvoiceDialogProps {
@@ -34,10 +39,10 @@ interface SendInvoiceDialogProps {
 }
 
 const formatCurrency = (amount: number, currency = 'USD') =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount)
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency }).format(amount)
 
 const formatDate = (date: string) =>
-  parseDay(date).toLocaleDateString('en-US', {
+  parseDay(date).toLocaleDateString('pt-BR', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
@@ -57,19 +62,16 @@ export function SendInvoiceDialog({
   primaryColor,
   onSent,
 }: SendInvoiceDialogProps) {
-  const label = kind === 'invoice' ? 'Invoice' : 'Estimate'
-  const defaultSubject = `${label} ${invoiceNumber} from ${businessName}`
-  const defaultMessage = `Hi,
-
-Here's your ${kind} from ${businessName}.
-
-${label}: ${invoiceNumber}
-Amount due: ${formatCurrency(amountDue, currency)}
-Due date: ${formatDate(dueDate)}
-
-You can view the invoice and full details using the button below.
-
-Thank you!`
+  const copy = getSendDocumentCopy(kind)
+  const label = copy.label
+  const defaultSubject = `${label} ${invoiceNumber} - ${businessName}`
+  const defaultMessage = buildDefaultSendMessage(
+    kind,
+    businessName,
+    invoiceNumber,
+    formatCurrency(amountDue, currency),
+    formatDate(dueDate),
+  )
 
   const [to, setTo] = useState(defaultEmail || '')
   const [cc, setCc] = useState('')
@@ -78,7 +80,7 @@ Thank you!`
   const [message, setMessage] = useState(defaultMessage)
   const [isSending, setIsSending] = useState(false)
 
-  // Re-prefill whenever the dialog opens for a (possibly different) invoice
+  // Preencher novamente sempre que o diálogo abrir para uma fatura (possivelmente diferente)
   useEffect(() => {
     if (open) {
       setTo(defaultEmail || '')
@@ -106,14 +108,14 @@ Thank you!`
         message: message.trim() || undefined,
       })
       if (result.success) {
-        toast.success(`${label} ${invoiceNumber} sent to ${result.to}`)
+        toast.success(buildSendSuccessMessage(kind, invoiceNumber, result.to ?? to.trim()))
         onOpenChange(false)
         onSent?.()
       } else {
-        toast.error(result.error || 'Failed to send invoice')
+        toast.error(result.error || copy.failureMessage)
       }
     } catch {
-      toast.error('Failed to send invoice')
+      toast.error(copy.failureMessage)
     } finally {
       setIsSending(false)
     }
@@ -123,16 +125,16 @@ Thank you!`
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Send {invoiceNumber}</DialogTitle>
+          <DialogTitle>Enviar {invoiceNumber}</DialogTitle>
         </DialogHeader>
         <Tabs defaultValue="compose">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="compose">Compose</TabsTrigger>
-            <TabsTrigger value="preview">Preview</TabsTrigger>
+            <TabsTrigger value="compose">Redigir</TabsTrigger>
+            <TabsTrigger value="preview">Pré-visualizar</TabsTrigger>
           </TabsList>
           <TabsContent value="compose" className="space-y-4 pt-2">
             <div className="space-y-2">
-              <Label htmlFor="send-to">To</Label>
+              <Label htmlFor="send-to">Para</Label>
               <Input
                 id="send-to"
                 type="email"
@@ -146,23 +148,23 @@ Thank you!`
                 <Label htmlFor="send-cc">Cc</Label>
                 <Input
                   id="send-cc"
-                  placeholder="Optional, comma separated"
+                  placeholder="Opcional, separado por vírgulas"
                   value={cc}
                   onChange={(e) => setCc(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="send-bcc">Bcc</Label>
+                <Label htmlFor="send-bcc">Cco</Label>
                 <Input
                   id="send-bcc"
-                  placeholder="Optional, comma separated"
+                  placeholder="Opcional, separado por vírgulas"
                   value={bcc}
                   onChange={(e) => setBcc(e.target.value)}
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="send-subject">Subject</Label>
+              <Label htmlFor="send-subject">Assunto</Label>
               <Input
                 id="send-subject"
                 value={subject}
@@ -170,7 +172,7 @@ Thank you!`
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="send-message">Message</Label>
+              <Label htmlFor="send-message">Mensagem</Label>
               <Textarea
                 id="send-message"
                 value={message}
@@ -191,27 +193,27 @@ Thank you!`
                   <p className="mb-4 whitespace-pre-wrap text-sm">{message}</p>
                 )}
                 <div className="mb-4 rounded-lg bg-muted p-4">
-                  <p className="text-xs text-muted-foreground">Amount due</p>
+                  <p className="text-xs text-muted-foreground">{copy.amountLabel}</p>
                   <p className="text-2xl font-bold">
                     {formatCurrency(amountDue, currency)}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Due {formatDate(dueDate)}
+                    {copy.datePrefix} {formatDate(dueDate)}
                   </p>
                 </div>
                 <div
                   className="rounded-lg p-3 text-center text-sm font-semibold text-white"
                   style={{ backgroundColor: primaryColor || '#2563eb' }}
                 >
-                  View {label}
+                  Visualizar {copy.article} {copy.noun}
                 </div>
                 <p className="mt-4 text-center text-xs text-muted-foreground">
-                  Sent via Billr
+                  Enviado pelo Faturador
                 </p>
               </div>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              The email also includes the invoice line items below the amount.
+              O e-mail também inclui os itens {copy.detailsPhrase} abaixo do valor.
             </p>
           </TabsContent>
         </Tabs>
@@ -221,11 +223,11 @@ Thank you!`
             onClick={() => onOpenChange(false)}
             disabled={isSending}
           >
-            Cancel
+            Cancelar
           </Button>
           <Button onClick={handleSend} disabled={isSending || !to.trim()}>
             <Send className="mr-2 h-4 w-4" />
-            {isSending ? 'Sending...' : `Send ${label}`}
+            {isSending ? 'Enviando...' : `Enviar ${label}`}
           </Button>
         </DialogFooter>
       </DialogContent>

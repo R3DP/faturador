@@ -25,20 +25,20 @@ function registeredToolNames(): string[] {
   return names
 }
 
-describe('tool catalog', () => {
-  it('advertises exactly the tools the server registers', () => {
+describe('catálogo de ferramentas', () => {
+  it('anuncia exatamente as ferramentas registradas pelo servidor', () => {
     expect([...TOOL_NAMES].sort()).toEqual([...registeredToolNames()].sort())
   })
 
-  it('advertises every tool exactly once', () => {
+  it('anuncia cada ferramenta uma única vez', () => {
     expect(new Set(TOOL_NAMES).size).toBe(TOOL_NAMES.length)
   })
 
-  it('keeps the published count derived from the list rather than hardcoded', () => {
+  it('calcula a quantidade publicada a partir da lista, sem valor fixo', () => {
     expect(TOOL_COUNT).toBe(registeredToolNames().length)
   })
 
-  it('gives every group a name, a blurb, and at least one tool', () => {
+  it('fornece um nome, uma descrição e pelo menos uma ferramenta para cada grupo', () => {
     for (const group of TOOL_GROUPS) {
       expect(group.name.length).toBeGreaterThan(0)
       expect(group.blurb.length).toBeGreaterThan(0)
@@ -46,7 +46,7 @@ describe('tool catalog', () => {
     }
   })
 
-  it('uses no em-dashes in copy shown to users', () => {
+  it('não usa travessão longo nos textos exibidos às pessoas usuárias', () => {
     for (const group of TOOL_GROUPS) {
       expect(group.name).not.toContain('\u2014')
       expect(group.blurb).not.toContain('\u2014')
@@ -54,32 +54,32 @@ describe('tool catalog', () => {
   })
 })
 
-describe('ScopedDb discipline', () => {
-  it('never lets a tool file build its own Supabase client', () => {
+describe('regras de uso do ScopedDb', () => {
+  it('impede que arquivos de ferramentas criem seu próprio cliente Supabase', () => {
     for (const file of toolFiles()) {
       const src = sourceOf(file)
-      expect(src, `${file} must not import a Supabase client directly`).not.toMatch(
+      expect(src, `${file} não pode importar diretamente um cliente Supabase`).not.toMatch(
         /from '@\/lib\/supabase\/(service|server|client)'/
       )
-      expect(src, `${file} must not call createServiceClient`).not.toContain('createServiceClient(')
+      expect(src, `${file} não pode chamar createServiceClient`).not.toContain('createServiceClient(')
     }
   })
 
-  it('routes every data access in a tool file through ctx.db', () => {
+  it('direciona todo acesso a dados em arquivos de ferramentas por ctx.db', () => {
     for (const file of toolFiles()) {
       const src = sourceOf(file)
-      // Collapse whitespace so a multi-line chain reads as one expression, and
-      // match .from('table') specifically so Array.from(...) is not counted.
+      // Remove espaços extras para que uma cadeia em várias linhas seja lida como uma única expressão e
+      // identifique .from('table') especificamente, sem contar Array.from(...).
       const collapsed = src.replace(/\s+/g, '')
       const dataAccesses = collapsed.match(/\.from\('/g) ?? []
       const scopedAccesses = collapsed.match(/ctx\.db\.svc\.from\('/g) ?? []
-      expect(dataAccesses.length, `${file} has a .from( that is not ctx.db.svc.from(`).toBe(
+      expect(dataAccesses.length, `${file} tem uma chamada .from( que não usa ctx.db.svc.from(`).toBe(
         scopedAccesses.length
       )
     }
   })
 
-  it('has every tool file establish scope before querying', () => {
+  it('exige que cada arquivo de ferramenta defina o escopo antes de consultar dados', () => {
     for (const file of toolFiles()) {
       const src = sourceOf(file)
       if (!src.includes('ctx.db.svc.from(')) continue
@@ -87,22 +87,22 @@ describe('ScopedDb discipline', () => {
         /resolveBusinessId|assertClientAccess|assertInvoiceAccess|assertEstimateAccess|assertTimeEntryAccess|assertExpenseAccess/.test(
           src
         ),
-        `${file} queries the database without any assert*/resolveBusinessId scoping call`
+        `${file} consulta o banco sem definir o escopo com assert*/resolveBusinessId`
       ).toBe(true)
     }
   })
 })
 
 /**
- * Walks a TypeScript source file and returns every string literal in it: single
- * and double quoted strings, plus the literal chunks of template literals with
- * their `${...}` interpolations skipped. Line and block comments are ignored,
- * so prose written for maintainers is never mistaken for user-facing copy.
+ * Percorre um arquivo TypeScript e retorna todos os literais de texto: com aspas simples
+ * ou duplas, além dos trechos literais de modelos de texto, ignorando
+ * as interpolações `${...}`. Comentários de linha e de bloco são ignorados,
+ * para que textos destinados à manutenção não sejam confundidos com conteúdo exibido às pessoas usuárias.
  */
 function stringLiterals(src: string): { line: number; text: string }[] {
   const out: { line: number; text: string }[] = []
-  // A stack of frames: template literals can nest inside `${}` interpolations,
-  // which are themselves code that can open further template literals.
+  // Uma pilha de contextos: modelos de texto podem ser aninhados dentro de interpolações `${}`,
+  // que também são código e podem iniciar outros modelos de texto.
   const stack: { kind: 'code' | 'template'; depth: number }[] = [{ kind: 'code', depth: 0 }]
   let i = 0
   let line = 1
@@ -190,7 +190,7 @@ function stringLiterals(src: string): { line: number; text: string }[] {
     if (c === '}') {
       frame.depth--
       i++
-      // depth 0 on a non-root frame means we just closed a `${...}`.
+      // profundidade 0 em um contexto que não seja raiz significa que acabamos de fechar `${...}`.
       if (frame.depth === 0 && stack.length > 1) stack.pop()
       continue
     }
@@ -200,20 +200,20 @@ function stringLiterals(src: string): { line: number; text: string }[] {
   return out
 }
 
-describe('user-facing copy', () => {
-  // Em-dash (U+2014) and en-dash (U+2013) are banned from anything an end user
-  // can see. Tool descriptions, parameter descriptions, error messages and
-  // result summaries are all relayed verbatim to the user by the calling agent,
-  // so every string literal in a tool module counts as user-facing copy.
+describe('textos exibidos às pessoas usuárias', () => {
+  // Travessão longo (U+2014) e travessão curto (U+2013) são proibidos em qualquer conteúdo que uma pessoa usuária
+  // possa ver. Descrições de ferramentas e parâmetros, mensagens de erro e
+  // resumos de resultados são repassados sem alterações pelo agente que chama a ferramenta,
+  // portanto, todo literal de texto em um módulo de ferramenta conta como conteúdo exibido às pessoas usuárias.
   const BANNED_DASH = /[\u2013\u2014]/
 
-  it('uses no em-dashes or en-dashes in any tool module string', () => {
+  it('não usa travessões longos ou curtos em textos de módulos de ferramentas', () => {
     const offenders: string[] = []
     for (const file of toolFiles()) {
       for (const { line, text } of stringLiterals(sourceOf(file))) {
         if (BANNED_DASH.test(text)) {
           offenders.push(
-            `src/lib/mcp/tools/${file}:${line} contains a banned dash: ${JSON.stringify(text)}`
+            `src/lib/mcp/tools/${file}:${line} contém um travessão proibido: ${JSON.stringify(text)}`
           )
         }
       }
@@ -221,9 +221,9 @@ describe('user-facing copy', () => {
     expect(
       offenders,
       [
-        'Banned em-dash (U+2014) or en-dash (U+2013) found in user-facing copy.',
-        'Rewrite each string so it reads naturally without the dash, usually as a',
-        'full stop and a new sentence, keeping any recovery instruction intact:',
+        'Travessão longo (U+2014) ou curto (U+2013) proibido encontrado em conteúdo exibido às pessoas usuárias.',
+        'Reescreva cada texto para que soe natural sem o travessão, geralmente como uma',
+        'ponto-final e uma nova frase, preservando qualquer instrução para recuperação:',
         ...offenders,
       ].join('\n')
     ).toEqual([])

@@ -13,10 +13,10 @@ function RecipeCard({ title, description, content }: AgentRecipe) {
     try {
       await navigator.clipboard.writeText(content)
       setCopied(true)
-      toast.success('Copied to clipboard')
+      toast.success('Copiado para a área de transferência')
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      toast.error('Could not copy. Select the recipe text and copy it manually')
+      toast.error('Não foi possível copiar. Selecione o texto da receita e copie manualmente')
     }
   }
 
@@ -38,7 +38,7 @@ function RecipeCard({ title, description, content }: AgentRecipe) {
           onClick={handleCopy}
         >
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-          <span className="sr-only">Copy recipe</span>
+          <span className="sr-only">Copiar receita</span>
         </Button>
       </div>
     </section>
@@ -49,10 +49,9 @@ export function RecipesPanel() {
   return (
     <div>
       <div>
-        <h2 className="text-lg font-semibold text-foreground">Recipes</h2>
+        <h2 className="text-lg font-semibold text-foreground">Receitas</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Copy-paste patterns for your CLAUDE.md or AGENTS.md. Paste one into a repo and your
-          agent follows it from then on.
+          Modelos para copiar e colar no CLAUDE.md ou AGENTS.md. Adicione um deles ao repositório e seu agente o seguirá dali em diante.
         </p>
       </div>
 
@@ -63,8 +62,8 @@ export function RecipesPanel() {
       </div>
 
       <p className="mt-10 max-w-2xl border-t pt-6 text-sm leading-relaxed text-muted-foreground">
-        These recipes run under your own agent, on your machine, with your API key. Billr does not
-        run any automation on your behalf.
+        Estas receitas são executadas pelo seu próprio agente, na sua máquina e com sua chave de API. O Faturador não
+        executa automações em seu nome.
       </p>
     </div>
   )

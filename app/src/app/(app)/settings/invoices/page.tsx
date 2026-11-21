@@ -58,7 +58,7 @@ export default function InvoiceSettingsPage() {
 
   const currency = watch('default_currency')
 
-  // Businesses load asynchronously; sync the form once data arrives
+  // As empresas carregam de forma assíncrona; sincroniza o formulário quando os dados chegam
   useEffect(() => {
     if (currentBusiness) {
       reset({
@@ -85,7 +85,7 @@ export default function InvoiceSettingsPage() {
     if ('error' in result) {
       setMessage({ type: 'error', text: result.error })
     } else {
-      setMessage({ type: 'success', text: 'Invoice settings updated' })
+      setMessage({ type: 'success', text: 'Configurações de faturas atualizadas' })
       refreshBusinesses()
     }
   }
@@ -105,8 +105,8 @@ export default function InvoiceSettingsPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Settings"
-        description="Manage your business settings and preferences"
+        title="Configurações"
+        description="Gerencie as configurações e preferências da sua empresa"
       />
 
       <div className="mt-6">
@@ -126,15 +126,15 @@ export default function InvoiceSettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Invoice Defaults</CardTitle>
+                <CardTitle>Padrões de fatura</CardTitle>
                 <CardDescription>
-                  Default settings for new invoices and estimates
+                  Configurações padrão para novas faturas e orçamentos
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="default_currency">Default Currency</Label>
+                    <Label htmlFor="default_currency">Moeda padrão</Label>
                     <Select
                       value={currency}
                       onValueChange={(value) => setValue('default_currency', value)}
@@ -143,16 +143,16 @@ export default function InvoiceSettingsPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="USD">USD - US Dollar</SelectItem>
-                        <SelectItem value="EUR">EUR - Euro</SelectItem>
-                        <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                        <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
-                        <SelectItem value="AUD">AUD - Australian Dollar</SelectItem>
+                        <SelectItem value="USD">USD - dólar americano</SelectItem>
+                        <SelectItem value="EUR">EUR - euro</SelectItem>
+                        <SelectItem value="GBP">GBP - libra esterlina</SelectItem>
+                        <SelectItem value="CAD">CAD - dólar canadense</SelectItem>
+                        <SelectItem value="AUD">AUD - dólar australiano</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="default_payment_terms">Payment Terms (days)</Label>
+                    <Label htmlFor="default_payment_terms">Prazo de pagamento (dias)</Label>
                     <Input
                       id="default_payment_terms"
                       type="number"
@@ -164,18 +164,18 @@ export default function InvoiceSettingsPage() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="invoice_prefix">Invoice Number Prefix</Label>
+                    <Label htmlFor="invoice_prefix">Prefixo do número da fatura</Label>
                     <Input id="invoice_prefix" {...register('invoice_prefix')} />
                     <p className="text-xs text-muted-foreground">
-                      Next invoice: {currentBusiness.invoice_prefix}-
+                      Próxima fatura: {currentBusiness.invoice_prefix}-
                       {String(currentBusiness.next_invoice_number).padStart(4, '0')}
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="estimate_prefix">Estimate Number Prefix</Label>
+                    <Label htmlFor="estimate_prefix">Prefixo do número do orçamento</Label>
                     <Input id="estimate_prefix" {...register('estimate_prefix')} />
                     <p className="text-xs text-muted-foreground">
-                      Next estimate: {currentBusiness.estimate_prefix}-
+                      Próximo orçamento: {currentBusiness.estimate_prefix}-
                       {String(currentBusiness.next_estimate_number).padStart(4, '0')}
                     </p>
                   </div>
@@ -185,35 +185,35 @@ export default function InvoiceSettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Default Text</CardTitle>
+                <CardTitle>Texto padrão</CardTitle>
                 <CardDescription>
-                  Default notes and footer that will appear on new invoices
+                  Observações e rodapé padrão que aparecerão em novas faturas
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="invoice_notes">Default Notes</Label>
+                  <Label htmlFor="invoice_notes">Observações padrão</Label>
                   <Textarea
                     id="invoice_notes"
                     {...register('invoice_notes')}
-                    placeholder="Thank you for your business!"
+                    placeholder="Agradecemos por escolher nossa empresa!"
                     rows={3}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Shown in the notes section of invoices
+                    Exibido na seção de observações das faturas
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="invoice_footer">Default Footer</Label>
+                  <Label htmlFor="invoice_footer">Rodapé padrão</Label>
                   <Textarea
                     id="invoice_footer"
                     {...register('invoice_footer')}
-                    placeholder="Company registration number, terms, etc."
+                    placeholder="CNPJ, condições etc."
                     rows={2}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Shown at the bottom of invoices
+                    Exibido no rodapé das faturas
                   </p>
                 </div>
               </CardContent>
@@ -222,7 +222,7 @@ export default function InvoiceSettingsPage() {
             <div className="flex justify-end">
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
+                Salvar alterações
               </Button>
             </div>
           </form>

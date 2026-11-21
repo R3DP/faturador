@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export type StripeSetupView = StripeSetup & { webhookUrl: string }
 
-/** What Agents, Payments shows. Signed-in users only; never returns a key value. */
+/** O que é exibido em Agentes e Pagamentos. Apenas para usuários autenticados; nunca retorna o valor de uma chave. */
 export async function getStripeSetupAction(): Promise<StripeSetupView | null> {
   const supabase = await createClient()
   const { data } = await supabase.auth.getUser()

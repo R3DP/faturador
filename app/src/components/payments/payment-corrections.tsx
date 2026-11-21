@@ -1,23 +1,24 @@
 'use client'
 
 /**
- * Edit and Void controls for one recorded payment, shared by the Payments page
- * and the invoice page so both offer the same correction with the same rules.
+ * Controles de edição e estorno de um pagamento registrado, compartilhados pela página de pagamentos
+ * e pela página da fatura, para que ambas ofereçam a mesma correção sob as mesmas regras.
  *
- * Both actions go through the server actions in src/lib/actions/payments.ts,
- * which call the SECURITY DEFINER RPCs
- * update_payment and void_payment. The RPCs own every
- * other rule: membership, the refusal of Stripe-collected money, the refusal of
- * an already voided row, idempotency on (payment_id, request_id), the audit
- * row, and recomputing the invoice's amount_paid, balance_due and status.
- * Nothing here writes to `payments` or `invoices` directly.
+ * As duas ações passam pelas server actions em src/lib/actions/payments.ts,
+ * que chamam as RPCs SECURITY DEFINER
+ * update_payment e void_payment. As RPCs controlam todas as
+ * demais regras: associação do usuário, bloqueio de pagamentos recebidos pela Stripe, bloqueio de
+ * registros já estornados, idempotência em (payment_id, request_id), registro de auditoria
+ * e recálculo de amount_paid, balance_due e status da fatura.
+ * Nada aqui grava diretamente em `payments` ou `invoices`.
  *
- * Stripe-collected payments are disabled rather than hidden, with the reason on
- * hover, so it is obvious that the control exists and why it is unavailable.
+ * Pagamentos recebidos pela Stripe ficam desativados, não ocultos, e o motivo aparece ao
+ * passar o cursor, deixando claro que o controle existe e por que está indisponível.
  */
 
 import { useRef, useState } from 'react'
 import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { CalendarIcon, Ban, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -47,7 +48,7 @@ import { STRIPE_LOCKED_MESSAGE } from '@/lib/payments/messages'
 import { parseDay, toISODate } from '@/lib/dates'
 import type { Payment } from '@/types'
 
-/** Only the verified Stripe flow may write a card entry, so it is not offered. */
+/** Somente o fluxo Stripe verificado pode registrar pagamentos com cartão, por isso essa opção não é oferecida. */
 const EDITABLE_METHODS = paymentMethods.filter((method) => method.value !== 'stripe')
 
 export function isStripeSourced(payment: Pick<Payment, 'source' | 'stripe_payment_id' | 'payment_method'>): boolean {
@@ -57,7 +58,7 @@ export function isStripeSourced(payment: Pick<Payment, 'source' | 'stripe_paymen
 
 interface PaymentCorrectionsProps {
   payment: Payment
-  /** Called after a successful correction so the caller can refetch. */
+  /** Chamado após uma correção bem-sucedida para que a tela atualize os dados. */
   onChanged: () => void | Promise<void>
 }
 
@@ -70,7 +71,7 @@ export function PaymentCorrections({ payment, onChanged }: PaymentCorrectionsPro
   const reason = stripeSourced
     ? STRIPE_LOCKED_MESSAGE
     : voided
-      ? 'This payment is already voided.'
+      ? 'Este pagamento já foi estornado.'
       : undefined
 
   return (
@@ -81,10 +82,10 @@ export function PaymentCorrections({ payment, onChanged }: PaymentCorrectionsPro
           size="sm"
           disabled={disabled}
           onClick={() => setEditOpen(true)}
-          aria-label="Edit payment"
+          aria-label="Editar pagamento"
         >
           <Pencil className="mr-1 h-3.5 w-3.5" />
-          Edit
+          Editar
         </Button>
       </span>
       <span title={reason}>
@@ -93,10 +94,10 @@ export function PaymentCorrections({ payment, onChanged }: PaymentCorrectionsPro
           size="sm"
           disabled={disabled}
           onClick={() => setVoidOpen(true)}
-          aria-label="Void payment"
+          aria-label="Estornar pagamento"
         >
           <Ban className="mr-1 h-3.5 w-3.5" />
-          Void
+          Estornar
         </Button>
       </span>
       <EditPaymentDialog
@@ -127,14 +128,14 @@ function EditPaymentDialog({ open, onOpenChange, payment, onChanged }: DialogPro
   const [notes, setNotes] = useState(payment.notes ?? '')
   const [amount, setAmount] = useState(String(payment.amount))
   const [saving, setSaving] = useState(false)
-  // One request id per open dialog, so a double submit or a retry after a
-  // network blip replays the same correction instead of applying a second one.
+  // Um ID de requisição por diálogo aberto, para que um envio duplicado ou uma nova tentativa após
+  // uma falha de rede repita a mesma correção, sem aplicá-la novamente.
   const requestId = useRef<string | null>(null)
 
   async function save() {
     const parsedAmount = Number(amount)
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      toast.error('The amount must be greater than zero.')
+      toast.error('O valor deve ser maior que zero.')
       return
     }
 
@@ -157,7 +158,7 @@ function EditPaymentDialog({ open, onOpenChange, payment, onChanged }: DialogPro
         return
       }
 
-      toast.success('Payment updated')
+      toast.success('Pagamento atualizado')
       onOpenChange(false)
       await onChanged()
     } finally {
@@ -169,21 +170,21 @@ function EditPaymentDialog({ open, onOpenChange, payment, onChanged }: DialogPro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit payment</DialogTitle>
+          <DialogTitle>Editar pagamento</DialogTitle>
           <DialogDescription>
-            Corrects what was recorded. The invoice total paid, balance and status are recalculated from
-            the payments that are still live.
+            Corrige o que foi registrado. O total pago, o saldo e o status da fatura são recalculados com base
+            nos pagamentos que permanecem ativos.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Payment date</Label>
+            <Label>Data do pagamento</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="w-full justify-start font-normal">
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {format(date, 'MMMM d, yyyy')}
+                  {format(date, 'PPP', { locale: ptBR })}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -193,7 +194,7 @@ function EditPaymentDialog({ open, onOpenChange, payment, onChanged }: DialogPro
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="payment-amount">Amount</Label>
+            <Label htmlFor="payment-amount">Valor total</Label>
             <Input
               id="payment-amount"
               type="number"
@@ -205,10 +206,10 @@ function EditPaymentDialog({ open, onOpenChange, payment, onChanged }: DialogPro
           </div>
 
           <div className="space-y-2">
-            <Label>Method</Label>
+            <Label>Método</Label>
             <Select value={method} onValueChange={setMethod}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a method" />
+                <SelectValue placeholder="Selecione uma forma de pagamento" />
               </SelectTrigger>
               <SelectContent>
                 {EDITABLE_METHODS.map((option) => (
@@ -221,27 +222,27 @@ function EditPaymentDialog({ open, onOpenChange, payment, onChanged }: DialogPro
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="payment-reference">Reference</Label>
+            <Label htmlFor="payment-reference">Referência</Label>
             <Input
               id="payment-reference"
               value={reference}
               onChange={(e) => setReference(e.target.value)}
-              placeholder="Check or transaction number"
+              placeholder="Número do cheque ou da transação"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="payment-notes">Notes</Label>
+            <Label htmlFor="payment-notes">Observações</Label>
             <Textarea id="payment-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Cancel
+            Cancelar
           </Button>
           <Button onClick={save} disabled={saving}>
-            {saving ? 'Saving...' : 'Save changes'}
+            {saving ? 'Salvando...' : 'Salvar alterações'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -257,7 +258,7 @@ function VoidPaymentDialog({ open, onOpenChange, payment, onChanged }: DialogPro
 
   async function submit() {
     if (!reason.trim()) {
-      toast.error('Enter a reason for voiding this payment.')
+      toast.error('Informe o motivo do estorno deste pagamento.')
       return
     }
     if (!confirmed) {
@@ -278,7 +279,7 @@ function VoidPaymentDialog({ open, onOpenChange, payment, onChanged }: DialogPro
         return
       }
 
-      toast.success('Payment voided')
+      toast.success('Pagamento estornado')
       onOpenChange(false)
       await onChanged()
     } finally {
@@ -296,15 +297,15 @@ function VoidPaymentDialog({ open, onOpenChange, payment, onChanged }: DialogPro
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Void this payment</DialogTitle>
+          <DialogTitle>Estornar este pagamento</DialogTitle>
           <DialogDescription>
-            The payment stays on the record, struck through with your reason, but it stops counting as
-            money. The invoice reopens for this amount and it leaves every total and report.
+            O pagamento permanece no histórico, riscado e acompanhado do motivo, mas deixa de contar como
+            recebimento. A fatura reabre com esse valor, que também deixa de integrar os totais e relatórios.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2">
-          <Label htmlFor="void-reason">Reason</Label>
+          <Label htmlFor="void-reason">Motivo</Label>
           <Textarea
             id="void-reason"
             value={reason}
@@ -313,22 +314,22 @@ function VoidPaymentDialog({ open, onOpenChange, payment, onChanged }: DialogPro
               setConfirmed(false)
             }}
             rows={3}
-            placeholder="Recorded twice, wrong invoice, money never arrived..."
+            placeholder="Registrado em duplicidade, fatura incorreta, valor não recebido..."
           />
         </div>
 
         {confirmed && (
           <p className="text-sm font-medium text-destructive">
-            Voiding reopens the balance on this invoice. Press Void payment again to confirm.
+            O estorno reabre o saldo desta fatura. Pressione Estornar pagamento novamente para confirmar.
           </p>
         )}
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Cancel
+            Cancelar
           </Button>
           <Button variant="destructive" onClick={submit} disabled={saving}>
-            {saving ? 'Voiding...' : confirmed ? 'Yes, void payment' : 'Void payment'}
+            {saving ? 'Estornando...' : confirmed ? 'Sim, estornar pagamento' : 'Estornar pagamento'}
           </Button>
         </DialogFooter>
       </DialogContent>

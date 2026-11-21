@@ -12,7 +12,7 @@ import { publicUrl } from '@/lib/mcp/shared'
 import { todayISO } from '@/lib/dates'
 import { isAllowedLogoUrl } from '@/lib/branding/logo-url'
 
-// One PDF for everything: download button, public page, email attachment.
+// Um único PDF para tudo: botão de download, página pública e anexo de e-mail.
 
 interface InvoicePdfParty {
   name: string
@@ -71,16 +71,16 @@ const GREEN = '#059669'
 const RED = '#DC2626'
 
 const fmtMoney = (amount: number, currency = 'USD') =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount)
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency }).format(amount)
 
 const fmtQty = (q: number) =>
-  new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(q)
+  new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(q)
 
-// Format 'YYYY-MM-DD' without timezone shifting
+// Formata 'YYYY-MM-DD' sem deslocamento de fuso horário.
 const fmtDate = (d: string) => {
   const [y, m, day] = d.slice(0, 10).split('-').map(Number)
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  return `${months[m - 1]} ${day}, ${y}`
+  const months = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.']
+  return `${day} de ${months[m - 1]} de ${y}`
 }
 
 const addressLines = (p: InvoicePdfParty): string[] => {
@@ -186,10 +186,10 @@ function statusChip(data: InvoicePdfData) {
     data.status !== 'cancelled' &&
     data.due_date < todayISO()
   if (data.status === 'paid') {
-    return { text: 'PAID', color: GREEN }
+    return { text: 'PAGO', color: GREEN }
   }
   if (overdue) {
-    return { text: 'OVERDUE', color: RED }
+    return { text: 'VENCIDA', color: RED }
   }
   return null
 }
@@ -202,13 +202,13 @@ function InvoicePdfDocument({ data }: { data: InvoicePdfData }) {
 
   return (
     <Document
-      title={`Invoice ${data.invoice_number}`}
+      title={`Fatura ${data.invoice_number}`}
       author={biz.name}
-      producer="Billr"
-      creator="Billr"
+      producer="Faturador"
+      creator="Faturador"
     >
       <Page size="LETTER" style={styles.page}>
-        {/* Header */}
+        {/* Cabeçalho */}
         <View style={styles.headerRow}>
           <View style={{ maxWidth: 300 }}>
             {data.logo && (
@@ -220,7 +220,7 @@ function InvoicePdfDocument({ data }: { data: InvoicePdfData }) {
             <Text style={styles.bizName}>{biz.name}</Text>
           </View>
           <View>
-            <Text style={styles.invoiceLabel}>INVOICE</Text>
+            <Text style={styles.invoiceLabel}>FATURA</Text>
             <Text style={styles.invoiceNumber}>{data.invoice_number}</Text>
             {chip && (
               <Text
@@ -241,10 +241,10 @@ function InvoicePdfDocument({ data }: { data: InvoicePdfData }) {
 
         <View style={[styles.accentBar, { backgroundColor: accent }]} />
 
-        {/* From / Bill To / Details */}
+        {/* De / Cobrança para / Detalhes */}
         <View style={styles.metaRow}>
           <View style={{ width: 160 }}>
-            <Text style={styles.label}>FROM</Text>
+            <Text style={styles.label}>DE</Text>
             <Text style={styles.partyName}>{biz.name}</Text>
             {addressLines(biz).map((l, i) => (
               <Text key={i} style={styles.partyLine}>{l}</Text>
@@ -253,7 +253,7 @@ function InvoicePdfDocument({ data }: { data: InvoicePdfData }) {
             {biz.phone && <Text style={styles.partyLine}>{biz.phone}</Text>}
           </View>
           <View style={{ width: 160 }}>
-            <Text style={styles.label}>BILL TO</Text>
+            <Text style={styles.label}>COBRANÇA PARA</Text>
             <Text style={styles.partyName}>{data.client.name}</Text>
             {addressLines(data.client).map((l, i) => (
               <Text key={i} style={styles.partyLine}>{l}</Text>
@@ -262,21 +262,21 @@ function InvoicePdfDocument({ data }: { data: InvoicePdfData }) {
           </View>
           <View>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Issue Date</Text>
+              <Text style={styles.detailLabel}>Data de emissão</Text>
               <Text style={styles.detailValue}>{fmtDate(data.issue_date)}</Text>
             </View>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Due Date</Text>
+              <Text style={styles.detailLabel}>Vencimento</Text>
               <Text style={styles.detailValue}>{fmtDate(data.due_date)}</Text>
             </View>
             {data.po_number && (
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>PO Number</Text>
+              <Text style={styles.detailLabel}>Nº do pedido</Text>
                 <Text style={styles.detailValue}>{data.po_number}</Text>
               </View>
             )}
             <View style={[styles.detailRow, { marginTop: 8 }]}>
-              <Text style={styles.detailLabel}>Amount Due</Text>
+              <Text style={styles.detailLabel}>Valor devido</Text>
               <Text style={[styles.detailValue, { color: accent, fontSize: 11 }]}>
                 {fmtMoney(data.balance_due, data.currency)}
               </Text>
@@ -284,13 +284,13 @@ function InvoicePdfDocument({ data }: { data: InvoicePdfData }) {
           </View>
         </View>
 
-        {/* Line items */}
+        {/* Itens */}
         <View style={styles.table}>
           <View style={styles.theadRow}>
-            <Text style={[styles.th, styles.colDesc]}>DESCRIPTION</Text>
-            <Text style={[styles.th, styles.colQty]}>QTY</Text>
-            <Text style={[styles.th, styles.colRate]}>RATE</Text>
-            <Text style={[styles.th, styles.colAmount]}>AMOUNT</Text>
+            <Text style={[styles.th, styles.colDesc]}>DESCRIÇÃO</Text>
+            <Text style={[styles.th, styles.colQty]}>QTD.</Text>
+            <Text style={[styles.th, styles.colRate]}>VALOR UNITÁRIO</Text>
+            <Text style={[styles.th, styles.colAmount]}>VALOR</Text>
           </View>
           {data.line_items.map((li, i) => (
             <View
@@ -306,9 +306,9 @@ function InvoicePdfDocument({ data }: { data: InvoicePdfData }) {
           ))}
         </View>
 
-        {/* Totals */}
+        {/* Totais */}
         <View style={styles.totals} wrap={false}>
-          {data.status === 'paid' && <Text style={[styles.paidStamp, { top: 2 }]}>PAID</Text>}
+          {data.status === 'paid' && <Text style={[styles.paidStamp, { top: 2 }]}>PAGO</Text>}
           <View style={styles.totalsBox}>
             <View style={styles.totalsRow}>
               <Text style={styles.totalsLabel}>Subtotal</Text>
@@ -316,7 +316,7 @@ function InvoicePdfDocument({ data }: { data: InvoicePdfData }) {
             </View>
             {data.discount_amount > 0 && (
               <View style={styles.totalsRow}>
-                <Text style={styles.totalsLabel}>Discount</Text>
+                <Text style={styles.totalsLabel}>Desconto</Text>
                 <Text style={{ color: GREEN }}>
                   -{fmtMoney(data.discount_amount, data.currency)}
                 </Text>
@@ -324,13 +324,13 @@ function InvoicePdfDocument({ data }: { data: InvoicePdfData }) {
             )}
             {data.tax_amount > 0 && (
               <View style={styles.totalsRow}>
-                <Text style={styles.totalsLabel}>Tax ({data.tax_rate}%)</Text>
+              <Text style={styles.totalsLabel}>Imposto ({data.tax_rate}%)</Text>
                 <Text>{fmtMoney(data.tax_amount, data.currency)}</Text>
               </View>
             )}
             {data.shipping_amount > 0 && (
               <View style={styles.totalsRow}>
-                <Text style={styles.totalsLabel}>Shipping</Text>
+              <Text style={styles.totalsLabel}>Frete</Text>
                 <Text>{fmtMoney(data.shipping_amount, data.currency)}</Text>
               </View>
             )}
@@ -340,7 +340,7 @@ function InvoicePdfDocument({ data }: { data: InvoicePdfData }) {
             </View>
             {data.amount_paid > 0 && (
               <View style={styles.totalsRow}>
-                <Text style={styles.totalsLabel}>Amount Paid</Text>
+              <Text style={styles.totalsLabel}>Valor pago</Text>
                 <Text style={{ color: GREEN }}>
                   -{fmtMoney(data.amount_paid, data.currency)}
                 </Text>
@@ -348,7 +348,7 @@ function InvoicePdfDocument({ data }: { data: InvoicePdfData }) {
             )}
             {data.status !== 'paid' && (
               <View style={[styles.balanceBand, { backgroundColor: accent }]}>
-                <Text style={styles.balanceText}>Balance Due</Text>
+                <Text style={styles.balanceText}>Saldo devido</Text>
                 <Text style={styles.balanceText}>
                   {fmtMoney(data.balance_due, data.currency)}
                 </Text>
@@ -357,28 +357,28 @@ function InvoicePdfDocument({ data }: { data: InvoicePdfData }) {
           </View>
         </View>
 
-        {/* Notes / Terms / Payment instructions */}
+        {/* Observações / Condições / Instruções de pagamento */}
         {data.notes && (
           <View style={styles.section} wrap={false}>
-            <Text style={styles.label}>NOTES</Text>
+            <Text style={styles.label}>OBSERVAÇÕES</Text>
             <Text style={styles.sectionBody}>{data.notes}</Text>
           </View>
         )}
         {data.payment_instructions && (
           <View style={styles.section} wrap={false}>
-            <Text style={styles.label}>PAYMENT INSTRUCTIONS</Text>
+            <Text style={styles.label}>INSTRUÇÕES DE PAGAMENTO</Text>
             <Text style={styles.sectionBody}>{data.payment_instructions}</Text>
           </View>
         )}
         {data.payments_enabled && data.status !== 'paid' && data.public_url && (
           <View style={styles.section} wrap={false}>
-            <Text style={styles.label}>PAY ONLINE</Text>
-            <Text style={styles.sectionBody}>Pay online at {data.public_url}</Text>
+            <Text style={styles.label}>PAGUE ONLINE</Text>
+            <Text style={styles.sectionBody}>Pague online em {data.public_url}</Text>
           </View>
         )}
         {data.terms && (
           <View style={styles.section} wrap={false}>
-            <Text style={styles.label}>TERMS</Text>
+            <Text style={styles.label}>CONDIÇÕES</Text>
             <Text style={styles.sectionBody}>{data.terms}</Text>
           </View>
         )}
@@ -388,12 +388,12 @@ function InvoicePdfDocument({ data }: { data: InvoicePdfData }) {
           </View>
         )}
 
-        {/* Page footer */}
+        {/* Rodapé da página */}
         <View style={styles.footer} fixed>
           <Text>{contactBits}</Text>
           <Text
             render={({ pageNumber, totalPages }) =>
-              totalPages > 1 ? `Page ${pageNumber} of ${totalPages}` : ''
+              totalPages > 1 ? `Página ${pageNumber} de ${totalPages}` : ''
             }
           />
         </View>
@@ -402,7 +402,7 @@ function InvoicePdfDocument({ data }: { data: InvoicePdfData }) {
   )
 }
 
-// ---- Data building ----
+// ---- Montagem dos dados ----
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export function buildInvoicePdfData(
@@ -435,7 +435,7 @@ export function buildInvoicePdfData(
     footer: invoice.footer,
     primary_color: business?.primary_color,
     business: {
-      name: business?.name || 'Billr',
+      name: business?.name || 'Faturador',
       email: business?.email,
       phone: business?.phone,
       website: business?.website,
@@ -447,7 +447,7 @@ export function buildInvoicePdfData(
       country: business?.country,
     },
     client: {
-      name: client?.name || 'Client',
+      name: client?.name || 'Cliente',
       email: client?.email,
       address_line1: client?.address_line1,
       address_line2: client?.address_line2,
@@ -471,47 +471,47 @@ export function buildInvoicePdfData(
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-// SSRF hardening: this logo fetch is reachable UNAUTHENTICATED via the public
-// PDF route (/api/public/invoices/[publicId]/pdf), and the URL originates from
-// business.logo_url which a user controls. Reject any address that could reach
-// internal infrastructure or a cloud metadata endpoint.
+// Reforço contra SSRF: esta busca do logotipo pode ser acessada SEM AUTENTICAÇÃO
+// pela rota pública do PDF (/api/public/invoices/[publicId]/pdf), e a URL vem de
+// business.logo_url, controlada pelo usuário. Rejeita endereços que possam alcançar
+// a infraestrutura interna ou um endpoint de metadados da nuvem.
 const MAX_LOGO_BYTES = 5 * 1024 * 1024 // 5MB
 
-// Returns true if `ip` is a private / loopback / link-local / metadata address
-// that must NOT be fetched server-side. Exported for unit testing.
+// Retorna true se `ip` for um endereço privado, de loopback, link-local ou de
+// metadados que NÃO deve ser buscado pelo servidor. Exportada para testes unitários.
 export function isBlockedLogoAddress(ip: string): boolean {
   const addr = ip.trim().toLowerCase()
 
-  // IPv4 (also matches IPv4-mapped IPv6 like ::ffff:127.0.0.1 by suffix below)
+  // IPv4 (também corresponde a IPv4 mapeado em IPv6, como ::ffff:127.0.0.1, pelo sufixo abaixo)
   const v4 = addr.match(/(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
   if (v4) {
     const [a, b] = [Number(v4[1]), Number(v4[2])]
-    if (a === 0) return true // 0.0.0.0/8 ("this host")
+    if (a === 0) return true // 0.0.0.0/8 ("este host")
     if (a === 127) return true // loopback 127/8
-    if (a === 10) return true // private 10/8
-    if (a === 172 && b >= 16 && b <= 31) return true // private 172.16/12
-    if (a === 192 && b === 168) return true // private 192.168/16
-    if (a === 169 && b === 254) return true // link-local / metadata 169.254/16
-    if (a >= 224) return true // multicast / reserved
+    if (a === 10) return true // privado 10/8
+    if (a === 172 && b >= 16 && b <= 31) return true // privado 172.16/12
+    if (a === 192 && b === 168) return true // privado 192.168/16
+    if (a === 169 && b === 254) return true // link-local / metadados 169.254/16
+    if (a >= 224) return true // multicast / reservado
     return false
   }
 
   // IPv6
   if (addr === '::1') return true // loopback
-  if (addr === '::') return true // unspecified
+  if (addr === '::') return true // não especificado
   if (addr.startsWith('fe80')) return true // link-local
-  // Unique-local fc00::/7 -> fc.. or fd..
+  // Endereços locais exclusivos fc00::/7 -> fc.. ou fd..
   if (addr.startsWith('fc') || addr.startsWith('fd')) return true
 
   return false
 }
 
 /**
- * The Supabase CLI's local stack IS loopback http, so the private-range deny
- * list below would refuse the only storage a development install has. The
- * exemption is narrow on purpose: it applies only when the URL has already
- * matched the configured NEXT_PUBLIC_SUPABASE_URL origin, which on any real
- * install is an https public host.
+ * A pilha local da CLI do Supabase É loopback http, então a lista de bloqueio
+ * de faixas privadas abaixo recusaria o único armazenamento de uma instalação
+ * de desenvolvimento. A exceção é intencionalmente restrita: só se aplica quando
+ * a URL já corresponde à origem NEXT_PUBLIC_SUPABASE_URL configurada, que em
+ * qualquer instalação real é um host público https.
  */
 function isLoopbackStorage(parsed: URL): boolean {
   return (
@@ -522,7 +522,7 @@ function isLoopbackStorage(parsed: URL): boolean {
   )
 }
 
-/** Exported for unit testing, like isBlockedLogoAddress above. */
+/** Exportada para testes unitários, assim como isBlockedLogoAddress acima. */
 export async function fetchLogo(
   url: string | null | undefined
 ): Promise<InvoicePdfData['logo']> {
@@ -534,17 +534,17 @@ export async function fetchLogo(
     } catch {
       return null
     }
-    // (a) the installation's own storage origin, and nothing else. This is the
-    // narrowest of the checks and makes the rest belt and braces: the route
-    // below is reachable unauthenticated, so an arbitrary public host here
-    // would make it a request amplifier pointed wherever a logo_url says.
-    // The branding action writes nothing else.
+    // (a) somente a origem de armazenamento desta instalação. Esta é a
+    // verificação mais restritiva e reforça as demais: a rota abaixo pode ser
+    // acessada sem autenticação, então um host público arbitrário a transformaria
+    // em amplificadora de requisições para qualquer destino indicado por logo_url.
+    // A ação de identidade visual não grava nenhum outro tipo de URL.
     if (!isAllowedLogoUrl(url)) return null
 
-    // (b) https only
+    // (b) somente https
     if (parsed.protocol !== 'https:' && !isLoopbackStorage(parsed)) return null
 
-    // (c) resolve the hostname and reject private/loopback/metadata ranges
+    // (c) resolve o hostname e rejeita faixas privadas, de loopback ou metadados
     if (!isLoopbackStorage(parsed)) {
       const { lookup } = await import('node:dns/promises')
       const resolved = await lookup(parsed.hostname, { all: true })
@@ -552,7 +552,7 @@ export async function fetchLogo(
       if (resolved.some((r) => isBlockedLogoAddress(r.address))) return null
     }
 
-    // (d) redirect: 'manual' so a 30x can't bounce to an internal host
+    // (d) redirecionamento 'manual' para impedir que uma resposta 30x aponte para um host interno
     const res = await fetch(url, {
       signal: AbortSignal.timeout(5000),
       redirect: 'manual',
@@ -563,7 +563,7 @@ export async function fetchLogo(
     const format = type.includes('png') ? 'png' : type.includes('jpe') || type.includes('jpg') ? 'jpg' : null
     if (!format) return null
 
-    // (e) cap body size: reject early on Content-Length, and hard-cap bytes read
+    // (e) limita o tamanho do corpo: rejeita cedo pelo Content-Length e limita os bytes lidos
     const len = Number(res.headers.get('content-length'))
     if (Number.isFinite(len) && len > MAX_LOGO_BYTES) return null
     const buf = Buffer.from(await res.arrayBuffer())

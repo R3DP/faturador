@@ -10,12 +10,13 @@ import type { InvoiceFormData } from '@/lib/validations/invoice'
 import { engagementErrorMessage } from '@/lib/engagements/errors'
 
 /**
- * Creates an invoice.
+ * Cria uma fatura.
  *
- * engagementEntryIds bills schedule entries off an engagement. The lines for them are built in SQL from the entry's own amount and
- * the entry is claimed as invoiced in the SAME transaction, so an invoice that
- * exists always has its entries marked billed and an entry can never end up on
- * two invoices. Nothing is claimed if any part of the call is refused.
+ * engagementEntryIds fatura lançamentos da agenda de um contrato. As linhas
+ * são montadas em SQL a partir do valor de cada lançamento, e ele é marcado
+ * como faturado na MESMA transação. Assim, toda fatura criada tem seus
+ * lançamentos marcados como faturados, e nenhum lançamento aparece em duas
+ * faturas. Se qualquer parte da chamada for recusada, nada é marcado.
  */
 export async function createInvoiceAction(
   businessId: string,
@@ -30,16 +31,16 @@ export async function createInvoiceAction(
     p_business_id: businessId, p_client_id: data.client_id,
     p_request_id: requestId,
     p_patch: { ...data, line_items: undefined },
-    // An invoice billed purely from engagement entries has no written out
-    // lines at all; the RPC builds them and then insists on at least one.
+    // Uma fatura composta somente por lançamentos de contrato não recebe linhas
+    // explícitas; a RPC as monta e exige pelo menos uma.
     p_lines: data.line_items,
     p_engagement_entry_ids: engagementEntryIds,
   })
   if (error || !invoice) {
-    // Engagement refusals carry a stable code. Map it to the sentence a person
-    // and an agent are both told, rather than relaying a Postgres error.
+    // Recusas de contrato usam um código estável. Converta-o em uma mensagem
+    // compreensível para pessoas e agentes, em vez de repassar um erro do Postgres.
     throw new Error(
-      engagementErrorMessage(error?.message) || error?.message || 'Could not create invoice'
+      engagementErrorMessage(error?.message) || error?.message || 'Não foi possível criar a fatura'
     )
   }
   revalidatePath('/invoices')
@@ -49,16 +50,16 @@ export async function createInvoiceAction(
 }
 
 /**
- * Saves an edited invoice.
+ * Salva uma fatura editada.
  *
- * The whole save is one call to replace_invoice_line_items,
- * which runs the delete, the re-insert and the totals update in a single
- * transaction. Before this it was three unchecked round trips: if the re-insert
- * failed, the invoice was left with no line items at all while still showing a
- * total, and none of the three results were even inspected.
+ * Toda a gravação é feita em uma única chamada a replace_invoice_line_items,
+ * que executa a exclusão, a reinserção e a atualização dos totais na mesma
+ * transação. Antes eram três chamadas sem verificação: se a reinserção falhasse,
+ * a fatura ficava sem itens, mas ainda exibia um total, e nenhum dos resultados
+ * era sequer inspecionado.
  *
- * balance_due is no longer passed. The RPC derives it as total - amount_paid,
- * so editing a partly paid invoice cannot wipe the payments recorded against it.
+ * balance_due não é mais enviado. A RPC o calcula como total - amount_paid,
+ * evitando que a edição de uma fatura parcialmente paga apague os pagamentos registrados.
  */
 export async function updateInvoiceAction(
   invoiceId: string,
@@ -118,7 +119,7 @@ export async function updateInvoiceAction(
 export async function deleteInvoiceAction(invoiceId: string) {
   const supabase = await createClient()
 
-  // Only allow deleting draft invoices
+  // Permite excluir somente faturas em rascunho
   const { data: invoice } = await supabase
     .from('invoices')
     .select('status')
@@ -126,7 +127,7 @@ export async function deleteInvoiceAction(invoiceId: string) {
     .single()
 
   if (invoice?.status !== 'draft') {
-    throw new Error('Only draft invoices can be deleted')
+    throw new Error('Só é possível excluir faturas em rascunho')
   }
 
   const { error } = await supabase
@@ -142,12 +143,12 @@ export async function deleteInvoiceAction(invoiceId: string) {
 }
 
 /**
- * Marks a draft invoice as sent without emailing it, for an owner who
- * delivers the public link or the PDF themselves (or has no email set up).
- * A draft has no public page and does not count towards client totals; a
- * sent invoice does. Only a draft moves, and RLS limits it to members. For an
- * invoice already past draft it changes nothing and returns the current
- * status, so a repeat click is a quiet no-op.
+ * Marca uma fatura em rascunho como enviada sem enviar um e-mail, para que a
+ * pessoa responsável possa compartilhar o link público ou o PDF (ou caso não
+ * tenha e-mail configurado). Um rascunho não tem página pública nem entra nos
+ * totais do cliente; uma fatura enviada, sim. Apenas rascunhos são alterados, e
+ * o RLS restringe a operação a membros. Se a fatura já saiu do rascunho, nada
+ * muda e o status atual é retornado, tornando um clique repetido inofensivo.
  */
 export async function markInvoiceSentAction(invoiceId: string) {
   const supabase = await createClient()
@@ -162,8 +163,8 @@ export async function markInvoiceSentAction(invoiceId: string) {
     throw new Error(error.message)
   }
   if (!data?.length) {
-    // Already past draft: a repeat click or a page opened before the
-    // document was sent. Report where it stands instead of failing.
+    // Já saiu do rascunho: pode ser um clique repetido ou uma página aberta antes de
+    // o envio do documento. Informa o status atual em vez de falhar.
     const { data: current, error: readError } = await supabase
       .from('invoices')
       .select('status')
@@ -173,9 +174,9 @@ export async function markInvoiceSentAction(invoiceId: string) {
       throw new Error(readError.message)
     }
     if (!current) {
-      throw new Error('Invoice not found')
+      throw new Error('Fatura não encontrada')
     }
-    // The invoices status CHECK constraint matches InvoiceStatus.
+    // A restrição CHECK do status da fatura corresponde a InvoiceStatus.
     return { changed: false, status: current.status as InvoiceStatus }
   }
 

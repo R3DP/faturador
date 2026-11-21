@@ -22,11 +22,11 @@ export function MobileNav() {
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon">
             <Menu className="h-5 w-5" />
-            <span className="sr-only">Toggle menu</span>
+            <span className="sr-only">Abrir ou fechar o menu</span>
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-[232px] p-0">
-          <SheetTitle className="sr-only">Workspace navigation</SheetTitle>
+          <SheetTitle className="sr-only">Navegação do espaço de trabalho</SheetTitle>
           <Sidebar onNavigate={() => setOpen(false)} />
         </SheetContent>
       </Sheet>
@@ -38,7 +38,7 @@ export function MobileNav() {
       <Button size="icon" asChild>
         <Link href="/invoices/new">
           <Plus className="h-5 w-5" />
-          <span className="sr-only">New invoice</span>
+          <span className="sr-only">Nova fatura</span>
         </Link>
       </Button>
     </div>

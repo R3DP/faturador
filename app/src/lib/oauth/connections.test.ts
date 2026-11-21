@@ -51,12 +51,12 @@ beforeEach(() => {
       },
     ],
     oauth_refresh_tokens: [
-      // Current token of the family that minted key-oauth.
+      // Token atual da família que criou key-oauth.
       { id: 'rt-current', family_id: 'fam-1', api_key_id: 'key-oauth', revoked_at: null },
-      // Earlier rotation in the SAME family: still live, so a revoke that only
-      // looked at api_key_id would leave the client able to renew with this one.
+      // Rotação anterior da MESMA família: ainda ativa; por isso, uma revogação que considerasse apenas
+      // api_key_id ainda permitiria que o cliente renovasse usando este token.
       { id: 'rt-earlier', family_id: 'fam-1', api_key_id: 'key-superseded', revoked_at: null },
-      // A different connection entirely; must survive.
+      // Outra conexão; deve permanecer ativa.
       { id: 'rt-other', family_id: 'fam-2', api_key_id: 'key-other', revoked_at: null },
     ],
   })
@@ -67,8 +67,8 @@ afterEach(() => {
   _setOauthServiceClient(null)
 })
 
-describe('oauth connections', () => {
-  it('lists only OAuth-issued keys, with the granting client name', async () => {
+describe('conexões OAuth', () => {
+  it('lista somente chaves emitidas por OAuth, com o nome do cliente que concedeu acesso', async () => {
     const connections = await listOauthConnections(USER)
     expect(connections.map((c) => c.id)).toEqual(['key-oauth', 'key-superseded'])
     expect(connections[0]).toMatchObject({
@@ -80,14 +80,14 @@ describe('oauth connections', () => {
     })
   })
 
-  it('never embeds oauth_clients, which a signed-in caller may not read', async () => {
-    // The schema does REVOKE ALL ON oauth_clients FROM PUBLIC, anon,
-    // authenticated. PostgREST resource embedding needs SELECT on the embedded
-    // table for the querying role, so the old
-    // `...,oauth_clients(client_name)` select failed on every real request and
-    // the swallowed error left the Connected apps panel permanently empty. The
-    // name comes off api_keys.label, which the token endpoint sets to the
-    // client's name when it mints the key.
+  it('nunca inclui oauth_clients, que não pode ser lida por quem está autenticado', async () => {
+    // O schema executa REVOKE ALL ON oauth_clients FROM PUBLIC, anon,
+    // authenticated. A inclusão de recursos pelo PostgREST exige SELECT na tabela incluída
+    // para a função que faz a consulta, então a antiga
+    // consulta `...,oauth_clients(client_name)` falhava em todas as requisições reais, e
+    // o erro ignorado deixava o painel de aplicativos conectados permanentemente vazio. O
+    // nome vem de api_keys.label, que o endpoint de token define como
+    // o nome do cliente ao criar a chave.
     await listOauthConnections(USER)
     const asked = db.selects.filter((entry) => entry.table === 'api_keys')
     expect(asked).not.toHaveLength(0)
@@ -97,7 +97,7 @@ describe('oauth connections', () => {
     }
   })
 
-  it('still names the app when the row carries nothing but api_keys columns', async () => {
+  it('continua identificando o app quando a linha contém somente colunas de api_keys', async () => {
     db.tables.api_keys = [
       {
         id: 'key-only',
@@ -116,7 +116,7 @@ describe('oauth connections', () => {
     expect(connection.clientName).toBe('Some MCP Client')
   })
 
-  it('revokes one connection and reports a second attempt honestly', async () => {
+  it('revoga uma conexão e informa corretamente uma segunda tentativa', async () => {
     expect(await revokeOauthConnection(USER, 'key-oauth')).toEqual({ success: true })
     expect(db.tables.api_keys.find((row) => row.id === 'key-oauth')?.revoked_at).toBeTruthy()
 
@@ -124,7 +124,7 @@ describe('oauth connections', () => {
     expect(again.success).toBe(false)
   })
 
-  it('revokes the whole refresh family, so the client cannot silently renew', async () => {
+  it('revoga toda a família de tokens de renovação, impedindo a renovação silenciosa pelo cliente', async () => {
     expect(await revokeOauthConnection(USER, 'key-oauth')).toEqual({ success: true })
 
     const tokens = db.tables.oauth_refresh_tokens
@@ -133,13 +133,13 @@ describe('oauth connections', () => {
     expect(byId('rt-earlier')?.revoked_at).toBeTruthy()
     expect(byId('rt-other')?.revoked_at).toBeNull()
 
-    // The family sweep also kills access keys the family minted earlier.
+    // A revogação da família também invalida as chaves de acesso que ela criou anteriormente.
     const keys = db.tables.api_keys
     expect(keys.find((row) => row.id === 'key-superseded')?.revoked_at).toBeTruthy()
     expect(keys.find((row) => row.id === 'key-manual')?.revoked_at).toBeNull()
   })
 
-  it('leaves other connections\' refresh tokens alone when a revoke finds none of its own', async () => {
+  it('preserva os tokens de renovação de outras conexões quando a revogação não encontra nenhum da própria conexão', async () => {
     db.tables.oauth_refresh_tokens = db.tables.oauth_refresh_tokens.filter(
       (row) => row.family_id !== 'fam-1'
     )
@@ -148,13 +148,13 @@ describe('oauth connections', () => {
     expect(db.tables.oauth_refresh_tokens[0].revoked_at).toBeNull()
   })
 
-  it('does not touch refresh tokens when the key was not the caller\'s to revoke', async () => {
+  it('não altera tokens de renovação quando a chave não pertence a quem solicitou a revogação', async () => {
     const result = await revokeOauthConnection('22222222-2222-2222-2222-222222222222', 'key-oauth')
     expect(result.success).toBe(false)
     expect(db.tables.oauth_refresh_tokens.every((row) => row.revoked_at === null)).toBe(true)
   })
 
-  it('will not revoke a manual key through the connections path', async () => {
+  it('não revoga uma chave manual pelo fluxo de conexões', async () => {
     const result = await revokeOauthConnection(USER, 'key-manual')
     expect(result.success).toBe(false)
     expect(db.tables.api_keys.find((row) => row.id === 'key-manual')?.revoked_at).toBeNull()

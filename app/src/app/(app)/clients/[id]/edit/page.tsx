@@ -60,9 +60,9 @@ export default function EditClientPage() {
       <div className="p-6 lg:p-8">
         <EmptyState
           icon={Building2}
-          title="Client not found"
-          description="The client you're looking for doesn't exist."
-          action={{ label: 'Back to Clients', href: '/clients' }}
+          title="Cliente não encontrado"
+          description="O cliente que você procura não existe."
+          action={{ label: 'Voltar para clientes', href: '/clients' }}
         />
       </div>
     )
@@ -71,13 +71,13 @@ export default function EditClientPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title={`Edit ${client.name}`}
-        description="Update this client's information"
+        title={`Editar ${client.name}`}
+        description="Atualize as informações deste cliente"
       />
 
       <Card className="mx-auto mt-6 max-w-3xl">
         <CardHeader>
-          <CardTitle>Client Information</CardTitle>
+          <CardTitle>Informações do cliente</CardTitle>
         </CardHeader>
         <CardContent>
           <ClientForm

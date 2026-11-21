@@ -1,17 +1,17 @@
 'use client'
 
 /**
- * Reports.
+ * Relatórios.
  *
- * Composition only: the filter row, the KPI band, and each report section.
- * Every figure on this page comes from one RPC call scoped to the active
- * business (see components/reports/use-report-data.ts), and every calculation
- * lives in lib/reports as a pure, tested function.
+ * Composição: linha de filtros, faixa de indicadores e seções do relatório.
+ * Todos os números desta página vêm de uma única chamada RPC, limitada à empresa ativa
+ * (consulte components/reports/use-report-data.ts), e cada cálculo fica em lib/reports
+ * como uma função pura e testada.
  *
- * Reading order is deliberate. The KPI band answers "how am I doing", then AR
- * aging comes FIRST among the sections because chasing payment is the thing a
- * freelancer opens this page to do; the trend, the P&L, the client mix, the
- * expense mix and the time summary follow.
+ * A ordem de leitura é intencional. A faixa de indicadores responde "como estão as coisas?"; em seguida, o envelhecimento
+ * de contas a receber aparece PRIMEIRO entre as seções, pois cobrar pagamentos é o que a pessoa
+ * autônoma vem fazer nesta página. Depois vêm a tendência, o resultado, a distribuição por cliente,
+ * a distribuição de despesas e o resumo de horas.
  */
 
 import { useMemo, useState } from 'react'
@@ -47,13 +47,13 @@ import { RankedBarReport } from '@/components/reports/ranked-bar-report'
 import { TimeReport } from '@/components/reports/time-report'
 import { useReportData } from '@/components/reports/use-report-data'
 
-const BUCKET_NOUNS: Record<string, string> = { day: 'Day', week: 'Week', month: 'Month' }
+const BUCKET_NOUNS: Record<string, string> = { day: 'Dia', week: 'Semana', month: 'Mês' }
 
 export default function ReportsPage() {
   const { currentBusiness, isLoading: businessLoading } = useBusiness()
 
-  // Pinned at mount so "today" cannot drift mid-session and silently move a
-  // range between renders.
+  // Fixada na montagem para que "hoje" não mude durante a sessão e desloque silenciosamente um
+  // período entre renderizações.
   const [today] = useState(() => new Date())
   const [preset, setPreset] = useState<RangePresetId>('last_12_months')
   const [customRange, setCustomRange] = useState<ReportRange>(() => resolveRange('this_month', today))
@@ -106,13 +106,13 @@ export default function ReportsPage() {
   if (!currentBusiness) {
     return (
       <div className="p-6 lg:p-8">
-        <PageHeader title="Reports" description="Revenue, receivables, profit and time" />
+        <PageHeader title="Relatórios" description="Receitas, valores a receber, resultado e horas" />
         <Card className="mt-8">
           <EmptyState
             icon={BarChart3}
-            title="No business yet"
-            description="Create a business to start seeing revenue, receivables and profit reports."
-            action={{ label: 'Go to settings', href: '/settings' }}
+            title="Nenhuma empresa cadastrada"
+            description="Cadastre uma empresa para começar a acompanhar relatórios de receitas, valores a receber e resultados."
+            action={{ label: 'Ir para as configurações', href: '/settings' }}
           />
         </Card>
       </div>
@@ -122,8 +122,8 @@ export default function ReportsPage() {
   return (
     <VizScope className="p-6 lg:p-8">
       <PageHeader
-        title="Reports"
-        description={`Revenue, receivables, profit and time for ${currentBusiness.name}`}
+        title="Relatórios"
+        description={`Receitas, valores a receber, resultado e horas de ${currentBusiness.name}`}
       />
 
       <div className="mt-6">
@@ -148,11 +148,11 @@ export default function ReportsPage() {
         <Card className="mt-6">
           <EmptyState
             icon={BarChart3}
-            title="Reports did not load"
+            title="Não foi possível carregar os relatórios"
             description={error}
           />
           <div className="flex justify-center pb-6">
-            <Button onClick={refresh}>Try again</Button>
+            <Button onClick={refresh}>Tentar novamente</Button>
           </div>
         </Card>
       ) : isLoading || !data || !aging || !topClients ? (
@@ -161,25 +161,25 @@ export default function ReportsPage() {
         <Card className="mt-6">
           <EmptyState
             icon={BarChart3}
-            title="Nothing to report yet"
-            description={`No invoices, payments, expenses or time in ${formatRangeLabel(range)}. Send your first invoice and the numbers land here.`}
-            action={{ label: 'Create an invoice', href: '/invoices/new' }}
+            title="Ainda não há dados para mostrar"
+            description={`Não há faturas, pagamentos, despesas ou horas em ${formatRangeLabel(range)}. Envie sua primeira fatura para ver os dados aqui.`}
+            action={{ label: 'Criar uma fatura', href: '/invoices/new' }}
             className="py-16"
           />
         </Card>
       ) : (
-        // Refetches hold the previous render at reduced opacity rather than
-        // flashing a skeleton, so nothing jumps while the range changes.
+        // Durante uma nova busca, a renderização anterior fica com opacidade reduzida, em vez de
+        // exibir um esqueleto; assim, nada salta na tela quando o período muda.
         <div className={cn('mt-6 space-y-6 transition-opacity', isRefreshing && 'opacity-60')}>
           <ReportStats
             stats={stats}
             currency={data.currency}
-            comparisonLabel={compare ? 'vs previous period' : null}
+            comparisonLabel={compare ? 'em relação ao período anterior' : null}
           />
 
           <AgingReport data={data} report={aging} asOf={asOf} />
 
-          <RevenueChart data={data} compare={compare} bucketNoun={BUCKET_NOUNS[data.bucket] ?? 'Period'} />
+          <RevenueChart data={data} compare={compare} bucketNoun={BUCKET_NOUNS[data.bucket] ?? 'Período'} />
 
           <div className="grid gap-6 lg:grid-cols-2">
             <PnlReport data={data} basis={basis} onBasisChange={setBasis} compare={compare} />
@@ -188,56 +188,56 @@ export default function ReportsPage() {
 
           <div className="grid gap-6 lg:grid-cols-2">
             <RankedBarReport
-              title="Top clients"
-              description="Revenue invoiced in this period, and each client's share"
+              title="Principais clientes"
+              description="Receita faturada neste período e a participação de cada cliente"
               slug="top-clients"
               rows={topClients.rows.map((row) => ({
                 key: row.clientId || row.clientName,
                 label: row.clientName,
                 amount: row.invoiced,
                 share: row.share,
-                secondary: `${row.invoiceCount} ${row.invoiceCount === 1 ? 'invoice' : 'invoices'}`,
+                secondary: `${row.invoiceCount} ${row.invoiceCount === 1 ? 'fatura' : 'faturas'}`,
                 href: row.clientId ? `/clients/${row.clientId}` : undefined,
               }))}
               currency={data.currency}
               range={data.range}
               color={SERIES_COLORS.invoiced}
-              amountLabel="Invoiced"
-              shareLabel="Share of revenue"
-              categoryLabel="Client"
+              amountLabel="Receita faturada"
+              shareLabel="Participação na receita"
+              categoryLabel="Cliente"
               emptyIcon={Users}
-              emptyTitle="No client revenue yet"
-              emptyDescription="Invoice a client in this period and they show up here, ranked by revenue."
+              emptyTitle="Ainda não há receita de clientes"
+              emptyDescription="Fature um cliente neste período para que ele apareça aqui, ordenado pela receita."
               footer={
                 topClients.rows.length > 0 ? (
                   <span>
-                    {topClients.rows[0].clientName} accounts for {topClients.topShare.toFixed(0)}% of revenue
-                    in this range; the top three account for {topClients.topThreeShare.toFixed(0)}%.
+                    {topClients.rows[0].clientName} representa {topClients.topShare.toFixed(0)}% da receita
+                    neste período; os três maiores clientes juntos representam {topClients.topThreeShare.toFixed(0)}%.
                   </span>
                 ) : undefined
               }
             />
 
             <RankedBarReport
-              title="Expenses by category"
-              description="Where the money went in this period"
+              title="Despesas por categoria"
+              description="Para onde foi o dinheiro neste período"
               slug="expenses-by-category"
               rows={expenseSlices.map((slice) => ({
                 key: slice.category,
                 label: slice.label,
                 amount: slice.amount,
                 share: slice.share,
-                secondary: `${slice.count} ${slice.count === 1 ? 'expense' : 'expenses'}`,
+                secondary: `${slice.count} ${slice.count === 1 ? 'despesa' : 'despesas'}`,
               }))}
               currency={data.currency}
               range={data.range}
               color={SERIES_COLORS.expenses}
-              amountLabel="Spent"
-              shareLabel="Share of expenses"
-              categoryLabel="Category"
+              amountLabel="Valor gasto"
+              shareLabel="Participação nas despesas"
+              categoryLabel="Categoria"
               emptyIcon={Receipt}
-              emptyTitle="No expenses recorded"
-              emptyDescription="Log an expense and this breaks your spending down by category."
+              emptyTitle="Nenhuma despesa registrada"
+              emptyDescription="Registre uma despesa para ver seus gastos separados por categoria."
             />
           </div>
         </div>

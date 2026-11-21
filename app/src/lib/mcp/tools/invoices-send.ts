@@ -6,41 +6,41 @@ import { sendInvoiceEmail, SendInvoiceEmailError } from '@/lib/invoices/send-ema
 import { errorResult, jsonResult, formatCurrency, publicUrl } from '@/lib/mcp/shared'
 import { todayISO } from '@/lib/dates'
 
-const DATE_FIELD = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+const DATE_FIELD = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use uma data no formato YYYY-MM-DD')
 
 const PAYMENT_METHODS = ['cash', 'check', 'bank_transfer', 'credit_card', 'stripe', 'paypal', 'other'] as const
 
 /**
- * Registers the invoice send/payment tools (send_invoice, record_payment) on
- * the given MCP server, scoped to the businesses in ctx.db.scope.
+ * Registra as ferramentas de envio e pagamento de faturas (send_invoice, record_payment) no
+ * servidor MCP informado, limitadas às empresas em ctx.db.scope.
  */
 export function registerInvoiceSendTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'send_invoice',
     {
-      title: 'Send Invoice',
+      title: 'Enviar fatura',
       description:
-        'Email an invoice (with PDF attached) to its client, advancing a draft to "sent"; defaults the recipient to the client\'s own email if `to` is omitted. Refuses to send invoices that are already paid or cancelled.',
+        'Envia uma fatura por e-mail (com o PDF anexado) ao cliente, alterando o status de um rascunho para "sent"; se `to` não for informado, usa o e-mail do próprio cliente. Recusa o envio de faturas já pagas ou canceladas.',
       inputSchema: z.object({
-        request_id: z.uuid().describe('Stable delivery ID. Reuse on retries with identical recipients and content.'),
-        invoice_id: z.string().uuid().describe('Id of the invoice to send.'),
+        request_id: z.uuid().describe('ID estável de entrega. Reutilize nas tentativas com os mesmos destinatários e conteúdo.'),
+        invoice_id: z.string().uuid().describe('ID da fatura a enviar.'),
         to: z
           .string()
           .email()
           .optional()
-          .describe("Recipient email. Defaults to the invoice's client email if omitted."),
+          .describe("E-mail do destinatário. Se omitido, usa o e-mail do cliente da fatura."),
         cc: z
           .array(z.string().email())
           .max(10)
           .optional()
-          .describe('Cc recipients. At most 10; split larger sends across multiple calls.'),
+          .describe('Destinatários em cópia (Cc). No máximo 10; divida envios maiores em várias chamadas.'),
         bcc: z
           .array(z.string().email())
           .max(10)
           .optional()
-          .describe('Bcc recipients. At most 10; split larger sends across multiple calls.'),
-        subject: z.string().max(200).optional().describe('Email subject. Defaults to "Invoice <number> from <business>".'),
-        message: z.string().max(2000).optional().describe('Optional personal message included above the invoice summary.'),
+          .describe('Destinatários em cópia oculta (Bcc). No máximo 10; divida envios maiores em várias chamadas.'),
+        subject: z.string().max(200).optional().describe('Assunto do e-mail. O padrão segue o formato "Fatura <number> de <business>".'),
+        message: z.string().max(2000).optional().describe('Mensagem pessoal opcional, exibida antes do resumo da fatura.'),
       }),
     },
     async ({ request_id, invoice_id, to, cc, bcc, subject, message }) => {
@@ -48,17 +48,17 @@ export function registerInvoiceSendTools(server: McpServer, ctx: McpCtx) {
       try {
         invoice = await ctx.db.assertInvoiceAccess(invoice_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access invoice.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar a fatura.')
       }
 
       if (invoice.status === 'paid') {
         return errorResult(
-          `Invoice ${invoice.invoice_number} is already paid. There is nothing to send.`
+          `A fatura ${invoice.invoice_number} já está paga. Não há nada a enviar.`
         )
       }
       if (invoice.status === 'cancelled') {
         return errorResult(
-          `Invoice ${invoice.invoice_number} is cancelled. Cancelled invoices cannot be sent.`
+          `A fatura ${invoice.invoice_number} está cancelada. Faturas canceladas não podem ser enviadas.`
         )
       }
 
@@ -73,12 +73,12 @@ export function registerInvoiceSendTools(server: McpServer, ctx: McpCtx) {
 
         if (clientError) {
           console.error('send_invoice (client lookup):', clientError)
-          return errorResult('Could not look up client email.')
+          return errorResult('Não foi possível localizar o e-mail do cliente.')
         }
 
         if (!client?.email) {
           return errorResult(
-            `Invoice ${invoice.invoice_number}'s client has no email on file. Pass "to" explicitly.`
+            `O cliente da fatura ${invoice.invoice_number} não tem e-mail cadastrado. Informe "to" explicitamente.`
           )
         }
 
@@ -96,7 +96,7 @@ export function registerInvoiceSendTools(server: McpServer, ctx: McpCtx) {
         })
 
         const resultBody = {
-          summary: `Sent ${invoice.invoice_number} to ${result.to} with PDF attached.`,
+          summary: `Fatura ${invoice.invoice_number} enviada para ${result.to} com o PDF anexado.`,
           to: result.to,
           public_url: publicUrl(invoice.public_id),
         }
@@ -107,7 +107,7 @@ export function registerInvoiceSendTools(server: McpServer, ctx: McpCtx) {
           return errorResult(err.message)
         }
         console.error('send_invoice (send):', err)
-        return errorResult('Could not send invoice.')
+        return errorResult('Não foi possível enviar a fatura.')
       }
     }
   )
@@ -115,20 +115,20 @@ export function registerInvoiceSendTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'record_payment',
     {
-      title: 'Record Payment',
+      title: 'Registrar pagamento',
       description:
-        "Record a payment received against an invoice, updating the invoice's amount_paid/balance_due and status (\"paid\" once the balance reaches zero, \"partial\" otherwise). Mirrors the app's own Record Payment flow.",
+        "Registra um pagamento recebido para uma fatura, atualizando amount_paid/balance_due e o status (\"paid\" quando o saldo chegar a zero; caso contrário, \"partial\"). Segue o mesmo fluxo de registro de pagamento do aplicativo.",
       inputSchema: z.object({
-        request_id: z.uuid().describe('Stable payment ID; reuse with identical input on retries.'),
-        invoice_id: z.string().uuid().describe('Id of the invoice the payment applies to.'),
-        amount: z.number().positive().describe('Payment amount received (must be > 0).'),
-        payment_date: DATE_FIELD.optional().describe('Date the payment was received, YYYY-MM-DD. Defaults to today.'),
+        request_id: z.uuid().describe('ID estável do pagamento; reutilize nas tentativas com os mesmos dados.'),
+        invoice_id: z.string().uuid().describe('ID da fatura à qual o pagamento se aplica.'),
+        amount: z.number().positive().describe('Valor do pagamento recebido (deve ser > 0).'),
+        payment_date: DATE_FIELD.optional().describe('Data em que o pagamento foi recebido, no formato YYYY-MM-DD. Por padrão, usa a data de hoje.'),
         method: z
           .enum(PAYMENT_METHODS)
           .optional()
-          .describe('Payment method. Defaults to "other".'),
-        notes: z.string().max(2000).optional().describe('Optional notes about the payment.'),
-        reference_number: z.string().max(100).optional().describe('Optional reference/check/transaction number.'),
+          .describe('Forma de pagamento. Por padrão, usa "other".'),
+        notes: z.string().max(2000).optional().describe('Observações opcionais sobre o pagamento.'),
+        reference_number: z.string().max(100).optional().describe('Número opcional de referência, cheque ou transação.'),
       }),
     },
     async ({ request_id, invoice_id, amount, payment_date, method, notes, reference_number }) => {
@@ -136,21 +136,21 @@ export function registerInvoiceSendTools(server: McpServer, ctx: McpCtx) {
       try {
         invoice = await ctx.db.assertInvoiceAccess(invoice_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access invoice.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar a fatura.')
       }
 
       if (invoice.status === 'cancelled') {
         return errorResult(
-          `Invoice ${invoice.invoice_number} is cancelled. Payments cannot be recorded against it.`
+          `A fatura ${invoice.invoice_number} está cancelada. Não é possível registrar pagamentos para ela.`
         )
       }
 
       const resolvedPaymentDate = payment_date || todayISO()
 
-      // One transaction. record_invoice_payment inserts the
-      // ledger row and recomputes the invoice from SUM(payments), so there is
-      // no longer a window in which the payment exists but the invoice still
-      // reads unpaid, and the arithmetic is absolute rather than delta-based.
+      // Uma única transação. record_invoice_payment insere a linha no
+      // razão e recalcula a fatura a partir de SUM(payments), eliminando
+      // a janela em que o pagamento já existe, mas a fatura ainda aparece
+      // como unpaid; o cálculo usa valores absolutos, não incrementais.
       const { data: recorded, error: recordError } = await ctx.db.svc.rpc('record_payment_once', {
         p_request_id: request_id,
         p_invoice_id: invoice_id,
@@ -165,14 +165,14 @@ export function registerInvoiceSendTools(server: McpServer, ctx: McpCtx) {
 
       if (recordError || !recorded) {
         console.error('record_payment (rpc):', recordError)
-        return errorResult('Could not record payment.')
+        return errorResult('Não foi possível registrar o pagamento.')
       }
 
       const updated = (recorded as { invoice: { status: string; amount_paid: number; balance_due: number } })
         .invoice
 
       const result = {
-        summary: `Recorded ${formatCurrency(amount, invoice.currency)} payment on ${invoice.invoice_number}. It is now ${updated.status} with ${formatCurrency(updated.balance_due, invoice.currency)} balance due.`,
+        summary: `Pagamento de ${formatCurrency(amount, invoice.currency)} registrado na fatura ${invoice.invoice_number}. O status agora é ${updated.status}, com saldo de ${formatCurrency(updated.balance_due, invoice.currency)} a pagar.`,
         invoice: {
           status: updated.status,
           amount_paid: updated.amount_paid,

@@ -1,21 +1,21 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  // The Docker image runs Next.js's standalone server.
+  // A imagem Docker executa o servidor standalone do Next.js.
   output: process.env.BILLR_CONTAINER_BUILD === 'true' ? 'standalone' : undefined,
   experimental:
     process.env.BILLR_CONTAINER_BUILD === 'true'
       ? { cpus: 1, webpackMemoryOptimizations: true }
       : {},
-  // Server actions include passwords and invoice data; never print arguments.
+  // Server actions incluem senhas e dados de faturas; nunca imprima os argumentos.
   logging: { serverFunctions: false },
   async headers() {
     return [
       {
         source: '/:path*',
         headers: [
-          // Public invoice/estimate URLs carry the secret public_id in the
-          // path; keep it out of the Referer sent to third parties.
+          // URLs públicas de faturas/orçamentos carregam o public_id secreto no
+          // caminho; impeça que ele seja enviado a terceiros no cabeçalho Referer.
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },

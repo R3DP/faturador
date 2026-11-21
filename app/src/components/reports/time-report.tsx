@@ -1,16 +1,16 @@
 'use client'
 
 /**
- * Time summary for the range: hours logged, how much of it is billable, and
- * what is still sitting unbilled.
+ * Resumo das horas no período: horas registradas, quantas são faturáveis e quantas
+ * ainda não foram faturadas.
  *
- * Four numbers and one ratio, so this is a figure block with a meter rather
- * than a chart - a two-slice pie or a two-bar chart would just restate the
- * numbers beside it. The meter's track is a lighter step of the same blue, so
- * the ratio reads across the whole bar.
+ * São quatro números e uma proporção; por isso, usamos um bloco de indicadores com uma
+ * barra de progresso, em vez de um gráfico. Um gráfico de pizza com duas fatias ou de barras
+ * com duas colunas apenas repetiria os números exibidos ao lado. A faixa da barra usa um tom
+ * mais claro do mesmo azul, para que a proporção seja percebida ao longo de toda a barra.
  *
- * Time entries carry no currency column of their own, so their value is stated
- * in the business's default currency and labelled as such.
+ * Os registros de horas não têm uma coluna própria de moeda; por isso, os valores são
+ * apresentados na moeda padrão da empresa e identificados dessa forma.
  */
 
 import Link from 'next/link'
@@ -30,36 +30,36 @@ export function TimeReport({ data }: { data: ReportData }) {
     filename: csvFilename('time-summary', data.range),
     build: () => {
       const rows = [
-        { metric: 'Hours logged', value: time.totalHours },
-        { metric: 'Billable hours', value: time.billableHours },
-        { metric: 'Non-billable hours', value: time.nonBillableHours },
-        { metric: 'Unbilled hours', value: time.unbilledHours },
-        { metric: `Unbilled value (${currency})`, value: time.unbilledValue },
-        { metric: `Billable value (${currency})`, value: time.billableValue },
-        { metric: 'Billable rate (%)', value: Number(time.billableRate.toFixed(1)) },
+        { metric: 'Horas registradas', value: time.totalHours },
+        { metric: 'Horas faturáveis', value: time.billableHours },
+        { metric: 'Horas não faturáveis', value: time.nonBillableHours },
+        { metric: 'Horas não faturadas', value: time.unbilledHours },
+        { metric: `Valor não faturado (${currency})`, value: time.unbilledValue },
+        { metric: `Valor faturável (${currency})`, value: time.billableValue },
+        { metric: 'Proporção de horas faturáveis (%)', value: Number(time.billableRate.toFixed(1)) },
         {
-          metric: `Effective hourly rate (${currency})`,
+          metric: `Valor efetivo por hora (${currency})`,
           value: time.effectiveHourlyRate ?? '',
         },
       ]
       return withReportContext(
         toCsv(rows, [
-          { header: 'Metric', value: (row) => row.metric },
-          { header: 'Value', value: (row) => row.value },
+          { header: 'Indicador', value: (row) => row.metric },
+          { header: 'Valor', value: (row) => row.value },
         ]),
-        { title: 'Time summary', range: data.range, currency }
+        { title: 'Resumo de horas', range: data.range, currency }
       )
     },
   }
 
   if (time.entryCount === 0) {
     return (
-      <ReportCard title="Time summary" description="Hours logged in this period, billable and not">
+      <ReportCard title="Resumo de horas" description="Horas registradas neste período, faturáveis e não faturáveis">
         <EmptyState
           icon={Timer}
-          title="No time logged"
-          description="Log hours against a client and this shows what is billable and what is still waiting to be invoiced."
-          action={{ label: 'Track time', href: '/time' }}
+          title="Nenhuma hora registrada"
+          description="Registre horas para um cliente para ver o que é faturável e o que ainda aguarda faturamento."
+          action={{ label: 'Registrar horas', href: '/time' }}
           className="py-10"
         />
       </ReportCard>
@@ -68,17 +68,17 @@ export function TimeReport({ data }: { data: ReportData }) {
 
   return (
     <ReportCard
-      title="Time summary"
-      description="Hours logged in this period, billable and not"
+      title="Resumo de horas"
+      description="Horas registradas neste período, faturáveis e não faturáveis"
       csv={csv}
-      footer={<span>Time values are shown in {currency}, the currency on the time entries&apos; rates.</span>}
+      footer={<span>Os valores das horas são exibidos em {currency}, conforme a moeda das tarifas horárias.</span>}
     >
       <div className="space-y-5">
         <div>
           <div className="flex items-baseline justify-between">
-            <p className="text-sm text-muted-foreground">Hours logged</p>
+            <p className="text-sm text-muted-foreground">Horas registradas</p>
             <p className="text-sm tabular-nums text-muted-foreground">
-              {formatPercent(time.billableRate)} billable
+              {formatPercent(time.billableRate)} das horas registradas são faturáveis
             </p>
           </div>
           <p className="mt-0.5 text-2xl font-semibold tracking-tight text-foreground">
@@ -88,7 +88,7 @@ export function TimeReport({ data }: { data: ReportData }) {
             className="mt-3 h-2.5 w-full overflow-hidden rounded-full"
             style={{ backgroundColor: 'var(--viz-age-1)' }}
             role="img"
-            aria-label={`${formatHours(time.billableHours)} billable of ${formatHours(time.totalHours)} logged`}
+            aria-label={`${formatHours(time.billableHours)} horas faturáveis de ${formatHours(time.totalHours)} horas registradas`}
           >
             <div
               className="h-full rounded-full"
@@ -105,7 +105,7 @@ export function TimeReport({ data }: { data: ReportData }) {
                 className="h-2 w-2 rounded-[2px]"
                 style={{ backgroundColor: 'var(--viz-series-1)' }}
               />
-              Billable {formatHours(time.billableHours)}
+              Faturáveis: {formatHours(time.billableHours)}
             </span>
             <span className="flex items-center gap-1.5">
               <span
@@ -113,35 +113,35 @@ export function TimeReport({ data }: { data: ReportData }) {
                 className="h-2 w-2 rounded-[2px]"
                 style={{ backgroundColor: 'var(--viz-age-1)' }}
               />
-              Non-billable {formatHours(time.nonBillableHours)}
+              Não faturáveis: {formatHours(time.nonBillableHours)}
             </span>
           </div>
         </div>
 
         <dl className="grid grid-cols-2 gap-4 border-t border-border pt-4">
           <div>
-            <dt className="text-xs text-muted-foreground">Unbilled hours</dt>
+            <dt className="text-xs text-muted-foreground">Horas não faturadas</dt>
             <dd className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
               {formatHours(time.unbilledHours)}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Unbilled value</dt>
+            <dt className="text-xs text-muted-foreground">Valor não faturado</dt>
             <dd className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
               {formatMoney(time.unbilledValue, currency)}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Billable value</dt>
+            <dt className="text-xs text-muted-foreground">Valor faturável</dt>
             <dd className="mt-0.5 text-sm tabular-nums text-foreground">
               {formatMoney(time.billableValue, currency)}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Effective rate</dt>
+            <dt className="text-xs text-muted-foreground">Valor efetivo por hora</dt>
             <dd className="mt-0.5 text-sm tabular-nums text-foreground">
               {time.effectiveHourlyRate === null
-                ? 'No billable hours'
+                ? 'Sem horas faturáveis'
                 : `${formatMoney(time.effectiveHourlyRate, currency)}/h`}
             </dd>
           </div>
@@ -149,9 +149,9 @@ export function TimeReport({ data }: { data: ReportData }) {
 
         {time.unbilledHours > 0 ? (
           <p className="text-sm text-muted-foreground">
-            {formatHours(time.unbilledHours)} of billable time has not been invoiced yet.{' '}
+            {formatHours(time.unbilledHours)} do tempo faturável ainda não foi faturado.{' '}
             <Link href="/time" className="font-medium text-primary hover:underline">
-              Review unbilled time
+              Revisar horas não faturadas
             </Link>
           </p>
         ) : null}

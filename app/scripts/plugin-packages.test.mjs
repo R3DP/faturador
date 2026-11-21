@@ -10,7 +10,7 @@ const json = (path) => JSON.parse(read(path))
 const endpoint = new URL(json('plugins/codex/billr/mcp.json').mcpServers.billr.url)
 const packages = ['plugins/codex/billr', 'plugins/openclaw/billr']
 
-test('all shipped MCP configurations use the same public HTTPS OAuth endpoint', () => {
+test('todas as configurações MCP distribuídas usam o mesmo endpoint público OAuth HTTPS', () => {
   assert.equal(endpoint.protocol, 'https:')
   assert.equal(endpoint.username, '')
   assert.equal(endpoint.password, '')
@@ -20,7 +20,7 @@ test('all shipped MCP configurations use the same public HTTPS OAuth endpoint', 
     const servers = json(file).mcpServers
     assert.deepEqual(Object.keys(servers), ['billr'])
     assert.equal(new URL(servers.billr.url).href, endpoint.href, file)
-    assert.equal(servers.billr.headers, undefined, `${file} must not embed credentials`)
+    assert.equal(servers.billr.headers, undefined, `${file} não deve incluir credenciais`)
   }
   const codex = read('plugins/codex/codex-config.toml').split('\n').filter((line) => !line.trimStart().startsWith('#')).join('\n')
   assert(codex.includes(`url = "${endpoint.origin}"`))
@@ -28,19 +28,19 @@ test('all shipped MCP configurations use the same public HTTPS OAuth endpoint', 
   assert(read('plugins/shared/skill/SKILL.md').includes(endpoint.origin))
 })
 
-test('Codex manifests have matching release versions', () => {
+test('os manifestos do Codex têm versões de lançamento iguais', () => {
   const codex = json('plugins/codex/billr/.codex-plugin/plugin.json')
   assert.equal(codex.version, json('plugins/codex/billr/plugin.json').version)
 })
 
-test('standalone packages include instructions, licenses and only safe files', () => {
+test('os pacotes independentes incluem instruções, licenças e apenas arquivos seguros', () => {
   for (const directory of packages) {
     for (const name of ['README.md', 'LICENSE', 'NOTICE']) assert(existsSync(resolve(root, directory, name)), `${directory}/${name}`)
     const walk = (dir) => {
       for (const name of readdirSync(dir)) {
-        assert(!['.env', '.env.local', '.app.json', '.git', 'node_modules', '.agents', 'hooks.json'].includes(name), `private or unsupported package entry: ${name}`)
+        assert(!['.env', '.env.local', '.app.json', '.git', 'node_modules', '.agents', 'hooks.json'].includes(name), `entrada privada ou não compatível no pacote: ${name}`)
         const path = resolve(dir, name)
-        assert(!lstatSync(path).isSymbolicLink(), 'packages must be self-contained')
+        assert(!lstatSync(path).isSymbolicLink(), 'os pacotes devem ser autossuficientes')
         if (lstatSync(path).isDirectory()) walk(path)
       }
     }
@@ -48,7 +48,7 @@ test('standalone packages include instructions, licenses and only safe files', (
   }
 })
 
-test('listing assets and component paths resolve inside each package', () => {
+test('os caminhos dos recursos de listagem e dos componentes são resolvidos dentro de cada pacote', () => {
   for (const [directory, manifest] of [
     ['plugins/codex/billr', '.codex-plugin/plugin.json'],
   ]) {

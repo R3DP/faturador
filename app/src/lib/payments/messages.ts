@@ -1,27 +1,27 @@
 /**
- * The sentences a person sees when a payment write is refused.
+ * As mensagens exibidas quando uma gravação de pagamento é recusada.
  *
- * These used to live inside the corrections dialog, which was fine while the
- * browser called the RPCs itself. The writes now run inside server actions
- * (src/lib/actions/payments.ts), so the action is what turns a Postgres error
- * into something worth reading and the dialog just shows what it gets. This
- * module is plain TypeScript so both sides may import it: a 'use server' file
- * may only export async functions, and a 'use client' file must not be pulled
- * into the server bundle.
+ * Antes, elas ficavam no diálogo de correções, o que funcionava enquanto o
+ * navegador chamava as RPCs diretamente. Agora as gravações são executadas em
+ * ações de servidor (src/lib/actions/payments.ts), então a ação transforma o
+ * erro do Postgres em uma mensagem compreensível e o diálogo apenas a exibe.
+ * Este módulo é TypeScript simples para permitir a importação pelos dois lados:
+ * um arquivo 'use server' só pode exportar funções assíncronas, e um arquivo
+ * 'use client' não deve ser incluído no pacote do servidor.
  */
 
 export const STRIPE_LOCKED_MESSAGE =
-  'Collected through Stripe. Card payments cannot be edited or voided here. Refund the charge in Stripe and the refund comes back as its own entry.'
+  'Recebido pelo Stripe. Pagamentos com cartão não podem ser editados nem estornados aqui. Reembolse a cobrança no Stripe; o reembolso será registrado como um lançamento separado.'
 
-/** Turns a Postgres error from the payment RPCs into a sentence to act on. */
+/** Converte um erro do Postgres das RPCs de pagamento em uma mensagem útil. */
 export function correctionMessage(message: string, fallback: string): string {
   if (message.includes('stripe_payment_locked')) return STRIPE_LOCKED_MESSAGE
-  if (message.includes('payment_already_voided')) return 'This payment has already been voided.'
+  if (message.includes('payment_already_voided')) return 'Este pagamento já foi estornado.'
   if (message.includes('amount_exceeds_invoice_total'))
-    return 'That amount would take the invoice past its total once the other payments on it are counted.'
-  if (message.includes('request_id_reused')) return 'That correction was already saved with different values.'
-  if (message.includes('void_reason_required')) return 'Enter a reason for voiding this payment.'
-  if (message.includes('invalid_amount')) return 'The amount must be greater than zero.'
-  if (message.includes('payment_not_found')) return 'That payment could not be found.'
+    return 'Esse valor faria a soma da fatura ultrapassar o total, considerando os outros pagamentos.'
+  if (message.includes('request_id_reused')) return 'Essa correção já foi salva com valores diferentes.'
+  if (message.includes('void_reason_required')) return 'Informe o motivo do estorno deste pagamento.'
+  if (message.includes('invalid_amount')) return 'O valor deve ser maior que zero.'
+  if (message.includes('payment_not_found')) return 'Esse pagamento não foi encontrado.'
   return fallback
 }

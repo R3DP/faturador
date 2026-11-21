@@ -10,21 +10,21 @@ export async function POST(request: NextRequest) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET
 
   if (!signature || !secret) {
-    return NextResponse.json({ error: 'Missing signature.' }, { status: 400 })
+    return NextResponse.json({ error: 'Assinatura ausente.' }, { status: 400 })
   }
 
-  // Signature verification needs the exact raw request body - never
-  // JSON.parse before constructEvent, since re-serializing would not
-  // reproduce the byte-for-byte string Stripe signed.
+  // A verificação da assinatura precisa do corpo bruto exato da requisição - nunca
+  // use JSON.parse antes de constructEvent, pois serializar novamente não
+  // reproduziria os mesmos bytes assinados pelo Stripe.
   const rawBody = await request.text()
 
   let event
   try {
     event = stripe.webhooks.constructEvent(rawBody, signature, secret)
   } catch (err) {
-    // Never log the raw body/signature/secret - only that verification failed.
-    console.error('stripe webhook: signature verification failed', err instanceof Error ? err.message : err)
-    return NextResponse.json({ error: 'Invalid signature.' }, { status: 400 })
+    // Nunca registre o corpo bruto, a assinatura ou o segredo - apenas que a verificação falhou.
+    console.error('stripe webhook: falha na verificação da assinatura', err instanceof Error ? err.message : err)
+    return NextResponse.json({ error: 'Assinatura inválida.' }, { status: 400 })
   }
 
   const service = createServiceClient()
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     .eq('id', event.id)
     .maybeSingle()
   if (readError) {
-    return NextResponse.json({ error: 'Could not check event status.' }, { status: 503 })
+    return NextResponse.json({ error: 'Não foi possível verificar o status do evento.' }, { status: 503 })
   }
   if (processed) {
     return NextResponse.json({ received: true, duplicate: true })
@@ -44,17 +44,17 @@ export async function POST(request: NextRequest) {
   try {
     await reconcileEvent(service, event)
   } catch (err) {
-    console.error('stripe webhook: reconcile failed', event.type, err instanceof Error ? err.message : err)
-    // No completion marker is written, so Stripe's automatic retry
-    // reconciles the event again instead of treating it as handled.
-    return NextResponse.json({ error: 'Reconcile failed.' }, { status: 500 })
+    console.error('stripe webhook: falha na conciliação', event.type, err instanceof Error ? err.message : err)
+    // Nenhum marcador de conclusão é gravado, então a nova tentativa automática do Stripe
+    // reconcilia o evento novamente, em vez de considerá-lo processado.
+    return NextResponse.json({ error: 'Falha na conciliação.' }, { status: 500 })
   }
 
   const { error: finishError } = await service
     .from('stripe_events')
     .insert({ id: event.id, type: event.type })
   if (finishError && finishError.code !== '23505') {
-    return NextResponse.json({ error: 'Could not finish event.' }, { status: 503 })
+    return NextResponse.json({ error: 'Não foi possível concluir o evento.' }, { status: 503 })
   }
   return NextResponse.json({ received: true })
 }

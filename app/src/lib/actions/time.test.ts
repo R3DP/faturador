@@ -12,7 +12,7 @@ const REQUEST_ID = '50000000-0000-4000-8000-000000000001'
 
 const input = {
   client_id: CLIENT_ID,
-  description: 'Design review',
+  description: 'Revisão de design',
   hours: 1,
   rate: 100,
   date: '2026-09-22',
@@ -40,7 +40,7 @@ beforeEach(() => {
 })
 
 describe('createTimeEntryAction', () => {
-  it('logs time, replaying one request id', async () => {
+  it('registra horas reutilizando um request id', async () => {
     const result = await createTimeEntryAction(BUSINESS_ID, input, REQUEST_ID)
 
     expect(result).toEqual({ ok: true })
@@ -52,12 +52,12 @@ describe('createTimeEntryAction', () => {
     expect(args.p_record).toMatchObject({
       duration_seconds: 3600,
       hourly_rate: 100,
-      // Never taken from the browser: it follows the client being billed.
+      // Nunca vem do navegador: acompanha o cliente faturado.
       currency: 'EUR',
     })
   })
 
-  it('rejects an entry the form could not have produced', async () => {
+  it('recusa um lançamento que o formulário não poderia produzir', async () => {
     const result = await createTimeEntryAction(BUSINESS_ID, { ...input, hours: 99 }, REQUEST_ID)
 
     expect('error' in result).toBe(true)
@@ -66,16 +66,16 @@ describe('createTimeEntryAction', () => {
 })
 
 describe('updateTimeEntryAction', () => {
-  it('saves an edit and leaves invoiced work alone', async () => {
+  it('salva a edição sem alterar trabalho faturado', async () => {
     expect(await updateTimeEntryAction(ROW_ID, input)).toEqual({ ok: true })
     const update = db.calls.find((call) => call.op === 'update')
     expect(update?.table).toBe('time_entries')
     expect(update?.payload).toMatchObject({ duration_seconds: 3600, amount: 100 })
-    // The invoiced-work filter survived the move off the browser.
+    // O filtro de trabalho faturado continuou valendo após sair do navegador.
     expect(update?.filters.some((f) => f.method === 'is' && f.args[0] === 'invoice_id')).toBe(true)
   })
 
-  it('reports a refused edit rather than claiming success', async () => {
+  it('informa a recusa da edição em vez de aparentar sucesso', async () => {
     db = createFakeSupabase({
       'clients.select': { data: { currency: 'USD' }, error: null },
       'time_entries.select': { data: { business_id: BUSINESS_ID }, error: null },
@@ -84,13 +84,13 @@ describe('updateTimeEntryAction', () => {
     createClientMock.mockResolvedValue(db)
 
     expect(await updateTimeEntryAction(ROW_ID, input)).toEqual({
-      error: 'Invoiced work cannot be edited.',
+      error: 'Trabalho faturado não pode ser editado.',
     })
   })
 })
 
 describe('deleteTimeEntryAction', () => {
-  it('deletes unbilled work', async () => {
+  it('exclui trabalho não faturado', async () => {
     expect(await deleteTimeEntryAction(ROW_ID)).toEqual({ ok: true })
     const del = db.calls.find((call) => call.op === 'delete')
     expect(del?.filters.some((f) => f.method === 'is' && f.args[0] === 'invoice_id')).toBe(true)

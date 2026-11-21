@@ -1,9 +1,9 @@
 'use client'
 
 /**
- * The one filter row. It sits above every report and scopes all of them, so
- * the numbers on the page always describe the same slice. No chart carries its
- * own range control.
+ * A única linha de filtros aparece acima de todos os relatórios e aplica os mesmos critérios a todos, para que
+ * os números da página sempre descrevam o mesmo recorte. Nenhum gráfico tem seu próprio
+ * controle de período.
  */
 
 import { CalendarRange, Check, RefreshCw } from 'lucide-react'
@@ -53,7 +53,7 @@ export function ReportFilters(props: ReportFiltersProps) {
         value={props.preset}
         onValueChange={(value) => props.onPresetChange(value as RangePresetId)}
       >
-        <SelectTrigger className="w-[180px]" aria-label="Date range">
+        <SelectTrigger className="w-[180px]" aria-label="Período">
           <CalendarRange className="h-4 w-4 text-muted-foreground" aria-hidden />
           <SelectValue />
         </SelectTrigger>
@@ -92,12 +92,12 @@ export function ReportFilters(props: ReportFiltersProps) {
         >
           {props.compare ? <Check className="h-3 w-3" /> : null}
         </span>
-        Compare to previous
+        Comparar com o período anterior
       </button>
 
       {multiCurrency ? (
         <Select value={props.currency} onValueChange={props.onCurrencyChange}>
-          <SelectTrigger className="w-[110px]" aria-label="Currency">
+          <SelectTrigger className="w-[110px]" aria-label="Moeda">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -114,7 +114,7 @@ export function ReportFilters(props: ReportFiltersProps) {
         <p className="text-sm text-muted-foreground">
           {formatRangeLabel(props.range)}
           {props.compare && props.previousRange
-            ? ` vs ${formatRangeLabel(props.previousRange)}`
+            ? ` em comparação com ${formatRangeLabel(props.previousRange)}`
             : ''}
         </p>
         <Button
@@ -122,7 +122,7 @@ export function ReportFilters(props: ReportFiltersProps) {
           size="sm"
           onClick={props.onRefresh}
           disabled={props.isRefreshing}
-          aria-label="Refresh reports"
+          aria-label="Atualizar relatórios"
         >
           <RefreshCw className={cn('h-4 w-4', props.isRefreshing && 'animate-spin')} aria-hidden />
         </Button>
@@ -143,12 +143,12 @@ function CustomRangePicker({
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="h-9">
-          {valid ? formatRangeLabel(value) : 'Pick dates'}
+          {valid ? formatRangeLabel(value) : 'Selecionar datas'}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 space-y-3">
         <div className="space-y-1.5">
-          <Label htmlFor="report-range-start">Start date</Label>
+          <Label htmlFor="report-range-start">Data inicial</Label>
           <Input
             id="report-range-start"
             type="date"
@@ -158,7 +158,7 @@ function CustomRangePicker({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="report-range-end">End date</Label>
+          <Label htmlFor="report-range-end">Data final</Label>
           <Input
             id="report-range-end"
             type="date"
@@ -169,7 +169,7 @@ function CustomRangePicker({
         </div>
         {!valid ? (
           <p className="text-xs text-destructive">
-            Choose a start date on or before the end date.
+            Escolha uma data inicial anterior ou igual à data final.
           </p>
         ) : null}
       </PopoverContent>

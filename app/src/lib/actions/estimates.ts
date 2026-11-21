@@ -20,10 +20,10 @@ export async function createEstimateAction(businessId:string,input:EstimateFormD
 }
 
 /**
- * Saves an edited estimate. One transaction, via replace_estimate_line_items,
- * for the same reason as updateInvoiceAction: the old
- * delete-then-insert could leave an estimate with a total and no line items,
- * and it checked none of its three results.
+ * Salva um orçamento editado em uma transação, por meio de
+ * replace_estimate_line_items. Pelo mesmo motivo de updateInvoiceAction, a
+ * antiga sequência de exclusão e inserção podia deixar um orçamento com total,
+ * mas sem itens, e não verificava nenhum dos três resultados.
  */
 export async function updateEstimateAction(
   estimateId: string,
@@ -68,7 +68,7 @@ export async function updateEstimateAction(
 export async function deleteEstimateAction(estimateId: string) {
   const supabase = await createClient()
 
-  // Only allow deleting draft estimates
+  // Permite excluir somente orçamentos em rascunho
   const { data: estimate } = await supabase
     .from('estimates')
     .select('status')
@@ -76,7 +76,7 @@ export async function deleteEstimateAction(estimateId: string) {
     .single()
 
   if (estimate?.status !== 'draft') {
-    throw new Error('Only draft estimates can be deleted')
+    throw new Error('Só é possível excluir orçamentos em rascunho')
   }
 
   const { error } = await supabase
@@ -92,10 +92,10 @@ export async function deleteEstimateAction(estimateId: string) {
 }
 
 /**
- * Marks a draft estimate as sent without emailing it, so its public page
- * opens for an owner who shares the link themselves. Only a draft moves; for
- * an estimate already past draft it changes nothing and returns the current
- * status, so a repeat click is a quiet no-op.
+ * Marca um orçamento em rascunho como enviado sem mandar um e-mail, para que
+ * sua página pública fique disponível quando a pessoa responsável compartilhar
+ * o link. Apenas rascunhos são alterados; se o orçamento já passou desse estado,
+ * nada muda e o status atual é retornado, tornando um clique repetido inofensivo.
  */
 export async function markEstimateSentAction(estimateId: string) {
   const supabase = await createClient()
@@ -110,8 +110,8 @@ export async function markEstimateSentAction(estimateId: string) {
     throw new Error(error.message)
   }
   if (!data?.length) {
-    // Already past draft: a repeat click or a page opened before the
-    // document was sent. Report where it stands instead of failing.
+    // Já saiu do rascunho: pode ser um clique repetido ou uma página aberta antes de
+    // o envio do documento. Informa o status atual em vez de falhar.
     const { data: current, error: readError } = await supabase
       .from('estimates')
       .select('status')
@@ -121,9 +121,9 @@ export async function markEstimateSentAction(estimateId: string) {
       throw new Error(readError.message)
     }
     if (!current) {
-      throw new Error('Estimate not found')
+      throw new Error('Orçamento não encontrado')
     }
-    // Typed like the estimate rows the detail page already holds.
+    // Tipado como as linhas do orçamento já mantidas pela página de detalhes.
     return { changed: false, status: current.status as EstimateStatus }
   }
 
@@ -136,7 +136,7 @@ export async function convertEstimateAction(estimateId: string) {
   const supabase = await createClient()
   const { data: estimate, error: fetchError } = await supabase.from('estimates')
     .select('*, line_items:estimate_line_items(*)').eq('id', estimateId).single()
-  if (fetchError || !estimate) throw new Error('Estimate not found')
+  if (fetchError || !estimate) throw new Error('Orçamento não encontrado')
   const { data: result, error } = await supabase.rpc('convert_estimate_to_invoice', {
     p_estimate_id: estimateId, p_public_id: generatePublicId(),
     p_issue_date: todayISO(),
@@ -144,7 +144,7 @@ export async function convertEstimateAction(estimateId: string) {
     p_line_items: estimate.line_items.map((line) => ({ ...line })),
     p_subtotal: estimate.subtotal, p_total: estimate.total,
   })
-  if (error || !result) throw new Error(error?.message || 'Could not convert estimate')
+  if (error || !result) throw new Error(error?.message || 'Não foi possível converter o orçamento')
   revalidatePath('/estimates')
   revalidatePath('/invoices')
   return (result as { invoice: { id: string } }).invoice

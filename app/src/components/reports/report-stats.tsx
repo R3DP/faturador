@@ -1,13 +1,14 @@
 'use client'
 
 /**
- * The KPI row. Four headline numbers, each with an optional period-over-period
- * delta.
+ * A linha de indicadores apresenta quatro números principais, cada um com variação opcional
+ * em relação ao período anterior.
  *
- * Direction is carried by an arrow and a signed number as well as colour, so a
- * reader who cannot separate the green from the red still sees which way it
- * went. Values use proportional figures (tabular-nums makes a large number
- * look loose); only the delta, which sits in a row of small text, is tabular.
+ * A direção é indicada por uma seta e por um número com sinal, além da cor, para que
+ * quem não distingue verde de vermelho também perceba em que sentido o valor variou.
+ * Os valores principais usam algarismos proporcionais, pois os algarismos tabulares podem
+ * deixar números grandes visualmente espaçados; apenas a variação, exibida em texto pequeno,
+ * usa algarismos tabulares para facilitar a comparação.
  */
 
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from 'lucide-react'

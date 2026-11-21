@@ -12,14 +12,14 @@ import {
 } from './rate-limit'
 
 /**
- * A fake that models the contract of the consume_rate_limit RPC: fixed windows keyed on (bucket, floor(now / window)), and a
- * single atomic read-modify-write, like INSERT ... ON CONFLICT DO UPDATE.
+ * Implementação simulada que reproduz o contrato da RPC consume_rate_limit: janelas fixas indexadas por (bucket, floor(now / window)) e uma
+ * única operação atômica de leitura-modificação-gravação, como INSERT ... ON CONFLICT DO UPDATE.
  *
- * The `await` before the counter is touched simulates the network round trip.
- * The counter mutation itself is synchronous, which is what makes it atomic:
- * no other pending call can interleave between reading and writing. That is
- * exactly the property the SQL statement has and the old in-memory limiter's
- * filter/push/set sequence did not.
+ * O `await` antes de acessar o contador simula a ida e volta pela rede.
+ * A alteração do contador em si é síncrona, o que a torna atômica:
+ * nenhuma outra chamada pendente pode se intercalar entre a leitura e a gravação. Essa é
+ * exatamente a propriedade da instrução SQL que a antiga sequência do limitador em memória
+ * com filter/push/set não tinha.
  */
 function atomicStore(clock: { now: number }) {
   const rows = new Map<string, { windowStart: number; hits: number }>()
@@ -35,7 +35,7 @@ function atomicStore(clock: { now: number }) {
       const bucket = args.p_bucket as string
       const limit = args.p_limit as number
       const windowSeconds = args.p_window_seconds as number
-      // Round trip. Everything after this point runs without interleaving.
+      // Ida e volta. Tudo depois deste ponto é executado sem intercalação.
       await Promise.resolve()
       const { rowKey, windowStart } = key(bucket, windowSeconds)
       const existing = rows.get(rowKey)
@@ -65,7 +65,7 @@ function atomicStore(clock: { now: number }) {
   return store
 }
 
-/** A store that reads, yields, then writes: the race the RPC exists to avoid. */
+/** Um armazenamento que lê, cede a execução e depois grava: a condição de corrida que a RPC evita. */
 function racyStore() {
   const rows = new Map<string, number>()
   const store: RateLimitStore = {
@@ -88,7 +88,7 @@ function racyStore() {
 
 const POLICY = { limit: 3, windowMs: 60_000 }
 
-/** Installs one shared fake store (a single factory instance, as in production). */
+/** Instala um armazenamento simulado compartilhado (uma única instância da fábrica, como em produção). */
 function useAtomicStore() {
   const clock = { now: 1_700_000_000_000 }
   const store = atomicStore(clock)
@@ -102,22 +102,22 @@ afterEach(() => {
 })
 
 describe('rateLimitKey', () => {
-  it('is deterministic', () => {
+  it('é determinística', () => {
     expect(rateLimitKey('auth', 'a@b.com')).toBe(rateLimitKey('auth', 'a@b.com'))
   })
 
-  it('does not leak the identifier into the stored key', () => {
+  it('não expõe o identificador na chave armazenada', () => {
     const key = rateLimitKey('auth', 'victim@example.com')
     expect(key.startsWith('auth:')).toBe(true)
     expect(key).not.toContain('victim@example.com')
   })
 
-  it('produces a bounded key regardless of identifier length', () => {
+  it('produz uma chave de tamanho limitado, independentemente do comprimento do identificador', () => {
     const key = rateLimitKey('auth', 'x'.repeat(10_000))
     expect(key.length).toBeLessThanOrEqual(200)
   })
 
-  it('separates namespaces', () => {
+  it('separa espaços de nomes', () => {
     expect(rateLimitKey('auth', 'same')).not.toBe(rateLimitKey('support', 'same'))
   })
 })
@@ -127,7 +127,7 @@ describe('clientIpFrom', () => {
     vi.unstubAllEnvs()
   })
 
-  it('prefers the header Vercel sets over anything the client sent', () => {
+  it('prioriza o cabeçalho definido pela Vercel em vez de qualquer valor enviado pelo cliente', () => {
     vi.stubEnv('VERCEL', '1')
     const headers = new Headers({
       'x-vercel-forwarded-for': '9.9.9.9',
@@ -137,10 +137,10 @@ describe('clientIpFrom', () => {
     expect(clientIpFrom(headers)).toBe('9.9.9.9')
   })
 
-  it('ignores the platform headers off the platform that sets them', () => {
-    // Off Vercel. Nothing in front of the app writes x-vercel-forwarded-for or
-    // necessarily overwrites x-real-ip, so believing either hands the caller a
-    // private rate-limit bucket per forged value, i.e. no limit at all.
+  it('ignora os cabeçalhos da plataforma fora dela', () => {
+    // Fora da Vercel, nada na frente do aplicativo define x-vercel-forwarded-for nem
+    // necessariamente sobrescreve x-real-ip; confiar em qualquer um deles daria a quem chama um
+    // bucket privado de limite de requisições para cada valor forjado - ou seja, nenhum limite.
     vi.stubEnv('VERCEL', '')
     vi.stubEnv('VERCEL_ENV', '')
     const headers = new Headers({
@@ -151,7 +151,7 @@ describe('clientIpFrom', () => {
     expect(clientIpFrom(headers)).toBe('198.51.100.9')
   })
 
-  it('shares one bucket when an install has no proxy header at all', () => {
+  it('compartilha um bucket quando a instalação não recebe nenhum cabeçalho de proxy', () => {
     vi.stubEnv('VERCEL', '')
     vi.stubEnv('VERCEL_ENV', '')
     const forged = new Headers({ 'x-vercel-forwarded-for': '203.0.113.7' })
@@ -161,7 +161,7 @@ describe('clientIpFrom', () => {
     expect(ipKey('probe', clientIpFrom(forged))).toBe(ipKey('probe', clientIpFrom(other)))
   })
 
-  it('lets the operator name the header their own proxy overwrites', () => {
+  it('permite que a pessoa operadora informe qual cabeçalho o próprio proxy sobrescreve', () => {
     vi.stubEnv('VERCEL', '')
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('BILLR_TRUSTED_IP_HEADER', 'X-Real-IP')
@@ -172,37 +172,37 @@ describe('clientIpFrom', () => {
     expect(clientIpFrom(headers)).toBe('203.0.113.8')
   })
 
-  it('never takes the spoofable first x-forwarded-for entry', () => {
-    // An attacker sends `x-forwarded-for: 1.2.3.4`; the proxy appends the real
-    // peer. Keying on the first entry would hand out a fresh allowance per
-    // forged value.
+  it('nunca usa a primeira entrada falsificável de x-forwarded-for', () => {
+    // Um invasor envia `x-forwarded-for: 1.2.3.4`; o proxy acrescenta o endereço real
+    // do cliente. Usar a primeira entrada concederia uma nova cota para cada
+    // valor forjado.
     const headers = new Headers({ 'x-forwarded-for': '1.2.3.4, 203.0.113.7' })
     expect(clientIpFrom(headers)).toBe('203.0.113.7')
   })
 
-  it('falls back to x-forwarded-for when the platform header is absent', () => {
+  it('usa x-forwarded-for como alternativa quando falta o cabeçalho da plataforma', () => {
     vi.stubEnv('VERCEL', '1')
     expect(clientIpFrom(new Headers({ 'x-forwarded-for': '203.0.113.9' }))).toBe('203.0.113.9')
   })
 
-  it('returns null when there is nothing to go on', () => {
+  it('retorna null quando não há dados para usar', () => {
     expect(clientIpFrom(new Headers())).toBeNull()
   })
 
-  it('rejects a junk or oversized header value', () => {
+  it('recusa um valor de cabeçalho inválido ou grande demais', () => {
     vi.stubEnv('VERCEL', '1')
     expect(clientIpFrom(new Headers({ 'x-vercel-forwarded-for': 'not-an-ip' }))).toBeNull()
     expect(clientIpFrom(new Headers({ 'x-vercel-forwarded-for': '1'.repeat(100) }))).toBeNull()
   })
 
-  it('handles ipv6', () => {
+  it('trata IPv6', () => {
     vi.stubEnv('VERCEL', '1')
     expect(clientIpFrom(new Headers({ 'x-vercel-forwarded-for': '2001:db8::1' }))).toBe('2001:db8::1')
   })
 })
 
 describe('ipKey', () => {
-  it('puts unidentifiable callers in one shared bucket rather than waving them through', () => {
+  it('coloca chamadas sem identificação em um bucket compartilhado, em vez de liberá-las', () => {
     expect(ipKey('ns', null)).toBe(ipKey('ns', null))
     expect(ipKey('ns', null)).not.toBe(ipKey('ns', '1.2.3.4'))
   })
@@ -213,7 +213,7 @@ describe('consumeRateLimit', () => {
     useAtomicStore()
   })
 
-  it('allows up to the limit and then denies', async () => {
+  it('permite até o limite e depois bloqueia', async () => {
     expect((await consumeRateLimit('b', POLICY)).allowed).toBe(true)
     expect((await consumeRateLimit('b', POLICY)).allowed).toBe(true)
     const third = await consumeRateLimit('b', POLICY)
@@ -222,13 +222,13 @@ describe('consumeRateLimit', () => {
     expect((await consumeRateLimit('b', POLICY)).allowed).toBe(false)
   })
 
-  it('keeps a tripped bucket tripped: blocked requests still count', async () => {
+  it('mantém bloqueado um bucket que atingiu o limite: requisições bloqueadas continuam sendo contabilizadas', async () => {
     for (let i = 0; i < 10; i += 1) await consumeRateLimit('b', POLICY)
-    // Backing off for one request must not restore any allowance.
+    // Aguardar antes de uma requisição não deve restaurar nenhuma cota.
     expect((await consumeRateLimit('b', POLICY)).allowed).toBe(false)
   })
 
-  it('rolls over at the window boundary', async () => {
+  it('reinicia ao atingir o limite da janela', async () => {
     const { clock } = useAtomicStore()
 
     for (let i = 0; i < 4; i += 1) await consumeRateLimit('b', POLICY)
@@ -238,20 +238,20 @@ describe('consumeRateLimit', () => {
     expect((await consumeRateLimit('b', POLICY)).allowed).toBe(true)
   })
 
-  it('keeps buckets independent', async () => {
+  it('mantém os buckets independentes', async () => {
     for (let i = 0; i < 4; i += 1) await consumeRateLimit('one', POLICY)
     expect((await consumeRateLimit('two', POLICY)).allowed).toBe(true)
   })
 
-  it('reports a retry-after within the window', async () => {
+  it('informa o tempo de espera restante dentro da janela', async () => {
     const result = await consumeRateLimit('b', POLICY)
     expect(result.retryAfterSeconds).toBeGreaterThan(0)
     expect(result.retryAfterSeconds).toBeLessThanOrEqual(60)
   })
 })
 
-describe('atomicity under concurrency', () => {
-  it('admits exactly the limit when 200 requests race the same bucket', async () => {
+describe('atomicidade sob concorrência', () => {
+  it('admite exatamente o limite quando 200 requisições disputam o mesmo bucket', async () => {
     useAtomicStore()
 
     const results = await Promise.all(
@@ -260,9 +260,9 @@ describe('atomicity under concurrency', () => {
     expect(results.filter((r) => r.allowed).length).toBe(5)
   })
 
-  it('a read-then-write store over-admits, which is why the counter is one statement', async () => {
-    // Documents the failure mode the SQL counter avoids. If someone ever
-    // rewrites consume_rate_limit as SELECT-then-UPDATE, this is what happens.
+  it('um armazenamento que lê e depois grava admite além do limite; por isso o contador usa uma única instrução', async () => {
+    // Documenta a falha evitada pelo contador SQL. Se alguém algum dia
+    // reescrever consume_rate_limit como SELECT seguido de UPDATE, é isso que acontece.
     _setRateLimitStore(() => racyStore())
 
     const results = await Promise.all(
@@ -272,8 +272,8 @@ describe('atomicity under concurrency', () => {
   })
 })
 
-describe('fail closed', () => {
-  it('denies when the store returns an error', async () => {
+describe('falha de modo restritivo', () => {
+  it('bloqueia quando o armazenamento retorna um erro', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     _setRateLimitStore(() => ({
       rpc: async () => ({ data: null, error: { message: 'connection refused' } }),
@@ -284,11 +284,11 @@ describe('fail closed', () => {
     expect(result.degraded).toBe(true)
   })
 
-  it('denies when the store throws', async () => {
+  it('bloqueia quando o armazenamento lança uma exceção', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     _setRateLimitStore(() => ({
       rpc: async () => {
-        throw new Error('socket hang up')
+        throw new Error('conexão de socket encerrada')
       },
     }))
 
@@ -297,7 +297,7 @@ describe('fail closed', () => {
     expect(result.degraded).toBe(true)
   })
 
-  it('denies when the store answers with an unexpected shape', async () => {
+  it('bloqueia quando o armazenamento retorna um formato inesperado', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     _setRateLimitStore(() => ({ rpc: async () => ({ data: { nope: true }, error: null }) }))
 
@@ -306,7 +306,7 @@ describe('fail closed', () => {
     expect(result.degraded).toBe(true)
   })
 
-  it('allows only when a call site has explicitly opted into failing open', async () => {
+  it('permite somente quando o ponto de chamada opta explicitamente por falhar de modo permissivo', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     _setRateLimitStore(() => ({
       rpc: async () => ({ data: null, error: { message: 'down' } }),
@@ -317,13 +317,13 @@ describe('fail closed', () => {
     expect(result.degraded).toBe(true)
   })
 
-  it('every shipped policy fails closed', () => {
+  it('todas as políticas distribuídas falham de modo restritivo', () => {
     for (const [name, policy] of Object.entries(RATE_LIMITS)) {
       expect(policy.onStoreFailure ?? 'deny', `${name} must fail closed`).toBe('deny')
     }
   })
 
-  it('peek fails closed too', async () => {
+  it('a consulta prévia também falha de modo restritivo', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     _setRateLimitStore(() => ({
       rpc: async () => ({ data: null, error: { message: 'down' } }),
@@ -335,14 +335,14 @@ describe('fail closed', () => {
 })
 
 describe('peekRateLimit', () => {
-  it('does not spend allowance', async () => {
+  it('não consome a cota', async () => {
     useAtomicStore()
 
     for (let i = 0; i < 20; i += 1) await peekRateLimit('b', POLICY)
     expect((await consumeRateLimit('b', POLICY)).allowed).toBe(true)
   })
 
-  it('reports a standing block without deepening it', async () => {
+  it('informa um bloqueio vigente sem prolongá-lo', async () => {
     useAtomicStore()
 
     for (let i = 0; i < 3; i += 1) await consumeRateLimit('b', POLICY)
@@ -351,15 +351,15 @@ describe('peekRateLimit', () => {
 })
 
 describe('consumeRateLimits (layered)', () => {
-  it('spends every layer even when one already denies', async () => {
+  it('consome todas as camadas mesmo quando uma delas já bloqueia', async () => {
     useAtomicStore()
 
-    // Exhaust the per-identifier layer.
+    // Esgota a camada por identificador.
     for (let i = 0; i < 5; i += 1) await consumeRateLimit('id', { limit: 2, windowMs: 60_000 })
 
-    // Two layered attempts. Both are denied by the id layer, but the ip layer
-    // must still have been charged twice, otherwise rotating the identifier
-    // would cost an attacker nothing.
+    // Duas tentativas em camadas. Ambas são bloqueadas pela camada de ID, mas a camada de IP
+    // ainda precisa ter contabilizado as duas, senão alternar o identificador
+    // não custaria nada ao invasor.
     await consumeRateLimits([
       { bucket: 'id', policy: { limit: 2, windowMs: 60_000 } },
       { bucket: 'ip', policy: { limit: 3, windowMs: 60_000 } },
@@ -374,7 +374,7 @@ describe('consumeRateLimits (layered)', () => {
     expect(ipOnly.remaining).toBe(0)
   })
 
-  it('denies when any single layer denies', async () => {
+  it('bloqueia quando qualquer camada individual bloqueia', async () => {
     useAtomicStore()
 
     for (let i = 0; i < 3; i += 1) await consumeRateLimit('ip', { limit: 2, windowMs: 60_000 })
@@ -387,7 +387,7 @@ describe('consumeRateLimits (layered)', () => {
     expect(result.retryAfterSeconds).toBeGreaterThan(0)
   })
 
-  it('is a no-op for an empty check list', async () => {
+  it('não faz nada quando a lista de verificações está vazia', async () => {
     useAtomicStore()
     expect((await consumeRateLimits([])).allowed).toBe(true)
   })

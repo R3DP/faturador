@@ -12,11 +12,11 @@ import {
 } from '@/lib/branding/logo-url'
 
 /**
- * Business settings writes: profile, invoice defaults, branding.
+ * Gravações das configurações da empresa: perfil, padrões de fatura e identidade visual.
  *
- * Three narrow actions rather than one patch action on purpose: a generic
- * `update(businesses, patch)` behind a server action would hand the browser a
- * column picker. Each action names the columns it may write.
+ * São três actions específicas, e não uma action genérica de atualização: um
+ * `update(businesses, patch)` exposto por uma server action daria ao navegador
+ * controle para escolher colunas. Cada action declara as colunas que pode gravar.
  */
 
 const profileInput = z.object({
@@ -43,10 +43,10 @@ const invoiceDefaultsInput = z.object({
   invoice_footer: z.string().max(5000).nullish(),
 })
 
-// logo_url is NOT `z.string().url()`. In zod 4 that accepts javascript:,
-// data:, file: and vbscript:, and the value is later fetched server-side by the
-// unauthenticated public PDF route. It is either an object on this
-// installation's own Supabase storage, or empty to clear the logo. See
+// logo_url NÃO usa `z.string().url()`. No zod 4, essa validação aceita javascript:,
+// data:, file: e vbscript:, e o valor depois é buscado no servidor pela
+// rota pública de PDF sem autenticação. O valor deve ser um objeto no
+// armazenamento Supabase desta instalação ou vazio para remover o logotipo. Consulte
 // src/lib/branding/logo-url.ts.
 const brandingInput = z.object({
   primary_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
@@ -73,9 +73,9 @@ async function patchBusiness(
     .select('id')
 
   if (error) return { error: error.message }
-  // RLS answers an update on someone else's business with zero rows, not an
-  // error, so an empty result is a refusal rather than a success.
-  if (!data?.length) return { error: 'You cannot change that business.' }
+  // O RLS responde a uma atualização na empresa de outra pessoa com zero linhas,
+  // não com um erro; por isso, um resultado vazio significa recusa, não sucesso.
+  if (!data?.length) return { error: 'Você não pode alterar essa empresa.' }
 
   revalidatePath('/settings')
   return { ok: true }
@@ -93,7 +93,7 @@ export async function updateBusinessProfileAction(
       website: data.website || null,
     })
   } catch (error) {
-    return failure(error, 'Could not save those settings.')
+    return failure(error, 'Não foi possível salvar essas configurações.')
   }
 }
 
@@ -110,7 +110,7 @@ export async function updateInvoiceDefaultsAction(
       invoice_footer: data.invoice_footer || null,
     })
   } catch (error) {
-    return failure(error, 'Could not save those settings.')
+    return failure(error, 'Não foi possível salvar essas configurações.')
   }
 }
 
@@ -121,15 +121,15 @@ export async function updateBrandingAction(
   try {
     const data = brandingInput.parse(input)
     if (data.primary_color === undefined && data.logo_url === undefined) {
-      return { error: 'Nothing to update.' }
+      return { error: 'Nada para atualizar.' }
     }
-    // An empty logo clears the column rather than storing '', so every reader
-    // sees the same "no logo" value the schema default uses.
+    // Um logotipo vazio limpa a coluna em vez de armazenar '', para que todos
+    // os leitores vejam o mesmo valor "sem logotipo" definido como padrão pelo esquema.
     return await patchBusiness(businessId, {
       ...data,
       ...(data.logo_url === '' ? { logo_url: null } : {}),
     })
   } catch (error) {
-    return failure(error, 'Could not save your branding.')
+    return failure(error, 'Não foi possível salvar a identidade visual.')
   }
 }

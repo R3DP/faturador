@@ -31,19 +31,20 @@ function isActivityEntity(value: unknown): value is ActivityEntity {
 }
 
 /**
- * Coerces a raw row returned by the `get_agent_activity` RPC into an
- * `ActivityRow`. The generated Supabase types (`src/types/database.ts`)
- * report `amount` and `created_by_key_id` as non-null strings/numbers, but
- * the actual SQL returns NULL for both on several entity types (e.g.
- * `client`/`time_entry` rows always have NULL `amount`; rows created outside
- * the MCP/agent path have NULL `created_by_key_id`), so callers must not
- * trust the generated `Args`/`Returns` types directly and should route every
- * raw RPC row through this mapper instead.
+ * Converte uma linha bruta retornada pela RPC `get_agent_activity` em uma
+ * `ActivityRow`. Os tipos gerados do Supabase (`src/types/database.ts`)
+ * indicam `amount` e `created_by_key_id` como strings/números não nulos, mas
+ * o SQL real retorna NULL para ambos em vários tipos de entidade (por exemplo,
+ * linhas de `client`/`time_entry` sempre têm `amount` NULL; linhas criadas fora
+ * do fluxo MCP/agente têm `created_by_key_id` NULL), portanto quem chama não deve
+ * confiar diretamente nos tipos gerados `Args`/`Returns` e deve passar cada
+ * linha bruta da RPC por este mapeador.
  *
- * Rows with an `entity_type` outside the six known literals are dropped
- * (returns `null`) rather than thrown, since the activity feed is a
- * best-effort UI list: one unrecognized/future row type shouldn't take down
- * the whole feed. Callers should filter nulls out, e.g.
+ * Linhas com `entity_type` fora dos seis valores literais conhecidos são
+ * descartadas (retornam `null`) em vez de gerar uma exceção, pois o feed de
+ * atividades é uma lista de interface de melhor esforço: um tipo de linha
+ * desconhecido/futuro não deve derrubar o feed inteiro. Quem chama deve filtrar
+ * os valores nulos, por exemplo:
  * `rows.map(toActivityRow).filter((r): r is ActivityRow => r !== null)`.
  */
 export function toActivityRow(raw: unknown): ActivityRow | null {

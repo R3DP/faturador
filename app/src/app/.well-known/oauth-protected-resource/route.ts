@@ -1,8 +1,8 @@
 import { metadataResponse, protectedResourceMetadata } from '@/lib/oauth/metadata'
 
 /**
- * Root form of the protected-resource document, for clients that only know
- * this spelling. The path-suffix form (RFC 9728) lives in ./[...suffix]/route.ts.
+ * Formato raiz do documento de recurso protegido, para clientes que conhecem apenas
+ * esta forma. O formato com sufixo de caminho (RFC 9728) fica em ./[...suffix]/route.ts.
  */
 export const dynamic = 'force-dynamic'
 

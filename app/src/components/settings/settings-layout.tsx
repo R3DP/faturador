@@ -6,10 +6,10 @@ import { Building2, Palette, FileText, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const settingsNav = [
-  { href: '/settings/business', label: 'Business', icon: Building2 },
-  { href: '/settings/branding', label: 'Branding', icon: Palette },
-  { href: '/settings/invoices', label: 'Invoices', icon: FileText },
-  { href: '/settings/account', label: 'Account', icon: User },
+  { href: '/settings/business', label: 'Empresa', icon: Building2 },
+  { href: '/settings/branding', label: 'Identidade visual', icon: Palette },
+  { href: '/settings/invoices', label: 'Faturas', icon: FileText },
+  { href: '/settings/account', label: 'Conta', icon: User },
 ]
 
 interface SettingsLayoutProps {
@@ -21,9 +21,9 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
 
   return (
     <div className="space-y-7">
-      {/* Sidebar Navigation */}
+      {/* Navegação lateral */}
       <nav
-        aria-label="Settings sections"
+        aria-label="Seções de configurações"
         className="flex gap-6 overflow-x-auto border-b border-zinc-200"
       >
         {settingsNav.map((item) => (
@@ -44,7 +44,7 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
         ))}
       </nav>
 
-      {/* Content */}
+      {/* Conteúdo */}
       <div className="max-w-4xl">{children}</div>
     </div>
   )

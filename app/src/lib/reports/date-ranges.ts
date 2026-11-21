@@ -1,19 +1,20 @@
 /**
- * Date-range presets, comparison periods and time bucketing for reports.
- * Pure - no React, no I/O.
+ * Predefinições de intervalos de datas, períodos de comparação e agrupamento temporal dos relatórios.
+ * Funções puras, sem React nem entrada/saída.
  *
- * Timezone discipline: this file follows, and no longer defines, the app-wide
- * calendar-date rule. See src/lib/dates.ts for the full statement of it. In
- * short: every date reported on lives in a Postgres DATE column, a DATE has no
- * timezone, so nothing here converts to or from UTC. Calendar dates are
- * 'yyyy-MM-dd' strings, parsed to LOCAL midnight. Postgres buckets with
- * date_trunc on the same DATE columns, so the server and the client agree on
- * which day a row belongs to.
+ * Regra de fuso horário: este arquivo segue, mas não define mais, a regra de datas
+ * de calendário usada em todo o aplicativo. Consulte src/lib/dates.ts para ver a
+ * explicação completa. Em resumo: todas as datas dos relatórios ficam em colunas
+ * DATE do Postgres. Como DATE não tem fuso horário, nada aqui converte datas de ou
+ * para UTC. Datas de calendário são strings 'yyyy-MM-dd', interpretadas à meia-noite
+ * LOCAL. O Postgres agrupa pelas mesmas colunas DATE com date_trunc, para que o
+ * servidor e o cliente concordem sobre o dia ao qual cada linha pertence.
  *
- * parseDay / toISODate / todayISO moved to src/lib/dates.ts so the rest of the
- * app (invoice pages, MCP tools, PDF rendering, Stripe reconciliation) shares
- * one implementation instead of each hand-rolling a variant. They are
- * re-exported here so every existing import keeps working.
+ * parseDay / toISODate / todayISO foram movidas para src/lib/dates.ts para que o
+ * restante do aplicativo (páginas de faturas, ferramentas MCP, geração de PDF e
+ * conciliação Stripe) compartilhe uma única implementação, em vez de cada parte
+ * manter sua própria variante. Elas são reexportadas aqui para preservar as
+ * importações existentes.
  */
 
 import { parseDay, toISODate, todayISO } from '@/lib/dates'
@@ -22,7 +23,6 @@ import {
   addMonths,
   differenceInCalendarDays,
   endOfMonth,
-  format,
   startOfMonth,
   startOfQuarter,
   startOfWeek,
@@ -35,9 +35,9 @@ import {
 export type BucketUnit = 'day' | 'week' | 'month'
 
 export interface ReportRange {
-  /** Inclusive start, 'yyyy-MM-dd'. */
+  /** Início inclusivo, no formato 'yyyy-MM-dd'. */
   start: string
-  /** Inclusive end, 'yyyy-MM-dd'. */
+  /** Fim inclusivo, no formato 'yyyy-MM-dd'. */
   end: string
 }
 
@@ -50,12 +50,12 @@ export type RangePresetId =
   | 'custom'
 
 export const RANGE_PRESETS: { id: RangePresetId; label: string }[] = [
-  { id: 'this_month', label: 'This month' },
-  { id: 'last_month', label: 'Last month' },
-  { id: 'quarter_to_date', label: 'Quarter to date' },
-  { id: 'year_to_date', label: 'Year to date' },
-  { id: 'last_12_months', label: 'Last 12 months' },
-  { id: 'custom', label: 'Custom range' },
+  { id: 'this_month', label: 'Este mês' },
+  { id: 'last_month', label: 'Mês passado' },
+  { id: 'quarter_to_date', label: 'Trimestre até hoje' },
+  { id: 'year_to_date', label: 'Ano até hoje' },
+  { id: 'last_12_months', label: 'Últimos 12 meses' },
+  { id: 'custom', label: 'Intervalo personalizado' },
 ]
 
 export { parseDay, toISODate, todayISO }
@@ -84,13 +84,14 @@ export function resolveRange(
 }
 
 /**
- * The period a range is compared against.
+ * O período usado para comparar um intervalo.
  *
- * Calendar-aligned presets compare to the equivalent calendar period (this
- * month vs last month, QTD vs the same stretch of the previous quarter, YTD vs
- * the same stretch of last year) because that is the comparison a business
- * owner means. A custom range has no calendar meaning, so it compares to the
- * equal-length window immediately before it.
+ * As predefinições alinhadas ao calendário são comparadas ao período equivalente
+ * (mês atual com mês anterior, trimestre até hoje com o mesmo trecho do trimestre
+ * anterior, ano até hoje com o mesmo trecho do ano passado), que é a comparação
+ * esperada por quem administra a empresa. Um intervalo personalizado não tem
+ * significado de calendário, então é comparado ao período de mesma duração
+ * imediatamente anterior.
  */
 export function previousRange(range: ReportRange, preset: RangePresetId): ReportRange {
   const start = parseDay(range.start)
@@ -99,8 +100,8 @@ export function previousRange(range: ReportRange, preset: RangePresetId): Report
   switch (preset) {
     case 'this_month': {
       const prevStart = subMonths(start, 1)
-      // Day-of-month aligned, clamped to the previous month's length so
-      // "March 1-31 vs February" does not spill into March.
+      // Alinhado ao dia do mês, limitado à duração do mês anterior para que
+      // "1 a 31 de março vs. fevereiro" não avance para março.
       const prevEnd = clampToMonth(prevStart, end.getDate())
       return { start: toISODate(prevStart), end: toISODate(prevEnd) }
     }
@@ -137,15 +138,15 @@ function clampToMonth(monthAnchor: Date, dayOfMonth: number): Date {
   return new Date(monthAnchor.getFullYear(), monthAnchor.getMonth(), Math.min(dayOfMonth, last))
 }
 
-/** Inclusive day count of a range. */
+/** Quantidade inclusiva de dias de um intervalo. */
 export function rangeLengthInDays(range: ReportRange): number {
   return differenceInCalendarDays(parseDay(range.end), parseDay(range.start)) + 1
 }
 
 /**
- * Bucket granularity for a range: enough points to show a shape, few enough
- * that the axis stays readable. Chosen from the range alone so the server and
- * the chart never disagree about the bucket.
+ * Granularidade de agrupamento do intervalo: pontos suficientes para mostrar a
+ * tendência, mas poucos o bastante para manter o eixo legível. É determinada
+ * somente pelo intervalo, para que o servidor e o gráfico sempre concordem.
  */
 export function chooseBucket(range: ReportRange): BucketUnit {
   const days = rangeLengthInDays(range)
@@ -154,12 +155,12 @@ export function chooseBucket(range: ReportRange): BucketUnit {
   return 'month'
 }
 
-/** Every bucket start in a range, matching Postgres date_trunc (weeks start Monday). */
+/** Início de cada agrupamento do intervalo, conforme date_trunc do Postgres (semanas começam na segunda-feira). */
 export function enumerateBuckets(range: ReportRange, bucket: BucketUnit): string[] {
   const end = parseDay(range.end)
   let cursor = truncateToBucket(parseDay(range.start), bucket)
   const out: string[] = []
-  // Hard stop well past any realistic range so a bad input cannot spin.
+  // Limite máximo bem além de qualquer intervalo realista, para impedir um loop infinito causado por entrada inválida.
   for (let i = 0; i < 2000 && cursor <= end; i += 1) {
     out.push(toISODate(cursor))
     cursor =
@@ -174,28 +175,32 @@ function truncateToBucket(date: Date, bucket: BucketUnit): Date {
   return startOfMonth(date)
 }
 
-/** Which bucket a calendar date falls into, as a bucket-start date string. */
+/** Agrupamento ao qual pertence uma data de calendário, como string da data inicial. */
 export function bucketKeyFor(iso: string, bucket: BucketUnit): string {
   return toISODate(truncateToBucket(parseDay(iso), bucket))
 }
 
+const MONTHS_PT_BR = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.']
+
 export function formatBucketLabel(iso: string, bucket: BucketUnit): string {
   const date = parseDay(iso)
-  if (bucket === 'day') return format(date, 'MMM d')
-  if (bucket === 'week') return format(date, 'MMM d')
-  return format(date, 'MMM yyyy')
+  const month = MONTHS_PT_BR[date.getMonth()]
+  if (bucket === 'day' || bucket === 'week') return `${date.getDate()} de ${month}`
+  return `${month} de ${date.getFullYear()}`
 }
 
 export function formatRangeLabel(range: ReportRange): string {
   const start = parseDay(range.start)
   const end = parseDay(range.end)
   const sameYear = start.getFullYear() === end.getFullYear()
+  const startLabel = `${start.getDate()} de ${MONTHS_PT_BR[start.getMonth()]}`
+  const endLabel = `${end.getDate()} de ${MONTHS_PT_BR[end.getMonth()]}`
   return sameYear
-    ? `${format(start, 'MMM d')} to ${format(end, 'MMM d, yyyy')}`
-    : `${format(start, 'MMM d, yyyy')} to ${format(end, 'MMM d, yyyy')}`
+    ? `${startLabel} a ${endLabel} de ${end.getFullYear()}`
+    : `${startLabel} de ${start.getFullYear()} a ${endLabel} de ${end.getFullYear()}`
 }
 
-/** True when a custom range is usable (both ends present, start not after end). */
+/** Indica se um intervalo personalizado é válido (as duas extremidades estão presentes e o início não vem depois do fim). */
 export function isValidRange(range: ReportRange): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(range.start) || !/^\d{4}-\d{2}-\d{2}$/.test(range.end)) return false
   return range.start <= range.end

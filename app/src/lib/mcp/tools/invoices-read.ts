@@ -26,38 +26,38 @@ const statusEnum = z.enum([
 ])
 
 /**
- * Registers the invoice read tools (list, get, get link) on the given MCP
- * server, scoped to the businesses in ctx.db.scope.
+ * Registra as ferramentas de consulta de faturas (listar, consultar e obter link) no
+ * servidor MCP informado, limitadas às empresas em ctx.db.scope.
  */
 export function registerInvoiceReadTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'list_invoices',
     {
-      title: 'List Invoices',
+      title: 'Listar faturas',
       description:
-        "List invoices for the caller's businesses, most recent first. Optionally filter by business, status (including the synthetic 'unpaid' status, which matches sent/viewed/partial/overdue), and/or client.",
+        "Lista as faturas das empresas do solicitante, das mais recentes para as mais antigas. Opcionalmente, filtre por empresa, status (incluindo o status sintético 'unpaid', que corresponde a faturas sent/viewed/partial/overdue) e/ou cliente.",
       inputSchema: z.object({
-        offset: z.number().int().min(0).max(1000000).optional().describe('Page offset. Start at 0, then use next_offset until it is null. Keep other filters unchanged.'),
+        offset: z.number().int().min(0).max(1000000).optional().describe('Deslocamento da página. Comece em 0 e use next_offset até que seja null. Mantenha os demais filtros sem alterações.'),
         business_id: z
           .string()
           .uuid()
           .optional()
           .describe(
-            'Id of the business whose invoices to list. Optional. Omit to list across all businesses in scope.'
+            'ID da empresa cujas faturas serão listadas. Opcional. Omita para listar as faturas de todas as empresas no escopo.'
           ),
         status: statusEnum
           .optional()
           .describe(
-            "Filter by status. 'unpaid' is a synthetic filter matching sent, viewed, partial, and overdue invoices."
+            "Filtra por status. 'unpaid' é um filtro sintético que corresponde a faturas sent, viewed, partial e overdue."
           ),
-        client_id: z.string().uuid().optional().describe('Filter to invoices for this client only.'),
+        client_id: z.string().uuid().optional().describe('Filtra para exibir somente as faturas deste cliente.'),
         limit: z
           .number()
           .int()
           .min(1)
           .max(100)
           .optional()
-          .describe('Max invoices to return (default 20, max 100).'),
+          .describe('Número máximo de faturas a retornar (padrão: 20; máximo: 100).'),
       }),
     },
     async ({ offset, business_id, status, client_id, limit }) => {
@@ -67,7 +67,7 @@ export function registerInvoiceReadTools(server: McpServer, ctx: McpCtx) {
         try {
           resolvedId = ctx.db.resolveBusinessId(business_id)
         } catch (err) {
-          return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+          return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
         }
         businessIds = [resolvedId]
       }
@@ -99,7 +99,7 @@ export function registerInvoiceReadTools(server: McpServer, ctx: McpCtx) {
 
       if (error) {
         console.error('list_invoices:', error)
-        return errorResult('Could not list invoices.')
+        return errorResult('Não foi possível listar as faturas.')
       }
 
       const invoices = (data ?? []).map((inv) => ({
@@ -117,19 +117,19 @@ export function registerInvoiceReadTools(server: McpServer, ctx: McpCtx) {
       }))
 
       const currencies = Array.from(new Set(invoices.map((inv) => inv.currency)))
-      const countLabel = `${invoices.length} invoice${invoices.length === 1 ? '' : 's'}`
+      const countLabel = `${invoices.length} fatura${invoices.length === 1 ? '' : 's'}`
 
       let summary: string
       if (invoices.length === 0) {
         summary = `${countLabel}.`
       } else if (currencies.length === 1) {
         const outstanding = invoices.reduce((sum, inv) => sum + (inv.balance_due ?? 0), 0)
-        summary = `${countLabel}, ${formatCurrency(outstanding, currencies[0])} outstanding`
+        summary = `${countLabel}, ${formatCurrency(outstanding, currencies[0])} em aberto`
       } else {
         const byCurrency = currencies.map((currency) => {
           const group = invoices.filter((inv) => inv.currency === currency)
           const outstanding = group.reduce((sum, inv) => sum + (inv.balance_due ?? 0), 0)
-          return `${group.length} ${currency}: ${formatCurrency(outstanding, currency)} outstanding`
+          return `${group.length} ${currency}: ${formatCurrency(outstanding, currency)} em aberto`
         })
         summary = `${countLabel} (${byCurrency.join('; ')})`
       }
@@ -150,21 +150,21 @@ export function registerInvoiceReadTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'get_invoice',
     {
-      title: 'Get Invoice',
+      title: 'Consultar fatura',
       description:
-        'Fetch full details for one invoice, including line items, client, and public/PDF links. Identify the invoice by invoice_id, or by invoice_number (optionally scoped to a specific business if the caller has more than one).',
+        'Busca todos os detalhes de uma fatura, incluindo itens, cliente e links público/PDF. Identifique a fatura por invoice_id ou por invoice_number (opcionalmente limitado a uma empresa específica quando o solicitante tiver mais de uma).',
       inputSchema: z.object({
-        invoice_id: z.string().uuid().optional().describe('Id of the invoice to fetch.'),
+        invoice_id: z.string().uuid().optional().describe('ID da fatura a consultar.'),
         invoice_number: z
           .string()
           .optional()
-          .describe('Invoice number to look up (e.g. "INV-0004"). Used only if invoice_id is omitted.'),
+          .describe('Número da fatura a localizar (por exemplo, "INV-0004"). Usado somente se invoice_id não for informado.'),
         business_id: z
           .string()
           .uuid()
           .optional()
           .describe(
-            'When looking up by invoice_number, restrict the search to this business. Optional when scoped to a single business; recommended if scoped to multiple.'
+            'Ao buscar por invoice_number, limita a pesquisa a esta empresa. Opcional quando o escopo contém uma única empresa; recomendado quando contém várias.'
           ),
       }),
     },
@@ -188,25 +188,25 @@ export function registerInvoiceReadTools(server: McpServer, ctx: McpCtx) {
 
           if (error) {
             console.error('get_invoice (by number):', error)
-            return errorResult('Could not look up invoice.')
+            return errorResult('Não foi possível localizar a fatura.')
           }
 
           if (!data || data.length === 0) {
-            return errorResult(`No invoice found with number "${invoice_number}".`)
+            return errorResult(`Nenhuma fatura encontrada com o número "${invoice_number}".`)
           }
 
           if (data.length > 1) {
             return errorResult(
-              `Multiple invoices found with number "${invoice_number}" across businesses in scope; pass business_id to disambiguate.`
+              `Há várias faturas com o número "${invoice_number}" entre as empresas no escopo; informe business_id para identificar a correta.`
             )
           }
 
           invoice = data[0]
         } else {
-          return errorResult('Provide either invoice_id or invoice_number.')
+          return errorResult('Informe invoice_id ou invoice_number.')
         }
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access invoice.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar a fatura.')
       }
 
       const [{ data: lineItems, error: lineItemsError }, { data: client, error: clientError }] =
@@ -227,16 +227,16 @@ export function registerInvoiceReadTools(server: McpServer, ctx: McpCtx) {
 
       if (lineItemsError) {
         console.error('get_invoice (line items):', lineItemsError)
-        return errorResult('Could not load line items.')
+        return errorResult('Não foi possível carregar os itens da fatura.')
       }
 
       if (clientError) {
         console.error('get_invoice (client):', clientError)
-        return errorResult('Could not load client.')
+        return errorResult('Não foi possível carregar o cliente.')
       }
 
       const result = {
-        summary: `Invoice ${invoice.invoice_number}: ${invoice.status}, ${formatCurrency(invoice.balance_due, invoice.currency)} balance due.`,
+        summary: `Fatura ${invoice.invoice_number}: ${invoice.status}, saldo de ${formatCurrency(invoice.balance_due, invoice.currency)} a pagar.`,
         invoice: {
           id: invoice.id,
           business_id: invoice.business_id,
@@ -286,11 +286,11 @@ export function registerInvoiceReadTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'get_invoice_link',
     {
-      title: 'Get Invoice Link',
+      title: 'Obter link da fatura',
       description:
-        "Get the shareable public link and PDF download link for an invoice. The invoice must belong to one of the caller's businesses.",
+        "Obtém o link público compartilhável e o link para baixar o PDF de uma fatura. A fatura deve pertencer a uma das empresas do solicitante.",
       inputSchema: z.object({
-        invoice_id: z.string().uuid().describe('Id of the invoice.'),
+        invoice_id: z.string().uuid().describe('ID da fatura.'),
       }),
     },
     async ({ invoice_id }) => {
@@ -298,11 +298,11 @@ export function registerInvoiceReadTools(server: McpServer, ctx: McpCtx) {
       try {
         invoice = await ctx.db.assertInvoiceAccess(invoice_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access invoice.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar a fatura.')
       }
 
       const result = {
-        summary: `Invoice ${invoice.invoice_number} link.`,
+        summary: `Link da fatura ${invoice.invoice_number}.`,
         public_url: publicUrl(invoice.public_id),
         pdf_url: pdfUrl(invoice.public_id),
       }

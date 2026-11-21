@@ -17,7 +17,7 @@ import { ConsentForm } from './consent-form'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Authorize access',
+  title: 'Autorizar acesso',
   robots: { index: false, follow: false },
 }
 
@@ -29,7 +29,7 @@ function first(params: SearchParams, key: string): string {
   return value ?? ''
 }
 
-/** Rebuilds this request's own URL so sign-in can return to it intact. */
+/** Reconstrói a URL desta requisição para que o login possa retornar a ela sem alterações. */
 function currentPath(params: SearchParams): string {
   const query = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {
@@ -47,7 +47,7 @@ function Problem({ title, detail }: { title: string; detail: string }) {
       <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{detail}</p>
       <p className="mt-6 text-sm">
         <Link href="/agents" className="font-medium text-primary hover:underline">
-          Go to your Billr agents settings
+          Acessar as configurações de agentes do Faturador
         </Link>
       </p>
     </div>
@@ -55,14 +55,14 @@ function Problem({ title, detail }: { title: string; detail: string }) {
 }
 
 /**
- * OAuth 2.1 authorization endpoint (the consent screen).
+ * Endpoint de autorização OAuth 2.1 (tela de consentimento).
  *
- * Order matters here. The client and its redirect URI are checked FIRST,
- * against the registration, and a failure renders on this page rather than
- * redirecting: bouncing an error to an address the client never registered is
- * how an authorization endpoint becomes an open redirector. Only once the
- * redirect URI is known to be trustworthy do protocol errors go back to the
- * client the way RFC 6749 asks.
+ * A ordem é importante. O cliente e sua URI de redirecionamento são verificados PRIMEIRO,
+ * com base no registro; se houver falha, ela é exibida nesta página em vez de
+ * redirecionar. Enviar um erro para um endereço que o cliente nunca registrou é
+ * o que transforma um endpoint de autorização em um redirecionamento aberto. Só depois que a
+ * URI de redirecionamento é considerada confiável os erros de protocolo voltam para o
+ * cliente, conforme exige a RFC 6749.
  */
 export default async function AuthorizePage({
   searchParams,
@@ -78,8 +78,8 @@ export default async function AuthorizePage({
   if (!clientId || !redirectUri) {
     return (
       <Problem
-        title="Incomplete request"
-        detail="This connection request is missing the application id or its return address, so Billr cannot tell who is asking. Start the connection again from the application."
+        title="Solicitação incompleta"
+        detail="Esta solicitação de conexão não informa o identificador do aplicativo ou o endereço de retorno, então o Faturador não consegue identificar quem está solicitando. Inicie a conexão novamente pelo aplicativo."
       />
     )
   }
@@ -88,22 +88,22 @@ export default async function AuthorizePage({
   if (!client) {
     return (
       <Problem
-        title="Unknown application"
-        detail="No application is registered with Billr under that client id. Start the connection again from the application, which will register itself first."
+        title="Aplicativo desconhecido"
+        detail="Não há nenhum aplicativo registrado no Faturador com esse identificador de cliente. Inicie a conexão novamente pelo aplicativo, que fará o próprio registro."
       />
     )
   }
   if (!matchesRegisteredRedirect(redirectUri, client.redirect_uris)) {
     return (
       <Problem
-        title="Return address does not match"
-        detail="This application asked to be sent back to an address it never registered. That is exactly the shape of a stolen-code attack, so Billr stopped here."
+        title="O endereço de retorno não corresponde"
+        detail="Este aplicativo solicitou o redirecionamento para um endereço que nunca registrou. Esse é exatamente o padrão de um ataque com código roubado, então o Faturador interrompeu o processo."
       />
     )
   }
 
-  // From here the redirect URI is trusted, so protocol errors travel back to
-  // the client instead of dead-ending on a page nobody is watching.
+  // A partir daqui, a URI de redirecionamento é confiável, então os erros do protocolo voltam para
+  // o cliente, em vez de terminarem numa página que ninguém está acompanhando.
   const fail = (error: string, description: string) =>
     redirect(
       buildRedirect(redirectUri, {
@@ -157,8 +157,8 @@ export default async function AuthorizePage({
   if (!businesses || businesses.length === 0) {
     return (
       <Problem
-        title="Create a business first"
-        detail="An agent connection is granted to one business, and this account does not have one yet. Set one up, then start the connection again."
+        title="Crie uma empresa primeiro"
+        detail="A conexão com um agente é concedida para uma empresa, e esta conta ainda não tem nenhuma. Cadastre uma empresa e depois inicie a conexão novamente."
       />
     )
   }

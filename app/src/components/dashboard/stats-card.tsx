@@ -36,7 +36,7 @@ export function StatsCard({
           )}
         >
           {change.trend === 'up' && '+'}
-          {change.value}% from last month
+          {change.value}% em relação ao mês passado
         </p>
       )}
     </div>

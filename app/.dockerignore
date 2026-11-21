@@ -12,7 +12,7 @@
 !scripts
 scripts/*
 !scripts/validate-config.mjs
-# Never admit credentials, build output, operational notes or Git history.
+# Nunca inclua credenciais, artefatos de compilação, notas operacionais ou histórico do Git.
 **/.env*
 **/.git
 **/node_modules

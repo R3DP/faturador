@@ -3,8 +3,8 @@ import { createFakeSupabase, type FakeSupabase } from '@/lib/mcp/fake-supabase'
 import { BUSINESS_ID, CLIENT_ID, ROW_ID } from './action-fixture'
 
 /**
- * Task billing writes: approving a pricing policy and turning a task into a
- * draft invoice.
+ * Gravações de faturamento de tarefas: aprovação de uma política de preços
+ * e conversão de uma tarefa em fatura de rascunho.
  */
 
 const { createClientMock } = vi.hoisted(() => ({ createClientMock: vi.fn() }))
@@ -16,7 +16,7 @@ import { approvePricingPolicy, reviewTaskInvoice } from './tasks'
 const policy = {
   business_id: BUSINESS_ID,
   client_id: CLIENT_ID,
-  name: 'Development work',
+  name: 'Trabalho de desenvolvimento',
   currency: 'USD',
   hourly_rate: 150,
   usage_multiplier: 1,
@@ -41,7 +41,7 @@ beforeEach(() => {
 })
 
 describe('approvePricingPolicy', () => {
-  it('records the policy', async () => {
+  it('registra a política', async () => {
     await expect(approvePricingPolicy(policy)).resolves.toEqual({ id: ROW_ID })
     expect(db.calls.find((call) => call.op === 'insert')?.payload).toMatchObject({
       business_id: BUSINESS_ID,
@@ -51,7 +51,7 @@ describe('approvePricingPolicy', () => {
 })
 
 describe('reviewTaskInvoice', () => {
-  it('creates the draft, keeping the request id', async () => {
+  it('cria o rascunho mantendo o request id', async () => {
     await reviewTaskInvoice(BUSINESS_ID, ROW_ID, REQUEST_ID)
     const rpc = db.calls.find((call) => call.op === 'rpc')
     expect(rpc?.fn).toBe('task_operation')

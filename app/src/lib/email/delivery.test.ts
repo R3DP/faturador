@@ -27,8 +27,8 @@ function setup() {
     },
   }
 }
-describe('durable email delivery', () => {
-  it('reuses the original payload even when PDF generation changes on a retry', async () => {
+describe('entrega durável de e-mails', () => {
+  it('reutiliza o conteúdo original mesmo quando a geração do PDF muda em uma nova tentativa', async () => {
     const { db } = setup()
     const a = await prepareDelivery(
       db,
@@ -51,7 +51,7 @@ describe('durable email delivery', () => {
     expect(a.key).toBe(b.key)
     expect(b.payload.attachment).toBe('original')
   })
-  it('returns confirmed delivery without sending again', async () => {
+  it('retorna a entrega confirmada sem enviar novamente', async () => {
     const { db } = setup()
     await prepareDelivery(db, 'b', 'i', 'invoice', request, {}, {})
     await finishDelivery(db, 'b', request)
@@ -60,7 +60,7 @@ describe('durable email delivery', () => {
         .alreadySent
     ).toBe(true)
   })
-  it('rejects reuse with different recipients', async () => {
+  it('rejeita a reutilização com destinatários diferentes', async () => {
     const { db } = setup()
     await prepareDelivery(
       db,
@@ -81,26 +81,26 @@ describe('durable email delivery', () => {
         { to: 'b@example.test' },
         {}
       )
-    ).rejects.toThrow('different email content')
+    ).rejects.toThrow('outro conteúdo de e-mail')
   })
-  it('requires review after the provider idempotency window', async () => {
+  it('exige revisão após a janela de idempotência do provedor', async () => {
     const { db, age } = setup()
     await prepareDelivery(db, 'b', 'i', 'invoice', request, {}, {})
     age()
     await expect(
       prepareDelivery(db, 'b', 'i', 'invoice', request, {}, {})
-    ).rejects.toThrow('needs review')
+    ).rejects.toThrow('precisa ser verificado')
   })
 })
 
 /**
- * The daily send quota is enforced inside prepareDelivery so the web server
- * actions and the MCP send tools are both covered by one check. What matters
- * here is WHERE in the function it sits: one charge per new request id, none
- * for a retry of a send already in flight, and nothing written down when the
- * allowance is gone.
+ * A cota diária de envios é aplicada dentro de prepareDelivery, cobrindo
+ * tanto as server actions quanto as ferramentas de envio do MCP em uma única
+ * verificação. O importante é ONDE ela fica: uma cobrança por novo ID de
+ * solicitação, nenhuma em nova tentativa de envio em andamento e nenhum
+ * registro quando a cota se esgota.
  */
-describe('daily email quota inside the delivery path', () => {
+describe('cota diária de e-mails no fluxo de entrega', () => {
   const ORIGINAL = process.env.BILLR_EMAIL_DAILY_LIMIT
   afterEach(() => {
     _setRateLimitStore(null)
@@ -118,7 +118,7 @@ describe('daily email quota inside the delivery path', () => {
     return spends
   }
 
-  it('charges one send per new request id and nothing for a retry', async () => {
+  it('cobra um envio por novo ID de solicitação e nada em uma nova tentativa', async () => {
     process.env.BILLR_EMAIL_DAILY_LIMIT = '200'
     const spends = limiter(true)
     const { db } = setup()
@@ -127,18 +127,18 @@ describe('daily email quota inside the delivery path', () => {
     expect(spends).toHaveLength(1)
   })
 
-  it('refuses the send without recording a delivery when the allowance is gone', async () => {
+  it('recusa o envio sem registrar uma entrega quando a cota se esgota', async () => {
     process.env.BILLR_EMAIL_DAILY_LIMIT = '200'
     limiter(false)
     const { db } = setup()
     const fake = db as unknown as ReturnType<typeof createFakeSupabase>
     await expect(
       prepareDelivery(db, 'b', 'i', 'invoice', request, {}, {})
-    ).rejects.toThrow('Daily email limit reached for this business')
+    ).rejects.toThrow('O limite diário de e-mails desta empresa foi atingido')
     expect(fake.calls.some((c) => c.op === 'insert')).toBe(false)
   })
 
-  it('does not consult the limiter when no cap applies', async () => {
+  it('não consulta o limitador quando não há cota', async () => {
     delete process.env.BILLR_EMAIL_DAILY_LIMIT
     const spends = limiter(true)
     const { db } = setup()

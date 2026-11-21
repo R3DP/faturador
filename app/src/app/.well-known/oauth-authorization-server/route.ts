@@ -1,9 +1,9 @@
 import { authorizationServerMetadata, metadataResponse } from '@/lib/oauth/metadata'
 
 /**
- * RFC 8414 authorization-server metadata, served on the app origin because that
- * is the issuer: consent needs the signed-in session, and the session cookie
- * lives here, not on the MCP host.
+ * Metadados do servidor de autorização da RFC 8414, servidos na origem do aplicativo porque ela
+ * é a emissora: o consentimento exige uma sessão autenticada, e o cookie de sessão
+ * fica aqui, não no host MCP.
  */
 export const dynamic = 'force-dynamic'
 

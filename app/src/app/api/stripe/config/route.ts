@@ -2,7 +2,7 @@ import { stripePaymentsConfigured } from '@/lib/stripe/config'
 
 export const dynamic = 'force-dynamic'
 
-/** Whether card payment is available on this installation. Never exposes key values. */
+/** Indica se o pagamento com cartão está disponível nesta instalação. Nunca expõe valores de chaves. */
 export async function GET() {
   return Response.json(
     { available: stripePaymentsConfigured() },

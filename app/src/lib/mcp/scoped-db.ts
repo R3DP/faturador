@@ -41,7 +41,7 @@ export function createScopedDb(
     if (input !== undefined) {
       if (!scope.businessIds.includes(input)) {
         throw new ScopeError(
-          `You do not have access to business ${input}. Available: ${scope.businessIds.join(', ')}`
+          `Você não tem acesso à empresa ${input}. Disponíveis: ${scope.businessIds.join(', ')}`
         )
       }
       return input
@@ -50,17 +50,17 @@ export function createScopedDb(
       return scope.businessIds[0]
     }
     throw new ScopeError(
-      `Multiple businesses in scope (${scope.businessIds.join(', ')}); pass business_id to specify which one.`
+      `Há várias empresas no escopo (${scope.businessIds.join(', ')}); informe business_id para especificar qual delas.`
     )
   }
 
   /**
-   * Single implementation behind every assert*Access helper: fetch the row by
-   * id, then refuse it unless its business_id is inside the key's scope.
+   * Implementação única usada por todos os helpers assert*Access: busca o registro pelo
+   * ID e só o permite se business_id estiver dentro do escopo da chave.
    *
-   * "Missing" and "out of scope" deliberately produce the IDENTICAL message,
-   * so a caller cannot probe for the existence of another tenant's rows by
-   * diffing error text. scoped-db.test.ts asserts that equivalence.
+   * "Ausente" e "fora do escopo" produzem deliberadamente a MESMA mensagem,
+   * para que quem chama não possa descobrir a existência de registros de outro locatário
+   * comparando o texto dos erros. scoped-db.test.ts verifica essa equivalência.
    */
   async function assertRowAccess<T extends { business_id: string }>(
     table: 'clients' | 'invoices' | 'estimates' | 'time_entries' | 'expenses' | 'payments',
@@ -73,19 +73,20 @@ export function createScopedDb(
     }
     const row = data as T | null
     if (error || !row || !scope.businessIds.includes(row.business_id)) {
-      throw new ScopeError(`${label} not found`)
+      const genderedNotFound = label === 'Fatura' || label === 'Despesa' ? 'não encontrada' : 'não encontrado'
+      throw new ScopeError(`${label} ${genderedNotFound}`)
     }
     return row
   }
 
-  const assertClientAccess = (clientId: string) => assertRowAccess<ClientRow>('clients', 'Client', clientId)
-  const assertInvoiceAccess = (invoiceId: string) => assertRowAccess<InvoiceRow>('invoices', 'Invoice', invoiceId)
+  const assertClientAccess = (clientId: string) => assertRowAccess<ClientRow>('clients', 'Cliente', clientId)
+  const assertInvoiceAccess = (invoiceId: string) => assertRowAccess<InvoiceRow>('invoices', 'Fatura', invoiceId)
   const assertEstimateAccess = (estimateId: string) =>
-    assertRowAccess<EstimateRow>('estimates', 'Estimate', estimateId)
+    assertRowAccess<EstimateRow>('estimates', 'Orçamento', estimateId)
   const assertTimeEntryAccess = (timeEntryId: string) =>
-    assertRowAccess<TimeEntryRow>('time_entries', 'Time entry', timeEntryId)
-  const assertExpenseAccess = (expenseId: string) => assertRowAccess<ExpenseRow>('expenses', 'Expense', expenseId)
-  const assertPaymentAccess = (paymentId: string) => assertRowAccess<PaymentRow>('payments', 'Payment', paymentId)
+    assertRowAccess<TimeEntryRow>('time_entries', 'Lançamento de horas', timeEntryId)
+  const assertExpenseAccess = (expenseId: string) => assertRowAccess<ExpenseRow>('expenses', 'Despesa', expenseId)
+  const assertPaymentAccess = (paymentId: string) => assertRowAccess<PaymentRow>('payments', 'Pagamento', paymentId)
 
   return {
     scope,

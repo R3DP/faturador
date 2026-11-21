@@ -4,6 +4,7 @@ import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { CalendarIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,9 +39,9 @@ import type { Expense, Client } from '@/types'
 import { parseDay } from '@/lib/dates'
 
 const expenseSchema = z.object({
-  category: z.string().min(1, 'Category is required'),
+  category: z.string().min(1, 'A categoria é obrigatória'),
   description: z.string().optional(),
-  amount: z.coerce.number().min(0.01, 'Amount must be greater than 0'),
+  amount: z.coerce.number().min(0.01, 'O valor deve ser maior que zero'),
   date: z.date(),
   vendor: z.string().optional(),
   client_id: z.string().optional(),
@@ -95,7 +96,7 @@ export function ExpenseForm({
                 name="date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date</FormLabel>
+                    <FormLabel>Data</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -108,9 +109,9 @@ export function ExpenseForm({
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {field.value ? (
-                              format(field.value, 'PPP')
+                              format(field.value, 'PPP', { locale: ptBR })
                             ) : (
-                              <span>Pick a date</span>
+                              <span>Escolha uma data</span>
                             )}
                           </Button>
                         </FormControl>
@@ -134,11 +135,11 @@ export function ExpenseForm({
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category</FormLabel>
+                    <FormLabel>Categoria</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
+                          <SelectValue placeholder="Selecione uma categoria" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -159,7 +160,7 @@ export function ExpenseForm({
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Amount</FormLabel>
+                    <FormLabel>Valor total</FormLabel>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                           {displayCurrency}
@@ -186,9 +187,9 @@ export function ExpenseForm({
                 name="vendor"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Vendor (Optional)</FormLabel>
+                    <FormLabel>Fornecedor (opcional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Office Depot" {...field} />
+                      <Input placeholder="ex.: Office Depot" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -200,10 +201,10 @@ export function ExpenseForm({
                 name="description"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>Descrição</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="What was this expense for?"
+                        placeholder="A que se refere esta despesa?"
                         rows={3}
                         {...field}
                       />
@@ -218,15 +219,15 @@ export function ExpenseForm({
                 name="client_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Client (Optional)</FormLabel>
+                    <FormLabel>Cliente (opcional)</FormLabel>
                     <Select value={field.value || 'none'} onValueChange={(value) => field.onChange(value === 'none' ? '' : value)}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select client" />
+                          <SelectValue placeholder="Selecione um cliente" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="none">No client</SelectItem>
+                        <SelectItem value="none">Sem cliente</SelectItem>
                         {clients.map((client) => (
                           <SelectItem key={client.id} value={client.id}>
                             {client.name}
@@ -235,7 +236,7 @@ export function ExpenseForm({
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Associate this expense with a client
+                      Vincule esta despesa a um cliente
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -254,9 +255,9 @@ export function ExpenseForm({
                       />
                     </FormControl>
                     <div className="flex-1">
-                      <FormLabel className="cursor-pointer">Billable Expense</FormLabel>
+                      <FormLabel className="cursor-pointer">Despesa faturável</FormLabel>
                       <FormDescription>
-                        This expense can be added to a client invoice
+                        Esta despesa pode ser incluída na fatura de um cliente
                       </FormDescription>
                     </div>
                   </FormItem>
@@ -268,14 +269,14 @@ export function ExpenseForm({
 
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            Cancelar
           </Button>
           <Button type="submit" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting
-              ? 'Saving...'
+              ? 'Salvando...'
               : expense
-              ? 'Update Expense'
-              : 'Add Expense'}
+              ? 'Atualizar despesa'
+              : 'Adicionar despesa'}
           </Button>
         </div>
       </form>

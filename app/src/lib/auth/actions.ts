@@ -9,28 +9,28 @@ import { admitAccount, signupIsOpen } from './admission'
 import { ACCESS_CHECK_FAILED_MESSAGE, SIGNUP_CLOSED_MESSAGE } from './signup-closed'
 
 /**
- * Server actions for sign-in, sign-up and password-reset requests.
+ * Ações de servidor para solicitações de entrada, cadastro e redefinição de senha.
  *
- * These exist so authentication passes through a server we control. Before this
- * the auth pages called supabase.auth.* straight from the browser, which meant
- * there was no point in the request path where a rate limit could be applied:
- * an attacker could grind passwords against Supabase Auth at whatever rate it
- * would accept, and nothing of ours would ever see it.
+ * Elas garantem que a autenticação passe por um servidor sob nosso controle.
+ * Antes, as páginas de autenticação chamavam supabase.auth.* diretamente do
+ * navegador, sem nenhum ponto no caminho da solicitação onde fosse possível
+ * aplicar um limite de tentativas: um invasor poderia testar senhas contra o
+ * Supabase Auth na velocidade permitida pelo serviço, sem passar por nós.
  *
- * Running the calls through @/lib/supabase/server also puts session cookie
- * handling on the server, which is where it belongs.
+ * Executar as chamadas por @/lib/supabase/server também coloca o gerenciamento
+ * do cookie de sessão no servidor, onde ele deve ficar.
  *
- * Password RESET completion (updateUser after following the emailed link) is
- * deliberately still client-side: that flow needs the recovery session that
- * Supabase establishes from the URL fragment, which never reaches the server,
- * and it is not a credential-guessing surface because it already requires a
- * valid single-use recovery token.
+ * A conclusão da REDEFINIÇÃO DE SENHA (updateUser após acessar o link enviado
+ * por e-mail) continua deliberadamente no cliente: esse fluxo precisa da sessão
+ * de recuperação que o Supabase estabelece a partir do fragmento da URL, que
+ * nunca chega ao servidor. Além disso, não é uma superfície para tentativa de
+ * adivinhar credenciais, pois exige um token de recuperação válido e de uso único.
  */
 
 export interface AuthActionResult {
   success: boolean
   error?: string
-  /** Set when the caller was rate limited or locked out, for a Retry-After style hint. */
+  /** Definido quando a pessoa que fez a solicitação atingiu o limite ou foi bloqueada, como indicação no estilo Retry-After. */
   retryAfterSeconds?: number
 }
 
@@ -43,13 +43,14 @@ const signInSchema = z.object({
 
 const resetSchema = z.object({ email: emailSchema })
 
-// Generic on purpose. Distinguishing "no such account" from "wrong password"
-// turns the login form into an account-enumeration oracle.
-const INVALID_CREDENTIALS = 'That email or password is not right. Please try again.'
+// A mensagem é genérica de propósito. Diferenciar "conta inexistente" de
+// "senha incorreta" transformaria o formulário de entrada em uma ferramenta
+// para descobrir quais contas existem.
+const INVALID_CREDENTIALS = 'E-mail ou senha incorretos. Tente novamente.'
 
 /**
- * Asks whether this account may use the installation. Returns the decision, or
- * 'unavailable' when the database could not answer (never an admission).
+ * Verifica se esta conta pode usar a instalação. Retorna a decisão ou
+ * 'unavailable' quando o banco de dados não consegue responder (nunca admite a conta).
  */
 async function admission(userId: string): Promise<boolean | null | 'unavailable'> {
   try {
@@ -82,9 +83,8 @@ export async function signInAction(input: {
     return { success: false, error: INVALID_CREDENTIALS }
   }
 
-  // Sign-up closes after the first account. An account that was never
-  // admitted (for example one made directly against Supabase Auth) gets no
-  // session here.
+  // O cadastro fecha após a primeira conta. Uma conta que nunca foi admitida
+  // (por exemplo, criada diretamente no Supabase Auth) não recebe uma sessão.
   const admitted = data.user ? await admission(data.user.id) : false
   if (admitted !== true) {
     await supabase.auth.signOut()
@@ -98,7 +98,7 @@ export async function signInAction(input: {
 }
 
 export interface SignUpActionResult extends AuthActionResult {
-  /** True when Supabase returned an active session (email autoconfirm is on). */
+  /** Indica que o Supabase retornou uma sessão ativa (a confirmação automática por e-mail está ativada). */
   hasSession?: boolean
 }
 
@@ -132,13 +132,14 @@ export async function signUpAction(input: {
   })
 
   if (error) {
-    // A rejected sign-up is a failed attempt: sign-up is the other endpoint an
-    // attacker can use to enumerate which addresses are already registered.
+    // Um cadastro rejeitado conta como tentativa malsucedida: o cadastro é
+    // outro endpoint que um invasor pode usar para descobrir quais endereços
+    // já estão registrados.
     await recordAuthFailure(email, guard.ip)
     return { success: false, error: error.message }
   }
 
-  // Settles the race between two first sign-ups: only one becomes the owner.
+  // Resolve a disputa entre dois primeiros cadastros: somente um se torna responsável.
   if (data.user) {
     const admitted = await admission(data.user.id)
     if (admitted === false || admitted === 'unavailable') {
@@ -157,8 +158,8 @@ export async function requestPasswordResetAction(input: {
   email: string
 }): Promise<AuthActionResult> {
   const parsed = resetSchema.safeParse(input)
-  // Always report success for a malformed or unknown address: the reset form
-  // must not reveal whether an account exists.
+  // Sempre informa sucesso para um endereço inválido ou desconhecido: o formulário
+  // de redefinição não deve revelar se uma conta existe.
   if (!parsed.success) return { success: true }
 
   const { email } = parsed.data
@@ -175,15 +176,15 @@ export async function requestPasswordResetAction(input: {
 
   if (error) {
     console.error('requestPasswordResetAction:', error.message)
-    // Still a success from the caller's point of view, for the same
-    // enumeration reason. The attempt allowance was already spent.
+    // Ainda é sucesso para quem fez a solicitação, pelo mesmo motivo de não
+    // revelar contas existentes. O limite de tentativas já foi consumido.
     return { success: true }
   }
 
   return { success: true }
 }
 
-/** Whether the sign-up page should show the form. */
+/** Indica se a página de cadastro deve exibir o formulário. */
 export async function signupStatusAction(): Promise<{ open: boolean }> {
   return { open: await signupIsOpen() }
 }

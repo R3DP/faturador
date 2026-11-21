@@ -19,7 +19,7 @@ export function TaskUsageReview({ taskId }: { taskId: string }) {
       .order('created_at')
       .order('id')
       .range(index * 50, index * 50 + 49)
-    if (error) setError('Could not load usage. Retry before approving billing.')
+    if (error) setError('Não foi possível carregar o uso. Tente novamente antes de aprovar a cobrança.')
     else {
       setRows(data || [])
       setCount(count || 0)
@@ -35,7 +35,7 @@ export function TaskUsageReview({ taskId }: { taskId: string }) {
       }}
     >
       <summary className="cursor-pointer text-sm">
-        Review reported usage sources
+        Revisar fontes de uso informadas
       </summary>
       {error && (
         <p role="alert" className="text-sm mt-2">
@@ -43,7 +43,7 @@ export function TaskUsageReview({ taskId }: { taskId: string }) {
         </p>
       )}
       {loading ? (
-        <p>Loading usage…</p>
+        <p>Carregando uso…</p>
       ) : (
         <>
           <ul className="mt-2 space-y-2 text-sm">
@@ -51,7 +51,7 @@ export function TaskUsageReview({ taskId }: { taskId: string }) {
               <li key={u.id} className="break-words">
                 {u.provider} {u.model}: {u.cost} {u.currency} ·{' '}
                 {u.provider_request_id}
-                <p className="text-muted-foreground">Source: {u.source}</p>
+                <p className="text-muted-foreground">Origem: {u.source}</p>
               </li>
             ))}
           </ul>
@@ -62,12 +62,12 @@ export function TaskUsageReview({ taskId }: { taskId: string }) {
               disabled={page === 0}
               onClick={() => load(page - 1)}
             >
-              Previous
+              Voltar
             </Button>
             <span>
               {count === 0
-                ? 'No usage reported'
-                : `${page * 50 + 1}–${Math.min((page + 1) * 50, count)} of ${count}`}
+                ? 'Nenhum uso informado'
+                : `${page * 50 + 1}–${Math.min((page + 1) * 50, count)} de ${count}`}
             </span>
             <Button
               variant="outline"
@@ -75,11 +75,11 @@ export function TaskUsageReview({ taskId }: { taskId: string }) {
               disabled={(page + 1) * 50 >= count}
               onClick={() => load(page + 1)}
             >
-              Next
+              Próximo
             </Button>
             {error && (
               <Button variant="outline" size="sm" onClick={() => load(page)}>
-                Retry
+                Tentar novamente
               </Button>
             )}
           </div>

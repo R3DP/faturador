@@ -1,5 +1,5 @@
-// Application Types
-// These extend the database types with additional properties
+// Tipos da aplicação
+// Estes estendem os tipos do banco de dados com propriedades adicionais
 
 export interface Profile {
   id: string
@@ -55,8 +55,8 @@ export interface Client {
   currency: string
   payment_terms: number
   notes: string | null
-  // Per-client money (invoiced, paid, outstanding) comes from the
-  // client_financials view, not from this row.
+  // Os valores financeiros por cliente (faturado, pago, em aberto) vêm da
+  // view client_financials, não desta linha.
   is_active: boolean
   created_at: string
   updated_at: string
@@ -249,12 +249,12 @@ export interface Payment {
   stripe_payment_id: string | null
   created_at: string
   /**
-   * Where the money came from. "stripe" money is owned by the
-   * verified Stripe flow and cannot be edited or voided in the app; the path
-   * for card money is a refund.
+   * Origem do dinheiro. Valores "stripe" pertencem ao fluxo verificado do
+   * Stripe e não podem ser editados nem estornados no app; para valores de
+   * cartão, o caminho é o reembolso.
    */
   source?: 'manual' | 'agent' | 'stripe'
-  /** Set once voided. A voided payment stays visible but stops being money. */
+  /** Definido uma vez ao estornar. O pagamento estornado continua visível, mas deixa de contar como dinheiro. */
   voided_at?: string | null
   void_reason?: string | null
   updated_at?: string | null
@@ -282,7 +282,7 @@ export interface TimeEntry {
   updated_at: string
 }
 
-// Status color mappings for badges
+// Mapeamentos de cores de status para os selos
 export const invoiceStatusColors: Record<InvoiceStatus, string> = {
   draft: 'bg-gray-100 text-gray-700',
   sent: 'bg-blue-100 text-blue-700',

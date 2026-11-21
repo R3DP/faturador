@@ -1,6 +1,6 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Consulte https://help.github.com/articles/ignoring-files/ para saber mais sobre arquivos ignorados.
 
-# dependencies
+# dependências
 /node_modules
 /.pnp
 .pnp.*
@@ -10,27 +10,27 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
+# testes
 /coverage
 
 # next.js
 /.next/
 /out/
 
-# production
+# produção
 /build
 
-# misc
+# diversos
 .DS_Store
 *.pem
 
-# debug
+# depuração
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# arquivos de ambiente (podem ser incluídos no commit se necessário)
 .env*
 
 # vercel
@@ -41,10 +41,10 @@ yarn-error.log*
 next-env.d.ts
 !.env.example
 
-# Local self-host installation state and keys
+# Estado e chaves da instalação local auto-hospedada
 .self-host/
 .env.local
 
-# Written by next dev when it runs under a coding agent
+# Criado pelo next dev quando executado por um agente de programação
 /AGENTS.md
 /CLAUDE.md

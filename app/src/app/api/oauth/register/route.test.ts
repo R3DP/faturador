@@ -26,8 +26,8 @@ function post(body: unknown, contentType = 'application/json'): Request {
   })
 }
 
-describe('dynamic client registration', () => {
-  it('registers a public client and stores name plus redirect URIs', async () => {
+describe('registro dinâmico de cliente', () => {
+  it('registra um cliente público e armazena o nome e as URIs de redirecionamento', async () => {
     const res = await POST(
       post({
         client_name: 'Claude',
@@ -51,17 +51,17 @@ describe('dynamic client registration', () => {
     })
   })
 
-  it('accepts a loopback redirect on any port, which is how CLIs connect', async () => {
+  it('aceita um redirecionamento de loopback em qualquer porta, como fazem as interfaces de linha de comando', async () => {
     const res = await POST(
       post({ client_name: 'Claude Code', redirect_uris: ['http://localhost:51873/callback'] })
     )
     expect(res.status).toBe(201)
   })
 
-  it('names an unnamed client rather than storing an empty label', async () => {
+  it('atribui um nome ao cliente em vez de armazenar um rótulo vazio', async () => {
     const res = await POST(post({ redirect_uris: ['https://a.example/cb'] }))
     expect(res.status).toBe(201)
-    expect((await res.json()).client_name).toBe('MCP client')
+    expect((await res.json()).client_name).toBe('Cliente MCP')
   })
 
   it.each([
@@ -76,7 +76,7 @@ describe('dynamic client registration', () => {
     expect(db.tables.oauth_clients ?? []).toHaveLength(0)
   })
 
-  it('rejects a confidential client, because no secret is ever issued', async () => {
+  it('rejeita um cliente confidencial, pois nenhum segredo é emitido', async () => {
     const res = await POST(
       post({
         client_name: 'x',
@@ -88,7 +88,7 @@ describe('dynamic client registration', () => {
     expect((await res.json()).error).toBe('invalid_client_metadata')
   })
 
-  it('rejects grants and response types we do not implement', async () => {
+  it('rejeita concessões e tipos de resposta não implementados', async () => {
     const implicit = await POST(
       post({
         redirect_uris: ['https://a.example/cb'],
@@ -106,12 +106,12 @@ describe('dynamic client registration', () => {
     expect(password.status).toBe(400)
   })
 
-  it('rejects a body that is not a JSON object', async () => {
+  it('rejeita um corpo que não seja um objeto JSON', async () => {
     expect((await POST(post('not json'))).status).toBe(400)
     expect((await POST(post([1, 2]))).status).toBe(400)
   })
 
-  it('fails closed when the rate limiter denies', async () => {
+  it('bloqueia a operação quando o limitador de frequência a recusa', async () => {
     _setRateLimitStore(() => ({
       rpc: async () => ({
         data: [{ allowed: false, remaining: 0, retry_after_seconds: 900 }],

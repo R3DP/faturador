@@ -90,23 +90,23 @@ export default function InvoicesPage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Invoices"
-        description="Create and manage your invoices"
+        title="Faturas"
+        description="Crie e gerencie suas faturas"
       >
         <Button asChild>
           <Link href="/invoices/new">
             <Plus className="mr-2 h-4 w-4" />
-            New Invoice
+            Nova fatura
           </Link>
         </Button>
       </PageHeader>
 
-      {/* Filters */}
+      {/* Filtros */}
       <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1 sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search invoices..."
+            placeholder="Buscar faturas..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -114,22 +114,22 @@ export default function InvoicesPage() {
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
+            <SelectValue placeholder="Filtrar por status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="sent">Sent</SelectItem>
-            <SelectItem value="viewed">Viewed</SelectItem>
-            <SelectItem value="paid">Paid</SelectItem>
-            <SelectItem value="partial">Partial</SelectItem>
-            <SelectItem value="overdue">Overdue</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
+            <SelectItem value="all">Todos os status</SelectItem>
+            <SelectItem value="draft">Rascunho</SelectItem>
+            <SelectItem value="sent">Enviada</SelectItem>
+            <SelectItem value="viewed">Visualizada</SelectItem>
+            <SelectItem value="paid">Paga</SelectItem>
+            <SelectItem value="partial">Parcial</SelectItem>
+            <SelectItem value="overdue">Atrasada</SelectItem>
+            <SelectItem value="cancelled">Cancelada</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Invoice List */}
+      {/* Lista de faturas */}
       <div className="mt-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -140,15 +140,15 @@ export default function InvoicesPage() {
             <CardContent className="py-12">
               <EmptyState
                 icon={FileText}
-                title={searchQuery || statusFilter !== 'all' ? 'No invoices found' : 'No invoices yet'}
+                title={searchQuery || statusFilter !== 'all' ? 'Nenhuma fatura encontrada' : 'Nenhuma fatura cadastrada'}
                 description={
                   searchQuery || statusFilter !== 'all'
-                    ? 'Try adjusting your search or filter'
-                    : 'Create your first invoice to start getting paid'
+                    ? 'Ajuste a busca ou o filtro'
+                    : 'Crie sua primeira fatura para começar a receber pagamentos'
                 }
                 action={
                   !searchQuery && statusFilter === 'all'
-                    ? { label: 'Create Invoice', href: '/invoices/new' }
+                    ? { label: 'Criar fatura', href: '/invoices/new' }
                     : undefined
                 }
               />
@@ -160,11 +160,11 @@ export default function InvoicesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Invoice</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Fatura</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Situação</TableHead>
+                    <TableHead>Vencimento</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -207,19 +207,23 @@ export default function InvoicesPage() {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={'Ações da fatura ' + invoice.invoice_number}
+                            >
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
                               <Link href={`/invoices/${invoice.id}`}>
-                                View
+                                Ver
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                               <Link href={`/invoices/${invoice.id}/edit`}>
-                                Edit
+                                Editar
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
@@ -227,7 +231,7 @@ export default function InvoicesPage() {
                                 href={`/i/${invoice.public_id}`}
                                 target="_blank"
                               >
-                                View public link
+                                Ver link público
                               </Link>
                             </DropdownMenuItem>
                           </DropdownMenuContent>

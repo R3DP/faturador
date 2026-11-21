@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 
-describe('vitest setup', () => {
-  it('runs', () => {
+describe('configuração do Vitest', () => {
+  it('executa', () => {
     expect(1 + 1).toBe(2)
   })
 })

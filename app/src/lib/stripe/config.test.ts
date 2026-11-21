@@ -12,11 +12,11 @@ afterEach(() => {
 })
 
 describe('stripeSetup', () => {
-  it('is configured in test mode with a matching test pair and a webhook secret', () => {
+  it('está configurado no modo de teste com o par de chaves correspondente e um segredo de webhook', () => {
     expect(stripeSetup(TEST)).toEqual({ configured: true, mode: 'test' })
   })
 
-  it('is configured in live mode with a matching live pair', () => {
+  it('está configurado no modo de produção com o par de chaves correspondente', () => {
     expect(
       stripeSetup({
         STRIPE_SECRET_KEY: 'sk_live_example',
@@ -26,14 +26,14 @@ describe('stripeSetup', () => {
     ).toEqual({ configured: true, mode: 'live' })
   })
 
-  it('accepts a restricted secret key', () => {
+  it('aceita uma chave secreta restrita', () => {
     expect(stripeSetup({ ...TEST, STRIPE_SECRET_KEY: 'rk_test_example' })).toEqual({
       configured: true,
       mode: 'test',
     })
   })
 
-  it('names every missing variable', () => {
+  it('indica todas as variáveis ausentes', () => {
     expect(stripeSetup({})).toEqual({
       configured: false,
       missing: ['STRIPE_SECRET_KEY', 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', 'STRIPE_WEBHOOK_SECRET'],
@@ -41,7 +41,7 @@ describe('stripeSetup', () => {
     })
   })
 
-  it('treats a value of only spaces as missing', () => {
+  it('considera ausente um valor que contém somente espaços', () => {
     expect(stripeSetup({ ...TEST, STRIPE_WEBHOOK_SECRET: '   ' })).toEqual({
       configured: false,
       missing: ['STRIPE_WEBHOOK_SECRET'],
@@ -49,36 +49,36 @@ describe('stripeSetup', () => {
     })
   })
 
-  it('refuses a test secret key with a live publishable key', () => {
+  it('recusa uma chave secreta de teste com uma chave publicável de produção', () => {
     expect(stripeSetup({ ...TEST, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_live_example' })).toMatchObject({
       configured: false,
       missing: [],
-      problem: expect.stringMatching(/different modes/),
+      problem: expect.stringMatching(/modos diferentes/),
     })
   })
 
-  it('refuses a publishable key pasted into the secret key slot', () => {
+  it('recusa uma chave publicável inserida no campo da chave secreta', () => {
     expect(stripeSetup({ ...TEST, STRIPE_SECRET_KEY: 'pk_test_example' })).toMatchObject({
       configured: false,
-      problem: expect.stringMatching(/STRIPE_SECRET_KEY must start with/),
+      problem: expect.stringMatching(/STRIPE_SECRET_KEY deve começar com/),
     })
   })
 
-  it('refuses a publishable key with an unknown prefix', () => {
+  it('recusa uma chave publicável com prefixo desconhecido', () => {
     expect(stripeSetup({ ...TEST, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: 'test_example' })).toMatchObject({
       configured: false,
-      problem: expect.stringMatching(/NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY must start with/),
+      problem: expect.stringMatching(/NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY deve começar com/),
     })
   })
 
-  it('refuses a webhook secret that is not a signing secret', () => {
+  it('recusa um segredo de webhook que não seja um segredo de assinatura', () => {
     expect(stripeSetup({ ...TEST, STRIPE_WEBHOOK_SECRET: 'sk_test_example' })).toMatchObject({
       configured: false,
       problem: expect.stringMatching(/whsec_/),
     })
   })
 
-  it('reads the process environment by default', () => {
+  it('lê o ambiente do processo por padrão', () => {
     vi.stubEnv('STRIPE_SECRET_KEY', TEST.STRIPE_SECRET_KEY)
     vi.stubEnv('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', TEST.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
     vi.stubEnv('STRIPE_WEBHOOK_SECRET', TEST.STRIPE_WEBHOOK_SECRET)
@@ -87,7 +87,7 @@ describe('stripeSetup', () => {
 })
 
 describe('stripePaymentsConfigured', () => {
-  it('answers yes or no for callers that need nothing more', () => {
+  it('responde sim ou não para chamadas que precisam somente dessa informação', () => {
     expect(stripePaymentsConfigured(TEST)).toBe(true)
     expect(stripePaymentsConfigured({})).toBe(false)
   })

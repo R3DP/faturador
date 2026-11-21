@@ -12,12 +12,12 @@ const app = fileURLToPath(new URL('../', import.meta.url))
 const target = resolve(app, '.env.local')
 if (existsSync(target))
   throw Error(
-    'Refusing to overwrite .env.local. Use your existing installation or move the file yourself.',
+    'Recusando-se a sobrescrever .env.local. Use a instalação existente ou mova o arquivo manualmente.',
   )
 const port = Number(process.env.BILLR_LOCAL_APP_PORT || 3000)
 const base = Number(process.env.BILLR_LOCAL_DB_PORT || 56421)
 if (![port, base].every((n) => Number.isInteger(n) && n >= 1024 && n < 65000))
-  throw Error('Local ports must be integers from 1024 to 64999')
+  throw Error('As portas locais devem ser números inteiros de 1024 a 64999')
 const project = `billr-local-${base}`
 const work = resolve(app, '.self-host', project)
 mkdirSync(resolve(work, 'supabase'), { recursive: true })
@@ -45,7 +45,7 @@ cpSync(
 )
 const cli = process.env.BILLR_SUPABASE_CLI || 'supabase'
 console.log(
-  'Starting an isolated LOCAL DEVELOPMENT database. Docker must be running; first start can take several minutes.',
+  'Iniciando um banco de dados isolado de DESENVOLVIMENTO LOCAL. O Docker precisa estar em execução; a primeira inicialização pode levar vários minutos.',
 )
 try {
   execFileSync(
@@ -60,9 +60,9 @@ try {
     { stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 16 * 1024 * 1024 },
   )
 } catch (error) {
-  // Never echo CLI output: it can contain API/admin keys.
+  // Nunca exiba a saída da CLI: ela pode conter chaves de API/administrador.
   throw Error(
-    `Local database startup failed (exit ${error.status}). Inspect Docker and run supabase start --workdir ${work} in your own terminal.`,
+    `Falha ao iniciar o banco de dados local (código ${error.status}). Verifique o Docker e execute supabase start --workdir ${work} no seu terminal.`,
   )
 }
 const status = JSON.parse(
@@ -72,7 +72,7 @@ const status = JSON.parse(
   }),
 )
 for (const key of ['API_URL', 'ANON_KEY', 'SERVICE_ROLE_KEY'])
-  if (!status[key]) throw Error(`Local Supabase did not return ${key}`)
+  if (!status[key]) throw Error(`O Supabase local não retornou ${key}`)
 const env = {
   NEXT_PUBLIC_APP_URL: `http://localhost:${port}`,
   NEXT_PUBLIC_SUPABASE_URL: status.API_URL,
@@ -87,11 +87,11 @@ writeFileSync(
   { mode: 0o600, flag: 'wx' },
 )
 console.log(
-  `Created private .env.local. Start Billr: npm run dev -- --port ${port} --hostname 127.0.0.1`,
+  `Arquivo .env.local privado criado. Inicie o Faturador: npm run dev -- --port ${port} --hostname 127.0.0.1`,
 )
 console.log(
-  `Database project: ${project}. Stop without deleting data: supabase stop --workdir .self-host/${project}`,
+  `Projeto do banco de dados: ${project}. Para parar sem excluir os dados: supabase stop --workdir .self-host/${project}`,
 )
 console.log(
-  'Local development only: do not expose this CLI stack or its development credentials to the internet. Production instructions: ../docs/self-hosting.md',
+  'Apenas para desenvolvimento local: não exponha esta pilha da CLI nem suas credenciais de desenvolvimento à internet. Instruções de produção: ../docs/self-hosting.md',
 )

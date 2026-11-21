@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
 /**
- * The MCP route as a ChatGPT or Codex plugin host sees it: tools/list carries
- * the card and auth metadata, and the ui:// cards can be listed and read.
- * Driven through the real SDK handler with a stub request context, so a change
- * in how the SDK serialises `_meta` or resources would show up here.
+ * A rota MCP como é vista por um host de plugins do ChatGPT ou Codex: tools/list inclui
+ * os metadados do cartão e de autenticação, e os cartões ui:// podem ser listados e lidos.
+ * O teste usa o manipulador real do SDK com um contexto de requisição simulado; assim, uma alteração
+ * na serialização de `_meta` ou dos recursos pelo SDK aparece aqui.
  */
 
 vi.mock('@/lib/deployment', () => ({
@@ -37,13 +37,13 @@ async function rpc(method: string, params: Record<string, unknown> = {}) {
     }),
   )
   const text = await response.text()
-  // Streamable HTTP may answer as an SSE frame; take the JSON out of it.
+  // O HTTP com fluxo pode responder em um quadro SSE; extraia dele o JSON.
   const json = text.startsWith('{') ? text : text.split('\n').find((l) => l.startsWith('data:'))!.slice(5)
   return JSON.parse(json) as { result?: Record<string, unknown>; error?: unknown }
 }
 
-describe('MCP route, plugin host view', () => {
-  it('lists card and auth metadata on tools', async () => {
+describe('rota MCP, visualização do host de plug-ins', () => {
+  it('lista os metadados do cartão e da autenticação nas ferramentas', async () => {
     const { result, error } = await rpc('tools/list')
     expect(error).toBeUndefined()
     const tools = result!.tools as { name: string; _meta?: Record<string, unknown> }[]
@@ -55,11 +55,11 @@ describe('MCP route, plugin host view', () => {
     })
     const profile = tools.find((t) => t.name === 'get_profile')!
     expect(profile._meta).toMatchObject({ 'openai/profile': true })
-    // A read-only connection still never sees write tools.
+    // Uma conexão somente leitura continua sem acesso às ferramentas de escrita.
     expect(tools.some((t) => t.name === 'create_invoice')).toBe(false)
   })
 
-  it('lists and serves the cards as MCP Apps resources', async () => {
+  it('lista e disponibiliza os cartões como recursos de MCP Apps', async () => {
     const listed = await rpc('resources/list')
     const uris = (listed.result!.resources as { uri: string }[]).map((r) => r.uri)
     expect(uris).toContain('ui://billr/invoice-v1.html')

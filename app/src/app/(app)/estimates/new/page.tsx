@@ -97,8 +97,8 @@ function NewEstimatePageInner() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="New Estimate"
-        description="Create a quote for your client"
+        title="Novo orçamento"
+        description="Crie um orçamento para seu cliente"
       />
 
       <div className="mt-6">

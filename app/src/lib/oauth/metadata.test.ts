@@ -13,8 +13,8 @@ function installation() {
   vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://invoices.example.org')
 }
 
-describe('protected resource metadata', () => {
-  it('describes the resource under the installation origin', () => {
+describe('metadados do recurso protegido', () => {
+  it('descreve o recurso na origem da instalação', () => {
     installation()
     const doc = protectedResourceMetadata()
     expect(doc.resource).toBe('https://invoices.example.org/api/mcp')
@@ -23,7 +23,7 @@ describe('protected resource metadata', () => {
     expect(doc.bearer_methods_supported).toEqual(['header'])
   })
 
-  it('publishes the metadata in RFC 9728 path-suffix form', () => {
+  it('publica os metadados no formato de sufixo de caminho da RFC 9728', () => {
     installation()
     expect(protectedResourceMetadataUrl()).toBe(
       'https://invoices.example.org/.well-known/oauth-protected-resource/api/mcp'
@@ -31,7 +31,7 @@ describe('protected resource metadata', () => {
     expect(mcpResourcePath()).toBe('/api/mcp')
   })
 
-  it('answers the suffix route only for this installation resource path', () => {
+  it('responde à rota de sufixo somente para o caminho de recurso desta instalação', () => {
     installation()
     expect(matchesResourceSuffix(['api', 'mcp'])).toBe(true)
     expect(matchesResourceSuffix(['api', 'mcp', 'extra'])).toBe(false)
@@ -40,8 +40,8 @@ describe('protected resource metadata', () => {
   })
 })
 
-describe('authorization server metadata', () => {
-  it('puts every endpoint on the installation origin', () => {
+describe('metadados do servidor de autorização', () => {
+  it('coloca todos os endpoints na origem da instalação', () => {
     installation()
     const doc = authorizationServerMetadata()
     expect(doc.issuer).toBe('https://invoices.example.org')

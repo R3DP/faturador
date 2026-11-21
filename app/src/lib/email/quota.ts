@@ -2,27 +2,27 @@ import 'server-only'
 import { consumeRateLimit, rateLimitKey, type RateLimitPolicy } from '@/lib/rate-limit'
 
 /**
- * Optional outbound email cap per business, set with BILLR_EMAIL_DAILY_LIMIT.
- * Mail leaves from your own Resend account and domain, so there is no cap
- * unless you ask for one.
+ * Limite opcional de envios de e-mail por empresa, definido por BILLR_EMAIL_DAILY_LIMIT.
+ * Os e-mails são enviados pela sua própria conta e domínio do Resend; por isso, não há limite
+ * a menos que você defina um.
  *
- * WINDOW SHAPE: the durable limiter uses fixed windows keyed on the epoch
- * floored to the window length, and clamps the window to at most 24 hours.
- * So this is a 24-hour window that rolls over on a fixed boundary rather than
- * a true sliding window: "resets in about N hours" is exact, and a burst that
- * straddles the boundary can reach up to twice the limit across it.
+ * FORMATO DA JANELA: o limitador persistente usa janelas fixas, alinhadas
+ * pelo início da época Unix e arredondadas para baixo conforme a duração da janela, limitada a no máximo 24 horas.
+ * Portanto, esta janela de 24 horas reinicia em um limite fixo, não é deslizante:
+ * a indicação de renovação em cerca de N horas é exata, e um pico que
+ * atravesse o limite pode atingir até o dobro da cota nesse intervalo.
  */
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-/** Thrown when a business has spent its daily allowance. */
+/** Lançado quando uma empresa esgota sua cota diária. */
 export class EmailQuotaError extends Error {
-  /** Whole hours until the window rolls over, floored at 1. */
+  /** Horas inteiras até a renovação da janela, com mínimo de 1. */
   readonly resetsInHours: number
   constructor(resetsInHours: number) {
     super(
-      `Daily email limit reached for this business, resets in about ${resetsInHours} ${
-        resetsInHours === 1 ? 'hour' : 'hours'
+      `O limite diário de e-mails desta empresa foi atingido. A cota será renovada em cerca de ${resetsInHours} ${
+        resetsInHours === 1 ? 'hora' : 'horas'
       }.`
     )
     this.name = 'EmailQuotaError'
@@ -31,13 +31,13 @@ export class EmailQuotaError extends Error {
 }
 
 /**
- * Resolves the cap in force, or null for "no cap".
+ * Determina o limite vigente ou retorna null quando não há limite.
  *
- * BILLR_EMAIL_DAILY_LIMIT applies when it is a positive whole
- * number. Anything else (blank, zero, negative, fractional, not a number) is
- * ignored with a warning rather than honoured: a typo'd "0" or "abc" must not
- * silently switch every outbound email off, which is a far worse failure than
- * sending uncapped.
+ * BILLR_EMAIL_DAILY_LIMIT é aplicado quando contém um número inteiro
+ * positivo. Qualquer outro valor (vazio, zero, negativo, fracionário ou não numérico)
+ * é ignorado com um aviso: um erro de digitação como "0" ou "abc" não deve
+ * desativar todos os envios silenciosamente, o que seria muito pior do que
+ * enviar sem limite.
  */
 export function emailDailyLimit(env: NodeJS.ProcessEnv = process.env): number | null {
   const raw = env.BILLR_EMAIL_DAILY_LIMIT?.trim()
@@ -45,36 +45,36 @@ export function emailDailyLimit(env: NodeJS.ProcessEnv = process.env): number | 
     const parsed = Number(raw)
     if (Number.isInteger(parsed) && parsed > 0) return parsed
     console.error(
-      `email quota: ignoring BILLR_EMAIL_DAILY_LIMIT=${raw} (want a positive whole number of sends per day)`
+      `cota de e-mail: ignorando BILLR_EMAIL_DAILY_LIMIT=${raw} (esperado um número inteiro positivo de envios por dia)`
     )
   }
   return null
 }
 
 /**
- * The limiter policy for one business's daily allowance. Built here rather
- * than added to RATE_LIMITS because the limit is not a constant: it depends
- * on the operator's env.
+ * Política do limitador para a cota diária de uma empresa. Definida aqui, em vez
+ * de ser adicionada a RATE_LIMITS, porque o limite não é constante: depende
+ * da variável de ambiente do operador.
  *
- * FAILS CLOSED, like every other policy in the product. It costs little: the
- * send path cannot complete without Postgres anyway (prepareDelivery reads
- * and writes email_deliveries), so a store outage was going to stop the send
- * either way, and failing open here would hand an unbounded send budget to
- * exactly the moment the database is struggling.
+ * BLOQUEIA EM CASO DE FALHA, como as outras políticas do produto. O custo é baixo:
+ * o fluxo de envio não pode terminar sem o PostgreSQL (prepareDelivery lê
+ * e grava em email_deliveries), então a indisponibilidade do armazenamento já impediria o envio
+ * de qualquer forma. Permitir envios sem limite nesse momento entregaria uma cota ilimitada
+ * justamente quando o banco de dados está com problemas.
  */
 function emailQuotaPolicy(limit: number): RateLimitPolicy {
   return { limit, windowMs: DAY_MS }
 }
 
-/** Bucket key. The business id is hashed by rateLimitKey, like every other bucket. */
+/** Chave do bucket. O ID da empresa é transformado em hash por rateLimitKey, como nos demais buckets. */
 export function emailQuotaBucket(businessId: string): string {
   return rateLimitKey('email:send', businessId)
 }
 
 /**
- * Spends one send from the business's daily allowance, or throws
- * EmailQuotaError. A no-op (and no round trip) when no cap applies, which is
- * the default.
+ * Consome um envio da cota diária da empresa ou lança
+ * EmailQuotaError. Não faz nada (nem uma ida e volta ao banco) quando não há limite, que é
+ * o comportamento padrão.
  */
 export async function consumeEmailQuota(businessId: string): Promise<void> {
   const limit = emailDailyLimit()

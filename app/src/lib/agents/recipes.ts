@@ -5,156 +5,116 @@ export interface AgentRecipe {
   content: string
 }
 
-const timeLoggingRecipe = `## Billable time logging
+const timeLoggingRecipe = `## Registro de horas faturáveis
 
-When I finish a meaningful chunk of work in this repo (a feature, a bug fix,
-a review, anything client-billable), log it to Billr before moving on:
+Quando eu terminar uma parte significativa do trabalho neste repositório (uma funcionalidade, uma correção de bug,
+uma revisão ou qualquer atividade faturável ao cliente), registre-a no Faturador antes de continuar:
 
-1. Estimate the hours spent on the task you just completed.
-2. Call \`log_time\` on the Billr MCP server, scoped to the "Acme Co" business,
-   with the client name, a one-line description of the work, the date, and
-   the hours.
-3. Do not create or send an invoice. Just log the time. I'll ask for an
-   invoice run separately.
-4. If you're unsure which client the work belongs to, ask me before logging.
+1. Estime quantas horas foram dedicadas à tarefa que acabou de concluir.
+2. Chame \`log_time\` no servidor MCP do Faturador, no contexto da empresa "Acme Co",
+   informando o nome do cliente, uma descrição do trabalho em uma linha, a data e as horas.
+3. Não crie nem envie uma fatura. Apenas registre o tempo. Vou pedir a emissão das faturas separadamente.
+4. Se não souber a qual cliente o trabalho pertence, pergunte antes de registrá-lo.
 `
 
-const monthEndRecipe = `## Month-end invoice run
+const monthEndRecipe = `## Emissão de faturas no fim do mês
 
-When I say "run invoices for <month>" or on the last business day of the
-month if I ask for the routine:
+Quando eu disser "emita as faturas de <month>" ou, se eu pedir essa rotina, no último dia útil do mês:
 
-1. Call \`list_unbilled\` for each active client to see unbilled time and
-   expenses grouped by client.
-2. For each client with unbilled work, call \`create_invoice\` with that
-   client's \`time_entry_ids\` and \`expense_ids\` from the list, and leave
-   \`line_items\` out. The server prices and links the source work in one
-   step; do not invent, round, or re-price a line.
-3. Leave every invoice as a **draft**. Never call \`send_invoice\` as part of
-   this recipe.
-4. Reply with a summary table: client, invoice total, and the dashboard link
-   from the tool response, so I can review and send from the app.
+1. Chame \`list_unbilled\` para cada cliente ativo para consultar horas e despesas não faturadas, agrupadas por cliente.
+2. Para cada cliente com trabalho não faturado, chame \`create_invoice\` com os \`time_entry_ids\` e \`expense_ids\` retornados para esse cliente e omita \`line_items\`. O servidor calcula os valores e associa o trabalho de origem em uma única etapa; não invente, arredonde nem recalcule nenhum item.
+3. Deixe todas as faturas como **rascunho**. Nunca chame \`send_invoice\` nesta rotina.
+4. Responda com uma tabela resumida contendo cliente, total da fatura e link do painel retornado pela ferramenta, para que eu possa revisar e enviar pelo app.
 
-Anything already attached to a draft disappears from \`list_unbilled\`, so run
-step 1 once per client and never re-bill an id you already passed in.
+Tudo o que já estiver associado a um rascunho deixa de aparecer em \`list_unbilled\`; portanto, execute a etapa 1 uma vez por cliente e nunca fature novamente um id já informado.
 `
 
-const overdueChaseRecipe = `## Overdue chase drafts
+const overdueChaseRecipe = `## Rascunhos de cobrança de faturas vencidas
 
-When I say "check on overdue invoices":
+Quando eu disser "verifique as faturas vencidas":
 
-1. Call \`list_invoices\` filtered to overdue status.
-2. For each overdue invoice, call \`get_invoice_link\` to get the public
-   invoice URL.
-3. Draft a short, friendly follow-up email per client (not per invoice) that
-   references the invoice number, amount, and due date, and includes the
-   public link. Do not send anything.
-4. Paste the drafts back to me in chat, one per client, so I can edit and
-   send them myself, or forward them for me to send from the dashboard.
-5. Never mark an invoice as paid or edit its terms as part of this recipe.
+1. Chame \`list_invoices\` filtrando pelo status vencido.
+2. Para cada fatura vencida, chame \`get_invoice_link\` para obter a URL pública da fatura.
+3. Escreva um rascunho curto e cordial de e-mail de acompanhamento para cada cliente (não para cada fatura), mencionando o número da fatura, o valor e a data de vencimento, e incluindo o link público. Não envie nada.
+4. Cole os rascunhos no chat, um por cliente, para que eu possa editá-los e enviá-los ou encaminhá-los para eu enviar pelo painel.
+5. Nunca marque uma fatura como paga nem altere os termos dela nesta rotina.
 `
 
-const quoteBeforeYouBillRecipe = `## Quote before you bill
+const quoteBeforeYouBillRecipe = `## Faça um orçamento antes de faturar
 
-When I describe a new piece of work and say "quote this" or "send me a
-number for this":
+Quando eu descrever um novo trabalho e disser "faça um orçamento" ou "me passe um valor para isto":
 
-1. Confirm the client with \`list_clients\`. If the name is ambiguous or the
-   client does not exist yet, ask me before creating anything.
-2. Call \`list_items\` first and price the scope from the saved rate catalog
-   wherever a line matches. Only invent a rate when nothing in the catalog
-   fits, and say so explicitly when you do.
-3. Call \`create_estimate\` with one line item per deliverable. Keep the
-   descriptions in my words, not marketing language.
-4. Stop at the draft. Never call \`send_estimate\`. The quote goes to a client
-   only after I have read it.
-5. Reply with the line items, the total, and the estimate number so I can
-   approve or adjust. If I ask for changes, use \`update_draft_estimate\`
-   rather than creating a second estimate.
-6. Later, when I tell you the client accepted, call
-   \`convert_estimate_to_invoice\` on that estimate id. Leave the resulting
-   invoice as a **draft** and never call \`send_invoice\`. Reply with the
-   invoice number so I can send it from the dashboard.
+1. Confirme o cliente com \`list_clients\`. Se o nome for ambíguo ou o cliente ainda não existir, pergunte antes de criar qualquer coisa.
+2. Chame \`list_items\` primeiro e calcule o escopo usando os valores salvos no catálogo sempre que houver um item correspondente. Só invente um valor se nada no catálogo se aplicar e, nesse caso, deixe isso explícito.
+3. Chame \`create_estimate\` com um item por entrega. Use minhas palavras nas descrições, sem linguagem de marketing.
+4. Pare no rascunho. Nunca chame \`send_estimate\`. O orçamento só vai para o cliente depois que eu o revisar.
+5. Responda com os itens, o total e o número do orçamento para que eu possa aprovar ou ajustar. Se eu pedir alterações, use \`update_draft_estimate\` em vez de criar outro orçamento.
+6. Depois, quando eu disser que o cliente aceitou, chame \`convert_estimate_to_invoice\` usando o id desse orçamento. Deixe a fatura resultante como **rascunho** e nunca chame \`send_invoice\`. Informe o número da fatura para que eu possa enviá-la pelo painel.
 `
 
-const paymentStatusRecipe = `## Payment status check
+const paymentStatusRecipe = `## Consulta do status de pagamentos
 
-When I say "where are we on payments" or ask about a specific invoice
-before I chase it:
+Quando eu perguntar "como estão os pagamentos" ou sobre uma fatura específica antes de cobrar:
 
-1. Call \`list_invoices\` filtered to sent and overdue status to get the
-   candidates.
-2. For each one, call \`get_payment_status\` rather than trusting the invoice
-   total alone. It returns the payments ledger, the balance still due, and a
-   mismatch flag.
-3. If \`mismatch\` is true on any invoice, stop and flag it to me by name.
-   Do not report a paid amount for that invoice and do not chase it. The
-   numbers disagree and I need to look at it myself.
-4. Report the rest as a short table: client, invoice number, amount paid,
-   balance due, and days overdue.
-5. Never call \`record_payment\`, \`send_invoice\`, or anything that edits an
-   invoice from this recipe. This one only reads.
+1. Chame \`list_invoices\` filtrando pelos status enviada e vencida para obter as possíveis faturas.
+2. Para cada uma, chame \`get_payment_status\` em vez de confiar somente no total da fatura. A ferramenta retorna o livro-caixa de pagamentos, o saldo ainda devido e um sinalizador de divergência.
+3. Se \`mismatch\` for true em qualquer fatura, pare e sinalize-a para mim pelo nome. Não informe um valor pago para essa fatura nem faça a cobrança. Os números divergem e preciso analisá-los pessoalmente.
+4. Informe as demais em uma tabela curta: cliente, número da fatura, valor pago, saldo devido e dias em atraso.
+5. Nunca chame \`record_payment\`, \`send_invoice\` nem qualquer operação que edite uma fatura nesta rotina. Ela é somente de leitura.
 `
 
-const rateCatalogRecipe = `## Rate catalog upkeep
+const rateCatalogRecipe = `## Manutenção do catálogo de preços
 
-When I say "check the rate catalog" or when I mention that a price has
-changed:
+Quando eu disser "verifique o catálogo de preços" ou mencionar que um preço mudou:
 
-1. Call \`list_items\` and show me the current saved items with their rates.
-2. Call \`list_invoices\` for the last few months and point out any line
-   description I keep typing by hand that is not in the catalog yet, along
-   with the rate I actually charged for it.
-3. Propose the additions and the rate changes to me as a list. Do not call
-   \`create_item\` or \`update_item\` until I say which ones to apply.
-4. When I approve, apply exactly what I approved and nothing else. Changing
-   a saved rate changes what future quotes and invoices bill at, so never
-   guess at a number.
-5. This recipe never touches an invoice or an estimate. It only maintains
-   the catalog they bill from.
+1. Chame \`list_items\` e mostre os itens salvos atualmente e seus valores.
+2. Chame \`list_invoices\` para os últimos meses e destaque descrições de itens que eu digito manualmente com frequência, mas que ainda não estão no catálogo, junto com o valor que cobrei por eles.
+3. Proponha as inclusões e alterações de valores em uma lista. Não chame \`create_item\` nem \`update_item\` até eu indicar quais aplicar.
+4. Quando eu aprovar, aplique exatamente o que aprovei e nada mais. Alterar um valor salvo muda o preço de orçamentos e faturas futuros, então nunca adivinhe um valor.
+5. Esta rotina nunca altera uma fatura nem um orçamento. Ela apenas mantém o catálogo usado para faturá-los.
 `
 
 export const agentRecipes: AgentRecipe[] = [
   {
     id: 'billable-time-logging',
-    title: 'Billable time logging',
+    title: 'Registro de horas faturáveis',
     description:
-      'Logs time as you finish work in a repo, so unbilled hours never pile up silently. It only calls log_time and never creates or sends anything, so there\'s nothing for the agent to get wrong on the money side.',
+      'Registra as horas quando você termina um trabalho em um repositório, para que horas não faturadas não se acumulem sem aviso. A rotina só chama log_time e nunca cria nem envia nada, evitando erros do agente com valores.',
     content: timeLoggingRecipe,
   },
   {
     id: 'month-end-invoice-run',
-    title: 'Month-end invoice run',
+    title: 'Emissão de faturas no fim do mês',
     description:
-      'Pulls everything unbilled per client and drafts invoices from it once a month. Every invoice lands as a draft. The agent never calls send_invoice, so nothing reaches a client without you looking at it first.',
+      'Reúne mensalmente tudo o que ainda não foi faturado por cliente e prepara as faturas como rascunhos. O agente nunca chama send_invoice, então nada chega ao cliente sem sua revisão.',
     content: monthEndRecipe,
   },
   {
     id: 'overdue-chase-drafts',
-    title: 'Overdue chase drafts',
+    title: 'Rascunhos de cobrança de faturas vencidas',
     description:
-      'Finds overdue invoices and writes the follow-up emails for you, but stops at drafting. The agent never sends the email or touches invoice status. You decide what goes out and when.',
+      'Encontra faturas vencidas e escreve e-mails de acompanhamento, mas para no rascunho. O agente nunca envia a mensagem nem altera o status da fatura. Você decide o que será enviado e quando.',
     content: overdueChaseRecipe,
   },
   {
     id: 'quote-before-you-bill',
-    title: 'Quote before you bill',
+    title: 'Faça um orçamento antes de faturar',
     description:
-      'Turns a described scope into a priced estimate off your saved rates, then stops. The agent never calls send_estimate, and when the client accepts it converts to a draft invoice you still have to send yourself.',
+      'Transforma o escopo descrito em um orçamento com base nos valores salvos e para por aí. O agente nunca chama send_estimate; quando o cliente aceita, o orçamento é convertido em uma fatura como rascunho, que você ainda precisa enviar.',
     content: quoteBeforeYouBillRecipe,
   },
   {
     id: 'payment-status-check',
-    title: 'Payment status check',
+    title: 'Consulta do status de pagamentos',
     description:
-      'Reads the real payments ledger per invoice instead of the invoice total, so you find out what has actually landed. It is read-only, and it refuses to report a number when the ledger and the invoice disagree.',
+      'Consulta o livro-caixa real de pagamentos por fatura, em vez de confiar no total da fatura, para mostrar o que foi efetivamente recebido. É somente de leitura e não informa valores quando o livro-caixa e a fatura divergem.',
     content: paymentStatusRecipe,
   },
   {
     id: 'rate-catalog-upkeep',
-    title: 'Rate catalog upkeep',
+    title: 'Manutenção do catálogo de preços',
     description:
-      'Keeps saved items in sync with what you are really charging, so quotes and invoices stop being priced from memory. The agent proposes every change and waits for your approval before writing anything.',
+      'Mantém os itens salvos alinhados aos valores realmente cobrados, evitando que orçamentos e faturas sejam calculados de memória. O agente propõe cada alteração e aguarda sua aprovação antes de gravar qualquer coisa.',
     content: rateCatalogRecipe,
   },
 ]

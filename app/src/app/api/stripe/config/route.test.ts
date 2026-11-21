@@ -6,7 +6,7 @@ afterEach(() => {
 })
 
 describe('GET /api/stripe/config', () => {
-  it('says card payment is available when all three keys are set and consistent', async () => {
+  it('informa que o pagamento com cartão está disponível quando as três chaves estão definidas e são compatíveis', async () => {
     vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_example')
     vi.stubEnv('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
     vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_example')
@@ -15,7 +15,7 @@ describe('GET /api/stripe/config', () => {
     expect(response.headers.get('cache-control')).toBe('no-store')
   })
 
-  it('says it is unavailable, and nothing else, when a key is missing', async () => {
+  it('informa apenas que está indisponível quando falta uma chave', async () => {
     vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_example')
     vi.stubEnv('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', '')
     vi.stubEnv('STRIPE_WEBHOOK_SECRET', '')

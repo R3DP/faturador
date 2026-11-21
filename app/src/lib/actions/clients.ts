@@ -15,35 +15,34 @@ function isHttpUrl(value: string): boolean {
 }
 
 /**
- * Client writes.
+ * Gravações de clientes.
  *
- * A server action is a public POST endpoint, so `data` here is whatever the
- * caller sends and never "whatever the form produced". These three used to
- * spread the argument straight into the insert and the update, after
- * `business_id`, which meant a supplied `business_id` won and `id`,
- * `created_at`, `created_via` and `created_by_key_id` were all equally
- * writable, with no length cap anywhere (application audit, Medium-3).
+ * Uma server action é um endpoint POST público; portanto, `data` pode conter qualquer valor
+ * enviado por quem chama, não apenas os dados produzidos pelo formulário. Antes, estas três
+ * ações espalhavam o argumento recebido no insert e no update, depois de `business_id`. Com
+ * isso, um `business_id` fornecido pelo chamador prevalecia, e também era possível gravar `id`,
+ * `created_at`, `created_via` e `created_by_key_id`, sem limite de tamanho (auditoria da
+ * aplicação, Medium-3).
  *
- * Two rules now, the same pair every other action file follows
+ * Agora há duas regras, iguais às usadas nos demais arquivos de actions
  * (`business.ts`, `invoices.ts`, `payments.ts`, ...):
  *
- *   1. parse with a server-side schema that is `.strict()`, so an unknown key
- *      is a refusal rather than something the spread carries into the write;
- *   2. name the columns being written, one by one. Nothing is spread. Adding a
- *      column to `clients` therefore cannot silently become writable from the
- *      browser.
+ *   1. analisar com um esquema do servidor que use `.strict()`, recusando chaves desconhecidas
+ *      em vez de incluí-las na gravação;
+ *   2. indicar uma a uma as colunas gravadas. Nada é espalhado. Assim, adicionar
+ *      uma nova coluna em `clients` não se torna gravável pelo navegador em silêncio.
  *
- * `clientSchema` in src/lib/validations/client.ts stays as it is: it drives the
- * form's field-level messages and has no `.max()` bounds because a text input
- * does not need them. This schema is the one that decides what is stored.
+ * `clientSchema` em src/lib/validations/client.ts permanece igual: ele controla
+ * as mensagens junto aos campos do formulário e não tem limites `.max()`, pois
+ * um campo de texto não precisa deles. Este esquema decide o que será armazenado.
  */
 const clientInput = z
   .object({
-    name: z.string().trim().min(1, 'Client name is required').max(200),
+    name: z.string().trim().min(1, 'O nome do cliente é obrigatório').max(200),
     email: z.union([z.literal(''), z.string().trim().email().max(320)]).optional(),
     phone: z.string().trim().max(50).optional(),
-    // The client detail page renders this as an <a href>, so the scheme is
-    // checked here rather than left to zod's url(), which accepts javascript:.
+    // A página de detalhes do cliente exibe isso como <a href>; por isso, o esquema
+    // é verificado aqui, em vez de usar url() do zod, que aceita javascript:.
     website: z
       .union([
         z.literal(''),
@@ -51,7 +50,7 @@ const clientInput = z
           .string()
           .trim()
           .max(500)
-          .refine(isHttpUrl, 'A website must be an http:// or https:// address'),
+          .refine(isHttpUrl, 'O site deve usar um endereço http:// ou https://'),
       ])
       .optional(),
     address_line1: z.string().trim().max(200).optional(),
@@ -70,9 +69,10 @@ const clientInput = z
 type ClientInput = z.infer<typeof clientInput>
 
 /**
- * The exact column list a browser caller may write, built by hand from the
- * parsed value. Empty optional fields become NULL so the column carries "not
- * set" rather than an empty string, matching updateBusinessProfileAction.
+ * Lista exata de colunas que uma chamada do navegador pode gravar, montada
+ * manualmente a partir do valor analisado. Campos opcionais vazios viram NULL
+ * para representar valores não definidos, em vez de armazenar uma string vazia,
+ * como em updateBusinessProfileAction.
  */
 function clientColumns(data: ClientInput) {
   const orNull = (value: string | undefined) => (value ? value : null)
@@ -101,8 +101,8 @@ export async function createClientAction(businessId: string, data: ClientFormDat
 
   const { data: client, error } = await supabase
     .from('clients')
-    // business_id comes from the argument and is written last, so no parsed
-    // field can shadow it. RLS checks it as well; this makes the action agree.
+    // business_id vem do argumento e é gravado por último, para que nenhum campo
+    // analisado possa substituí-lo. O RLS também o verifica; assim, a action fica alinhada.
     .insert({ ...clientColumns(parsed), business_id: business })
     .select()
     .single()
@@ -122,8 +122,8 @@ export async function updateClientAction(clientId: string, data: ClientFormData)
 
   const { data: client, error } = await supabase
     .from('clients')
-    // business_id is deliberately absent: an edit never moves a client between
-    // businesses, not even between two the caller belongs to.
+    // business_id foi omitido de propósito: uma edição nunca transfere um cliente
+    // entre empresas, nem mesmo entre duas às quais a pessoa tenha acesso.
     .update(clientColumns(parsed))
     .eq('id', id)
     .select()

@@ -4,11 +4,11 @@ import { readFileSync, readdirSync, lstatSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// Every variable the application reads is documented in .env.example, and
-// every variable documented there is read somewhere. Variables that a runtime
-// or the container sets, rather than an operator, are listed here.
+// Todas as variáveis lidas pelo aplicativo estão documentadas em .env.example, e
+// todas as variáveis documentadas ali são lidas em algum lugar. As variáveis definidas
+// pelo ambiente de execução ou pelo contêiner, e não por um operador, estão listadas aqui.
 const app = fileURLToPath(new URL('../', import.meta.url))
-// VERCEL and VERCEL_ENV are set by Vercel's runtime when Billr is deployed there.
+// VERCEL e VERCEL_ENV são definidas pelo ambiente de execução da Vercel quando o Faturador é implantado lá.
 const RUNTIME = new Set(['NODE_ENV', 'NEXT_RUNTIME', 'BILLR_CONTAINER', 'BILLR_CONTAINER_BUILD', 'VERCEL', 'VERCEL_ENV'])
 
 function sources(dir) {
@@ -23,8 +23,8 @@ function sources(dir) {
 
 const read = (path) => readFileSync(path, 'utf8')
 const used = new Set()
-// `env.NAME` covers helpers that take the environment as a parameter, such as
-// emailDailyLimit(env) and validateConfig(env).
+// `env.NAME` abrange funções auxiliares que recebem o ambiente como parâmetro, como
+// emailDailyLimit(env) e validateConfig(env).
 const READS = /(?:process\.env|\benv)\.([A-Z][A-Z0-9_]+)/g
 for (const file of [
   ...sources(resolve(app, 'src')),
@@ -40,10 +40,10 @@ const documented = new Set(
     .filter(Boolean),
 )
 
-test('every variable the app reads is in .env.example', () => {
+test('todas as variáveis lidas pelo app estão em .env.example', () => {
   assert.deepEqual([...used].filter((key) => !RUNTIME.has(key) && !documented.has(key)).sort(), [])
 })
 
-test('every variable in .env.example is read by the app', () => {
+test('todas as variáveis de .env.example são lidas pelo app', () => {
   assert.deepEqual([...documented].filter((key) => !used.has(key)).sort(), [])
 })

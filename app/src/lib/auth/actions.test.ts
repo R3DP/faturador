@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
- * Integration tests for the sign-up server action.
+ * Testes de integração da ação de servidor de cadastro.
  *
- * These call the real action and assert the wire between the agreement check,
- * the rate-limit guard and Supabase Auth: the agreement must stop a request
- * before any authentication call, and the recorded versions and timestamp must
- * come from the server rather than from the caller.
+ * Eles chamam a ação real e verificam a integração entre a validação do aceite,
+ * a proteção de limite de tentativas e o Supabase Auth: o aceite deve interromper
+ * uma solicitação antes de qualquer chamada de autenticação, e as versões e o
+ * registro de data e hora devem vir do servidor, não de quem fez a solicitação.
  */
 
 const {
@@ -68,7 +68,7 @@ afterEach(() => {
 })
 
 describe('signUpAction', () => {
-  it('creates the account with the name as its only metadata', async () => {
+  it('cria a conta usando o nome como único metadado', async () => {
     const result = await signUpAction(VALID)
 
     expect(result).toEqual({ success: true, hasSession: true })
@@ -80,15 +80,15 @@ describe('signUpAction', () => {
     })
   })
 
-  it('reports no session when confirmation email is required', async () => {
+  it('informa que não há sessão quando é necessário confirmar o e-mail', async () => {
     signUp.mockResolvedValue({ data: { session: null }, error: null })
     expect(await signUpAction(VALID)).toEqual({ success: true, hasSession: false })
   })
 
-  it('reports a rate limit without touching Supabase Auth', async () => {
+  it('informa o limite de tentativas sem acessar o Supabase Auth', async () => {
     guardAuthAttempt.mockResolvedValue({
       blocked: true,
-      message: 'Too many attempts.',
+      message: 'Muitas tentativas.',
       retryAfterSeconds: 900,
     })
 
@@ -96,13 +96,13 @@ describe('signUpAction', () => {
 
     expect(result).toEqual({
       success: false,
-      error: 'Too many attempts.',
+      error: 'Muitas tentativas.',
       retryAfterSeconds: 900,
     })
     expect(createClientMock).not.toHaveBeenCalled()
   })
 
-  it('records a failed attempt when Supabase rejects the sign-up', async () => {
+  it('registra uma tentativa malsucedida quando o Supabase rejeita o cadastro', async () => {
     signUp.mockResolvedValue({ data: null, error: { message: 'already registered' } })
 
     const result = await signUpAction(VALID)
@@ -112,45 +112,45 @@ describe('signUpAction', () => {
   })
 })
 
-describe('sign-up after the first account', () => {
-  it('refuses before creating anything when sign-up is closed', async () => {
+describe('cadastro após a primeira conta', () => {
+  it('recusa antes de criar qualquer coisa quando o cadastro está fechado', async () => {
     signupIsOpen.mockResolvedValue(false)
     expect(await signUpAction(VALID)).toEqual({ success: false, error: SIGNUP_CLOSED_MESSAGE })
     expect(signUp).not.toHaveBeenCalled()
   })
 
-  it('signs out an account that lost the race to be first', async () => {
+  it('encerra a sessão de uma conta que perdeu a disputa para ser a primeira', async () => {
     admitAccount.mockResolvedValue(false)
     expect(await signUpAction(VALID)).toEqual({ success: false, error: SIGNUP_CLOSED_MESSAGE })
     expect(signOut).toHaveBeenCalled()
   })
 
-  it('admits the owner and keeps the session', async () => {
+  it('admite a pessoa responsável e mantém a sessão', async () => {
     expect(await signUpAction(VALID)).toEqual({ success: true, hasSession: true })
     expect(admitAccount).toHaveBeenCalledWith('user-1')
   })
 
-  it('lets an existing-address placeholder through to the check-your-email message', async () => {
+  it('permite que um usuário provisório de endereço existente receba a mensagem para verificar o e-mail', async () => {
     signUp.mockResolvedValue({ data: { user: { id: 'placeholder' }, session: null }, error: null })
     admitAccount.mockResolvedValue(null)
     expect(await signUpAction(VALID)).toEqual({ success: true, hasSession: false })
     expect(signOut).not.toHaveBeenCalled()
   })
 
-  it('signs out and asks for a retry when access cannot be checked', async () => {
-    admitAccount.mockRejectedValue(new Error('could not check access'))
+  it('encerra a sessão e pede uma nova tentativa quando não é possível verificar o acesso', async () => {
+    admitAccount.mockRejectedValue(new Error('não foi possível verificar o acesso'))
     expect(await signUpAction(VALID)).toEqual({ success: false, error: ACCESS_CHECK_FAILED_MESSAGE })
     expect(signOut).toHaveBeenCalled()
   })
 })
 
 describe('signInAction', () => {
-  it('signs in an admitted account', async () => {
+  it('autentica uma conta admitida', async () => {
     signInWithPassword.mockResolvedValue({ data: { user: { id: 'owner' } }, error: null })
     expect(await signInAction({ email: 'person@example.com', password: 'pw' })).toEqual({ success: true })
   })
 
-  it('signs out an account that was never admitted', async () => {
+  it('encerra a sessão de uma conta que nunca foi admitida', async () => {
     signInWithPassword.mockResolvedValue({ data: { user: { id: 'stranger' } }, error: null })
     admitAccount.mockResolvedValue(false)
     expect(await signInAction({ email: 'person@example.com', password: 'pw' })).toEqual({
@@ -160,9 +160,9 @@ describe('signInAction', () => {
     expect(signOut).toHaveBeenCalled()
   })
 
-  it('signs out without claiming sign-up is closed when access cannot be checked', async () => {
+  it('encerra a sessão sem afirmar que o cadastro está fechado quando não é possível verificar o acesso', async () => {
     signInWithPassword.mockResolvedValue({ data: { user: { id: 'owner' } }, error: null })
-    admitAccount.mockRejectedValue(new Error('could not check access'))
+    admitAccount.mockRejectedValue(new Error('não foi possível verificar o acesso'))
     expect(await signInAction({ email: 'person@example.com', password: 'pw' })).toEqual({
       success: false,
       error: ACCESS_CHECK_FAILED_MESSAGE,

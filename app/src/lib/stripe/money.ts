@@ -1,4 +1,4 @@
-// Stripe charge-unit rules: https://docs.stripe.com/currencies#zero-decimal
+// Regras de unidades de cobrança do Stripe: https://docs.stripe.com/currencies#zero-decimal
 const ZERO_DECIMAL = new Set([
   'BIF',
   'CLP',
@@ -16,8 +16,8 @@ const ZERO_DECIMAL = new Set([
   'XOF',
   'XPF',
 ])
-// Three-decimal currencies are charged in thousandths, and Stripe requires
-// the amount to end in 0: https://docs.stripe.com/currencies#three-decimal
+// Moedas com três casas decimais são cobradas em milésimos, e o Stripe exige
+// que o valor termine em 0: https://docs.stripe.com/currencies#three-decimal
 const THREE_DECIMAL = new Set(['BHD', 'JOD', 'KWD', 'OMR', 'TND'])
 function chargeFactor(currency: string): number {
   const code = currency.toUpperCase()
@@ -33,21 +33,21 @@ export function amountToMinorUnits(
     code = currency.toUpperCase(),
     factor = chargeFactor(code)
   if (!Number.isFinite(amount) || amount < 0)
-    throw new Error('Invalid payment amount')
+    throw new Error('Valor de pagamento inválido')
   if (
     (factor === 1 || code === 'ISK' || code === 'UGX') &&
     !Number.isInteger(amount)
   )
-    throw new Error(`${code} payments require a whole-currency amount`)
+    throw new Error(`Pagamentos em ${code} exigem um valor em unidades inteiras da moeda`)
   const minor =
     factor === 1000
       ? Math.round((amount * factor) / 10) * 10
       : Math.round(amount * factor)
   if (!Number.isSafeInteger(minor))
-    throw new Error('Payment amount is too large')
+    throw new Error('O valor do pagamento é muito alto')
   return minor
 }
 export function minorUnitsToAmount(value: number, currency: string): number {
-  if (!Number.isSafeInteger(value)) throw new Error('Invalid Stripe amount')
+  if (!Number.isSafeInteger(value)) throw new Error('Valor do Stripe inválido')
   return value / chargeFactor(currency)
 }

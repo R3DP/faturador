@@ -66,7 +66,7 @@ afterEach(() => {
 })
 
 describe('POST /api/stripe/payment-intent', () => {
-  it('is unavailable, without calling Stripe, when card payments are not configured', async () => {
+  it('fica indisponível sem chamar o Stripe quando pagamentos com cartão não estão configurados', async () => {
     vi.stubEnv('STRIPE_WEBHOOK_SECRET', '')
     const response = await pay()
     expect(response.status).toBe(503)
@@ -74,7 +74,7 @@ describe('POST /api/stripe/payment-intent', () => {
     expect(create).not.toHaveBeenCalled()
   })
 
-  it('creates the intent on the installation account and remembers it on the invoice', async () => {
+  it('cria a intenção na conta da instalação e a registra na fatura', async () => {
     create.mockResolvedValue({ id: 'pi_new', client_secret: 'pi_new_secret', status: 'requires_payment_method' })
     const response = await pay()
     expect(response.status).toBe(200)
@@ -94,14 +94,14 @@ describe('POST /api/stripe/payment-intent', () => {
     expect(invoiceUpdates()).toEqual([{ stripe_payment_intent_id: 'pi_new', stripe_payment_status: null }])
   })
 
-  it('charges a zero-decimal currency in whole units', async () => {
+  it('cobra moedas sem casas decimais em unidades inteiras', async () => {
     withInvoice({ currency: 'JPY', balance_due: 5000 })
     create.mockResolvedValue({ id: 'pi_yen', client_secret: 'pi_yen_secret', status: 'requires_payment_method' })
     await pay()
     expect(create.mock.calls[0][0]).toMatchObject({ amount: 5000, currency: 'jpy' })
   })
 
-  it('reuses an open intent for the same amount instead of creating another', async () => {
+  it('reutiliza uma intenção em aberto para o mesmo valor em vez de criar outra', async () => {
     withInvoice({ stripe_payment_intent_id: 'pi_open' })
     retrieve.mockResolvedValue({ id: 'pi_open', status: 'requires_payment_method', amount: 15000, currency: 'usd', client_secret: 'pi_open_secret' })
     const response = await pay()
@@ -110,7 +110,7 @@ describe('POST /api/stripe/payment-intent', () => {
     expect(invoiceUpdates()).toEqual([])
   })
 
-  it('updates the amount of an open intent when the balance changed', async () => {
+  it('atualiza o valor de uma intenção em aberto quando o saldo muda', async () => {
     withInvoice({ stripe_payment_intent_id: 'pi_open' })
     retrieve.mockResolvedValue({ id: 'pi_open', status: 'requires_payment_method', amount: 20000, currency: 'usd', client_secret: 'pi_open_secret' })
     update.mockResolvedValue({ id: 'pi_open', status: 'requires_payment_method', amount: 15000, currency: 'usd', client_secret: 'pi_open_secret' })
@@ -119,7 +119,7 @@ describe('POST /api/stripe/payment-intent', () => {
     expect(create).not.toHaveBeenCalled()
   })
 
-  it('refuses a second form when the previous payment already went through', async () => {
+  it('recusa um segundo formulário quando o pagamento anterior já foi concluído', async () => {
     withInvoice({ stripe_payment_intent_id: 'pi_paid' })
     retrieve.mockResolvedValue({ id: 'pi_paid', status: 'succeeded', amount: 15000, currency: 'usd' })
     const response = await pay()
@@ -128,7 +128,7 @@ describe('POST /api/stripe/payment-intent', () => {
     expect(create).not.toHaveBeenCalled()
   })
 
-  it('takes a new payment once the previous one is booked and the balance rose again', async () => {
+  it('inicia um novo pagamento quando o anterior foi registrado e o saldo aumentou novamente', async () => {
     db = createFakeSupabase({
       'invoices.select': { data: { ...INVOICE, stripe_payment_intent_id: 'pi_paid' }, error: null },
       'invoices.update': { data: null, error: null },
@@ -145,7 +145,7 @@ describe('POST /api/stripe/payment-intent', () => {
     expect(invoiceUpdates()).toEqual([{ stripe_payment_intent_id: 'pi_topup', stripe_payment_status: null }])
   })
 
-  it('keeps refusing while the ledger cannot be checked for the previous payment', async () => {
+  it('continua recusando enquanto não for possível verificar o registro do pagamento anterior', async () => {
     db = createFakeSupabase({
       'invoices.select': { data: { ...INVOICE, stripe_payment_intent_id: 'pi_paid' }, error: null },
       'payments.select': { data: null, error: { message: 'database unavailable' } },
@@ -156,7 +156,7 @@ describe('POST /api/stripe/payment-intent', () => {
     expect(create).not.toHaveBeenCalled()
   })
 
-  it('keeps refusing a processing payment even if a row with its id exists', async () => {
+  it('continua recusando um pagamento em processamento mesmo que exista um registro com seu ID', async () => {
     db = createFakeSupabase({
       'invoices.select': { data: { ...INVOICE, stripe_payment_intent_id: 'pi_slow' }, error: null },
       'payments.select': { data: { id: 'pay_1' }, error: null },
@@ -167,7 +167,7 @@ describe('POST /api/stripe/payment-intent', () => {
     expect(create).not.toHaveBeenCalled()
   })
 
-  it('does not create a new intent when the previous one cannot be checked', async () => {
+  it('não cria uma nova intenção quando não é possível verificar a anterior', async () => {
     withInvoice({ stripe_payment_intent_id: 'pi_open' })
     retrieve.mockRejectedValue(Object.assign(new Error('Stripe is down'), { code: 'api_connection_error' }))
     const response = await pay()
@@ -175,7 +175,7 @@ describe('POST /api/stripe/payment-intent', () => {
     expect(create).not.toHaveBeenCalled()
   })
 
-  it('starts fresh when the remembered intent no longer exists on this account', async () => {
+  it('começa de novo quando a intenção registrada não existe mais nesta conta', async () => {
     withInvoice({ stripe_payment_intent_id: 'pi_gone' })
     retrieve.mockRejectedValue(Object.assign(new Error('No such payment_intent'), { code: 'resource_missing' }))
     create.mockResolvedValue({ id: 'pi_new', client_secret: 'pi_new_secret', status: 'requires_payment_method' })
@@ -184,7 +184,7 @@ describe('POST /api/stripe/payment-intent', () => {
     expect(create).toHaveBeenCalledTimes(1)
   })
 
-  it('refuses a draft invoice without calling Stripe', async () => {
+  it('recusa uma fatura em rascunho sem chamar o Stripe', async () => {
     withInvoice({ status: 'draft' })
     const response = await pay()
     expect(response.status).toBe(409)
@@ -192,7 +192,7 @@ describe('POST /api/stripe/payment-intent', () => {
     expect(create).not.toHaveBeenCalled()
   })
 
-  it('asks the browser to retry when the invoice cannot record the attempt', async () => {
+  it('solicita ao navegador que tente novamente quando a fatura não consegue registrar a tentativa', async () => {
     db = createFakeSupabase({
       'invoices.select': { data: INVOICE, error: null },
       'invoices.update': { data: null, error: { message: 'database unavailable' } },

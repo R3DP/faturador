@@ -7,10 +7,11 @@ import { secondsFromHours, timeAmount } from '@/lib/work/time'
 import { failure, type WriteResult } from './result'
 
 /**
- * Logging time runs as server actions that validate their input before
- * anything is written.
+ * O registro de horas é feito por server actions que validam os dados antes
+ * de qualquer gravação.
  *
- * Every call uses the caller's own Supabase client, so RLS decides membership.
+ * Cada chamada usa o próprio cliente Supabase de quem a iniciou, então o RLS
+ * determina a associação à empresa.
  */
 
 const entryInput = z.object({
@@ -26,8 +27,8 @@ const entryInput = z.object({
 export type TimeEntryInput = z.input<typeof entryInput>
 
 /**
- * The currency of a work entry is never taken from the browser: it follows the
- * client being billed, and falls back to the business default.
+ * A moeda de um lançamento de trabalho nunca vem do navegador: ela acompanha
+ * o cliente faturado e, na ausência dele, usa o padrão da empresa.
  */
 async function resolveCurrency(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -61,9 +62,9 @@ export async function createTimeEntryAction(
     const seconds = secondsFromHours(data.hours)
     const clientId = data.client_id || null
 
-    // The request id is minted once per form and reused on every retry, so
-    // create_work_entry_once returns the first entry rather
-    // than logging the same work twice.
+    // O request id é criado uma vez por formulário e reutilizado em cada nova
+    // tentativa, para que create_work_entry_once retorne o primeiro lançamento
+    // em vez de registrar o mesmo trabalho duas vezes.
     const { error } = await supabase.rpc('create_work_entry_once', {
       p_business_id: z.string().uuid().parse(businessId),
       p_kind: 'time',
@@ -86,7 +87,7 @@ export async function createTimeEntryAction(
     revalidatePath('/dashboard')
     return { ok: true }
   } catch (error) {
-    return failure(error, 'Could not log that time entry.')
+    return failure(error, 'Não foi possível registrar esse lançamento de horas.')
   }
 }
 
@@ -105,10 +106,10 @@ export async function updateTimeEntryAction(
       .select('business_id')
       .eq('id', entryId)
       .maybeSingle()
-    if (!entry?.business_id) return { error: 'Time entry not found.' }
+    if (!entry?.business_id) return { error: 'Lançamento de horas não encontrado.' }
 
-    // Invoiced work stays frozen: the `is('invoice_id', null)` filter is the
-    // same one the browser used, and the row count tells us whether it held.
+    // Trabalho faturado não pode ser alterado: o filtro `is('invoice_id', null)`
+    // é o mesmo usado pelo navegador, e a quantidade de linhas informa se ele foi aplicado.
     const { data: saved, error } = await supabase
       .from('time_entries')
       .update({
@@ -127,13 +128,13 @@ export async function updateTimeEntryAction(
       .select('id')
 
     if (error) return { error: error.message }
-    if (!saved?.length) return { error: 'Invoiced work cannot be edited.' }
+    if (!saved?.length) return { error: 'Trabalho faturado não pode ser editado.' }
 
     revalidatePath('/time')
     revalidatePath(`/time/${entryId}`)
     return { ok: true }
   } catch (error) {
-    return failure(error, 'Could not save that time entry.')
+    return failure(error, 'Não foi possível salvar esse lançamento de horas.')
   }
 }
 
@@ -149,12 +150,12 @@ export async function deleteTimeEntryAction(entryId: string): Promise<WriteResul
       .select('id')
 
     if (error) return { error: error.message }
-    if (!deleted?.length) return { error: 'Invoiced work cannot be deleted.' }
+    if (!deleted?.length) return { error: 'Trabalho faturado não pode ser excluído.' }
 
     revalidatePath('/time')
     revalidatePath('/dashboard')
     return { ok: true }
   } catch (error) {
-    return failure(error, 'Could not delete that time entry.')
+    return failure(error, 'Não foi possível excluir esse lançamento de horas.')
   }
 }

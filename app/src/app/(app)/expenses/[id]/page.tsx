@@ -50,7 +50,7 @@ export default function EditExpensePage() {
   async function handleSubmit(data: ExpenseFormData) {
     if (!expense) return
     if (expense.invoice_id) {
-      toast.error('Invoiced work cannot be edited. Create a correcting entry instead.')
+      toast.error('Um trabalho faturado não pode ser editado. Crie um lançamento de correção.')
       return
     }
 
@@ -84,9 +84,9 @@ export default function EditExpensePage() {
       <div className="p-6 lg:p-8">
         <EmptyState
           icon={Receipt}
-          title="Expense not found"
-          description="The expense you're looking for doesn't exist."
-          action={{ label: 'Back to Expenses', href: '/expenses' }}
+          title="Despesa não encontrada"
+          description="A despesa que você procura não existe."
+          action={{ label: 'Voltar para despesas', href: '/expenses' }}
         />
       </div>
     )
@@ -95,8 +95,8 @@ export default function EditExpensePage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Edit Expense"
-        description="Update this expense"
+        title="Editar despesa"
+        description="Atualize esta despesa"
       />
 
       <div className="mt-6 max-w-2xl">

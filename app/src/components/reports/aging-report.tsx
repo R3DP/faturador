@@ -1,18 +1,17 @@
 'use client'
 
 /**
- * Accounts-receivable aging - the report someone actually acts on.
+ * Envelhecimento de contas a receber - um relatório que leva a uma ação.
  *
- * It answers three questions in order: how much is late, how late, and who do
- * I call. So the card leads with the overdue figure, charts the buckets as a
- * horizontal bar (five ordered bands with long names read better lying down),
- * and every bucket drills into the invoices behind it.
+ * Ele responde a três perguntas: quanto está atrasado, há quanto tempo e quem devo
+ * contatar. Por isso, o cartão começa pelo valor vencido e mostra as faixas em um gráfico
+ * de barras horizontal (cinco faixas ordenadas e com nomes longos ficam mais legíveis assim),
+ * além de permitir abrir as faturas de cada faixa.
  *
- * Colour: the bands are an ORDINAL ramp, one hue deepening with age, because
- * age has a natural order. "Not yet due" sits outside the ramp in the
- * de-emphasis grey - it is context, not a stage of lateness. Every bar is also
- * directly labelled with its amount, so nothing here is encoded by colour
- * alone.
+ * Cor: as faixas usam uma escala ordinal, com um único tom que escurece com o tempo, pois
+ * a idade tem uma ordem natural. "Ainda não vencido" fica fora da escala, em
+ * cinza discreto - é contexto, não uma etapa do atraso. Cada barra também recebe
+ * o valor correspondente como rótulo, para que nenhuma informação dependa apenas da cor.
  */
 
 import { useState } from 'react'
@@ -52,7 +51,7 @@ export function AgingReport({
   asOf,
 }: {
   data: ReportData
-  /** Built once by the page so the KPI row and this card cannot disagree. */
+  /** Calculado uma vez pela página para manter os indicadores e este cartão consistentes. */
   report: AgingReportData
   asOf: string
 }) {
@@ -81,37 +80,37 @@ export function AgingReport({
     build: () =>
       withReportContext(
         toCsv(report.invoices, [
-          { header: 'Invoice', value: (row: AgedInvoice) => row.invoiceNumber },
-          { header: 'Client', value: (row: AgedInvoice) => row.clientName },
-          { header: 'Client email', value: (row: AgedInvoice) => row.clientEmail ?? '' },
-          { header: 'Status', value: (row: AgedInvoice) => row.status },
-          { header: 'Issued', value: (row: AgedInvoice) => row.issueDate },
-          { header: 'Due', value: (row: AgedInvoice) => row.dueDate },
-          { header: 'Days past due', value: (row: AgedInvoice) => row.daysPastDue },
+          { header: 'Fatura', value: (row: AgedInvoice) => row.invoiceNumber },
+          { header: 'Cliente', value: (row: AgedInvoice) => row.clientName },
+          { header: 'E-mail do cliente', value: (row: AgedInvoice) => row.clientEmail ?? '' },
+          { header: 'Situação', value: (row: AgedInvoice) => row.status },
+          { header: 'Emitida em', value: (row: AgedInvoice) => row.issueDate },
+          { header: 'Vencimento', value: (row: AgedInvoice) => row.dueDate },
+          { header: 'Dias em atraso', value: (row: AgedInvoice) => row.daysPastDue },
           {
-            header: 'Bucket',
+            header: 'Faixa',
             value: (row: AgedInvoice) => report.buckets.find((b) => b.id === row.bucket)?.label ?? '',
           },
-          { header: `Invoice total (${currency})`, value: (row: AgedInvoice) => row.total },
-          { header: `Balance due (${currency})`, value: (row: AgedInvoice) => row.balanceDue },
+          { header: `Total da fatura (${currency})`, value: (row: AgedInvoice) => row.total },
+          { header: `Saldo a pagar (${currency})`, value: (row: AgedInvoice) => row.balanceDue },
         ]),
         {
-          title: 'Accounts receivable aging',
+          title: 'Envelhecimento de contas a receber',
           range: data.range,
           currency,
-          note: `As of ${asOf}${report.truncated ? `; capped at ${data.openInvoices.length} of ${data.openInvoiceCount} open invoices` : ''}`,
+          note: `Em ${asOf}${report.truncated ? `; limitado a ${data.openInvoices.length} de ${data.openInvoiceCount} faturas em aberto` : ''}`,
         }
       ),
   }
 
   const table = (
     <ReportTable
-      caption="Receivable balance by aging bucket"
+      caption="Saldo a receber por faixa de vencimento"
       columns={[
-        { key: 'bucket', label: 'Bucket' },
-        { key: 'invoices', label: 'Invoices', align: 'right' },
-        { key: 'amount', label: 'Balance', align: 'right' },
-        { key: 'share', label: 'Share', align: 'right' },
+        { key: 'bucket', label: 'Faixa' },
+        { key: 'invoices', label: 'Faturas', align: 'right' },
+        { key: 'amount', label: 'Saldo', align: 'right' },
+        { key: 'share', label: 'Participação', align: 'right' },
       ]}
     >
       {report.buckets.map((bucket) => (
@@ -128,7 +127,7 @@ export function AgingReport({
       ))}
       <tr className="border-t border-border font-medium">
         <th scope="row" className="px-2 py-1.5 text-left">
-          Total outstanding
+          Total em aberto
         </th>
         <td className="px-2 py-1.5 text-right tabular-nums">{report.invoiceCount}</td>
         <td className="px-2 py-1.5 text-right tabular-nums">
@@ -142,13 +141,13 @@ export function AgingReport({
   if (report.invoiceCount === 0) {
     return (
       <ReportCard
-        title="Accounts receivable aging"
-        description="Every open invoice, sorted by how late it is"
+        title="Envelhecimento de contas a receber"
+        description="Todas as faturas em aberto, ordenadas pelo tempo de atraso"
       >
         <EmptyState
           icon={CheckCircle2}
-          title="Nothing outstanding"
-          description="No open invoices right now. When one is waiting on payment, it appears here with its age."
+          title="Nada em aberto"
+          description="Não há faturas em aberto no momento. Quando uma fatura estiver aguardando pagamento, ela aparecerá aqui com o tempo de atraso."
           className="py-10"
         />
       </ReportCard>
@@ -157,17 +156,17 @@ export function AgingReport({
 
   return (
     <ReportCard
-      title="Accounts receivable aging"
-      description="Every open invoice, sorted by how late it is"
+      title="Envelhecimento de contas a receber"
+      description="Todas as faturas em aberto, ordenadas pelo tempo de atraso"
       csv={csv}
       table={table}
       footer={
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span>As of {formatBucketLabel(asOf, 'day')}. Aging ignores the date range above.</span>
+          <span>Em {formatBucketLabel(asOf, 'day')}. O envelhecimento não considera o período selecionado acima.</span>
           {report.truncated ? (
             <span className="text-warning">
-              Showing the {data.openInvoices.length} oldest of {data.openInvoiceCount} open invoices, so
-              these totals are a floor.
+              Exibindo as {data.openInvoices.length} faturas em aberto mais antigas de {data.openInvoiceCount}; portanto,
+              estes totais são valores mínimos.
             </span>
           ) : null}
         </div>
@@ -176,26 +175,26 @@ export function AgingReport({
       <div className="grid gap-6 lg:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
         <div className="space-y-4">
           <div>
-            <p className="text-sm text-muted-foreground">Overdue</p>
+            <p className="text-sm text-muted-foreground">Total vencido</p>
             <p className="mt-0.5 text-3xl font-semibold tracking-tight text-foreground">
               {formatMoney(report.totalOverdue, currency)}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              of {formatMoney(report.totalOutstanding, currency)} outstanding across {report.invoiceCount}{' '}
-              {report.invoiceCount === 1 ? 'invoice' : 'invoices'}
+              de {formatMoney(report.totalOutstanding, currency)} em aberto em {report.invoiceCount}{' '}
+              {report.invoiceCount === 1 ? 'fatura' : 'faturas'}
             </p>
           </div>
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <dt className="text-xs text-muted-foreground">Average days late</dt>
+              <dt className="text-xs text-muted-foreground">Média de dias em atraso</dt>
               <dd className="mt-0.5 font-medium tabular-nums text-foreground">
                 {report.averageDaysOverdue}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-muted-foreground">Oldest</dt>
+              <dt className="text-xs text-muted-foreground">Maior atraso</dt>
               <dd className="mt-0.5 font-medium tabular-nums text-foreground">
-                {report.oldest ? `${report.oldest.daysPastDue}d` : 'None late'}
+                {report.oldest ? `${report.oldest.daysPastDue} dias` : 'Sem atraso'}
               </dd>
             </div>
           </dl>
@@ -203,7 +202,7 @@ export function AgingReport({
             <div className="rounded-lg border border-border bg-muted/40 p-3">
               <p className="flex items-center gap-1.5 text-xs font-medium text-foreground">
                 <AlertTriangle className="h-3.5 w-3.5 text-warning" aria-hidden />
-                Chase first
+                Priorize a cobrança
               </p>
               <Link
                 href={`/invoices/${report.oldest.id}`}
@@ -212,8 +211,8 @@ export function AgingReport({
                 {report.oldest.invoiceNumber}
               </Link>
               <p className="text-xs text-muted-foreground">
-                {report.oldest.clientName} owes {formatMoney(report.oldest.balanceDue, currency)},{' '}
-                {report.oldest.daysPastDue} days past due
+                {report.oldest.clientName} deve {formatMoney(report.oldest.balanceDue, currency)},{' '}
+                com {report.oldest.daysPastDue} dias de atraso
               </p>
             </div>
           ) : null}
@@ -222,7 +221,7 @@ export function AgingReport({
         <div className="min-w-0">
           <VizFrame
             height={220}
-            label={`Horizontal bar chart of open receivable balance by aging bucket in ${currency}`}
+            label={`Gráfico de barras horizontal do saldo em aberto por faixa de atraso, em ${currency}`}
           >
             <BarChart
               data={chartRows}
@@ -261,12 +260,12 @@ export function AgingReport({
                       rows={[
                         {
                           key: 'amount',
-                          name: `${row.count} ${row.count === 1 ? 'invoice' : 'invoices'}`,
+                          name: `${row.count} ${row.count === 1 ? 'fatura' : 'faturas'}`,
                           value: formatMoney(row.amount, currency),
                           color: AGING_COLORS[row.id],
                         },
                       ]}
-                      note={`${formatPercent(row.share)} of everything outstanding`}
+                      note={`${formatPercent(row.share)} do total em aberto`}
                     />
                   )
                 }}
@@ -298,7 +297,7 @@ export function AgingReport({
 
           <div className="mt-2 flex flex-wrap gap-1.5">
             <BucketChip active={selected === 'all'} onClick={() => setSelected('all')}>
-              All open ({report.invoiceCount})
+              Todas em aberto ({report.invoiceCount})
             </BucketChip>
             {report.buckets
               .filter((bucket) => bucket.count > 0)
@@ -320,19 +319,19 @@ export function AgingReport({
         <div className="min-w-0">
           <h3 className="text-sm font-medium text-foreground">
             {selected === 'all'
-              ? 'Open invoices'
+              ? 'Faturas em aberto'
               : report.buckets.find((b) => b.id === selected)?.label}
           </h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {visible.length} {visible.length === 1 ? 'invoice' : 'invoices'}, oldest first
+            {visible.length} {visible.length === 1 ? 'fatura' : 'faturas'}, mais antigas primeiro
           </p>
           <div className="mt-3 max-h-80 overflow-y-auto overflow-x-hidden px-2">
             <ReportTable
-              caption="Open invoices in the selected aging bucket"
+              caption="Faturas em aberto na faixa de vencimento selecionada"
               columns={[
-                { key: 'invoice', label: 'Invoice' },
-                { key: 'due', label: 'Days late', align: 'right' },
-                { key: 'balance', label: 'Balance', align: 'right' },
+                { key: 'invoice', label: 'Fatura' },
+                { key: 'due', label: 'Dias em atraso', align: 'right' },
+                { key: 'balance', label: 'Saldo', align: 'right' },
               ]}
             >
               {visible.map((invoice) => (
@@ -350,7 +349,7 @@ export function AgingReport({
                     {invoice.daysPastDue > 0 ? (
                       <span className="font-medium text-foreground">{invoice.daysPastDue}</span>
                     ) : (
-                      <Badge variant="secondary">Not due</Badge>
+                      <Badge variant="secondary">Ainda não vencida</Badge>
                     )}
                   </td>
                   <td className="px-2 py-2 text-right font-medium tabular-nums">
@@ -363,9 +362,9 @@ export function AgingReport({
         </div>
 
         <div className="min-w-0">
-          <h3 className="text-sm font-medium text-foreground">Who to chase</h3>
+          <h3 className="text-sm font-medium text-foreground">Quem cobrar</h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Clients ranked by overdue balance, then by how long it has been late
+            Clientes ordenados pelo saldo em atraso e, em seguida, pelo tempo de atraso
           </p>
           <ul className="mt-3 space-y-2.5">
             {clients.map((client) => (
@@ -389,8 +388,8 @@ export function AgingReport({
                     </span>
                   )}
                   <span className="text-xs text-muted-foreground">
-                    {client.invoiceCount} open,{' '}
-                    {client.worstDays > 0 ? `up to ${client.worstDays} days late` : 'none late yet'}
+                    {client.invoiceCount} em aberto,{' '}
+                    {client.worstDays > 0 ? `até ${client.worstDays} dias em atraso` : 'nenhuma em atraso'}
                   </span>
                 </div>
                 <span className="shrink-0 text-sm font-medium tabular-nums text-foreground">

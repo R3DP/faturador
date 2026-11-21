@@ -12,10 +12,10 @@ import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 
 const resetPasswordSchema = z.object({
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres'),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
+  message: "As senhas não coincidem.",
   path: ['confirmPassword'],
 })
 
@@ -68,13 +68,13 @@ export default function ResetPasswordPage() {
           </svg>
         </div>
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-          Password updated
+          Senha atualizada
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Your password has been successfully updated.
+          Sua senha foi atualizada com sucesso.
         </p>
         <Button className="mt-6" asChild>
-          <Link href="/dashboard">Go to dashboard</Link>
+          <Link href="/dashboard">Ir para o painel</Link>
         </Button>
       </div>
     )
@@ -84,10 +84,10 @@ export default function ResetPasswordPage() {
     <div className="w-full max-w-sm">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          Set new password
+          Defina uma nova senha
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Enter your new password below.
+          Digite sua nova senha abaixo.
         </p>
       </div>
 
@@ -99,7 +99,7 @@ export default function ResetPasswordPage() {
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="password">New password</Label>
+          <Label htmlFor="password">Nova senha</Label>
           <Input
             id="password"
             type="password"
@@ -113,7 +113,7 @@ export default function ResetPasswordPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Confirm new password</Label>
+          <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
           <Input
             id="confirmPassword"
             type="password"
@@ -128,7 +128,7 @@ export default function ResetPasswordPage() {
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Update password
+          Atualizar senha
         </Button>
       </form>
     </div>

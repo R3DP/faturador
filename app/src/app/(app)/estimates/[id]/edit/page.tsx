@@ -101,9 +101,9 @@ export default function EditEstimatePage() {
       <div className="p-6 lg:p-8">
         <EmptyState
           icon={FileText}
-          title="Estimate not found"
-          description="The estimate you're looking for doesn't exist."
-          action={{ label: 'Back to Estimates', href: '/estimates' }}
+          title="Orçamento não encontrado"
+          description="O orçamento que você procura não existe."
+          action={{ label: 'Voltar para orçamentos', href: '/estimates' }}
         />
       </div>
     )
@@ -112,8 +112,8 @@ export default function EditEstimatePage() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title={`Edit ${estimate.estimate_number}`}
-        description="Update the details of this estimate"
+        title={`Editar ${estimate.estimate_number}`}
+        description="Atualize os dados deste orçamento"
       />
 
       <div className="mt-6">

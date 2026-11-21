@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
-// Public invoice/estimate documents are keyed on unguessable IDs and must not
-// be indexed by search engines.
+// Os documentos públicos de fatura e orçamento usam IDs impossíveis de adivinhar e não devem
+// ser indexados por mecanismos de busca.
 export const metadata: Metadata = {
   robots: {
     index: false,

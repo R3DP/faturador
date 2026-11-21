@@ -1,23 +1,23 @@
 import { createClient } from '@/lib/supabase/client'
 import { safeAuthRedirect } from '@/lib/auth/redirect'
 
-/** The social providers Billr knows how to start a sign-in with. */
+/** Provedores sociais pelos quais o Faturador consegue iniciar uma autenticação. */
 export type OAuthProviderId = 'github' | 'google'
 
 type OAuthProviderConfig = {
-  /** Name shown on the button and in any error message. */
+  /** Nome exibido no botão e em mensagens de erro. */
   label: string
   /**
-   * Scopes to request. Left unset means the Supabase provider default, which
-   * is what GitHub sign-in has always used (authentication only, no repos).
+   * Escopos solicitados. Quando omitido, usa o padrão do provedor Supabase,
+   * como sempre ocorreu na autenticação pelo GitHub (somente autenticação, sem repositórios).
    */
   scopes?: string
 }
 
 export const OAUTH_PROVIDERS: Record<OAuthProviderId, OAuthProviderConfig> = {
   github: { label: 'GitHub' },
-  // Google needs an identity, nothing else. These are also Supabase's
-  // defaults, spelled out here so a provider-level change cannot widen them.
+  // O Google precisa apenas da identidade. Estes também são os padrões do
+  // Supabase, declarados aqui para impedir que uma alteração no provedor amplie os escopos.
   google: { label: 'Google', scopes: 'email profile' },
 }
 
@@ -26,12 +26,13 @@ export const OAUTH_PROVIDER_IDS = Object.keys(
 ) as OAuthProviderId[]
 
 /**
- * Providers the Supabase project currently has configured.
+ * Provedores atualmente configurados no projeto Supabase.
  *
- * Supabase publishes this at `/auth/v1/settings`, so availability is read at
- * runtime and enabling a provider needs no redeployment. An unreachable or
- * unreadable settings document means "offer none of them" and the email form
- * below the buttons stays the way in.
+ * O Supabase publica essas informações em `/auth/v1/settings`, então a
+ * disponibilidade é consultada em tempo de execução e ativar um provedor não
+ * exige nova implantação. Se o documento de configurações estiver inacessível
+ * ou ilegível, nenhum provedor é oferecido e o formulário de e-mail abaixo dos
+ * botões continua sendo uma opção.
  */
 export async function fetchEnabledOAuthProviders(): Promise<OAuthProviderId[]> {
   try {
@@ -51,11 +52,11 @@ export async function fetchEnabledOAuthProviders(): Promise<OAuthProviderId[]> {
 }
 
 /**
- * Start the PKCE flow and return the provider URL to send the browser to.
+ * Inicia o fluxo PKCE e retorna a URL do provedor para redirecionar o navegador.
  *
- * The return trip lands on `/api/auth/callback`, which is provider-agnostic:
- * it exchanges the code, then routes brand-new accounts through the agreement
- * step. `origin` is a parameter so this stays testable outside a browser.
+ * O retorno chega a `/api/auth/callback`, que não depende do provedor:
+ * troca o código e encaminha contas novas para a etapa de aceite. `origin` é um
+ * parâmetro para permitir testes fora de um navegador.
  */
 export async function startOAuthSignIn(
   provider: OAuthProviderId,
@@ -74,6 +75,6 @@ export async function startOAuthSignIn(
     },
   })
   if (error || !data?.url)
-    throw new Error(`Could not start ${label} sign-in. Please try again.`)
+    throw new Error(`Não foi possível iniciar a autenticação com ${label}. Tente novamente.`)
   return data.url
 }

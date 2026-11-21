@@ -17,27 +17,27 @@ import { guardedServer } from './guarded-server'
 import { registerBillrWidgets, widgetHtml, WIDGET_MIME_TYPE } from './widgets'
 import type { McpCtx } from './context'
 
-describe('tool metadata for the ChatGPT and Codex hosts', () => {
-  it('declares the OAuth scope each tool needs, which is its permission', () => {
+describe('metadados das ferramentas para os hosts ChatGPT e Codex', () => {
+  it('declara o escopo OAuth necessário para cada ferramenta, correspondente à sua permissão', () => {
     expect(securitySchemesFor('get_invoice')).toEqual([{ type: 'oauth2', scopes: ['read'] }])
     expect(securitySchemesFor('send_invoice')).toEqual([{ type: 'oauth2', scopes: ['send'] }])
     expect(securitySchemesFor('record_payment')).toEqual([{ type: 'oauth2', scopes: ['payments'] }])
     expect(securitySchemesFor('not_a_tool')).toEqual([])
   })
 
-  it('points card tools at their ui:// resource under both names', () => {
+  it('associa as ferramentas com cartão ao recurso ui:// usando os dois nomes', () => {
     const meta = toolMetaFor('get_invoice') as Record<string, unknown>
     expect(meta.ui).toEqual({ resourceUri: 'ui://billr/invoice-v1.html' })
     expect(meta['openai/outputTemplate']).toBe('ui://billr/invoice-v1.html')
   })
 
-  it('gives other tools no card', () => {
+  it('não associa cartões às demais ferramentas', () => {
     const meta = toolMetaFor('create_invoice') as Record<string, unknown>
     expect(meta.ui).toBeUndefined()
     expect(meta['openai/outputTemplate']).toBeUndefined()
   })
 
-  it("keeps a tool's own _meta when merging", () => {
+  it("preserva o _meta da própria ferramenta ao mesclar", () => {
     const config = withToolMeta('get_profile', { title: 'x', _meta: { 'openai/profile': true } })
     expect(config._meta).toMatchObject({
       'openai/profile': true,
@@ -50,14 +50,14 @@ describe('tool metadata for the ChatGPT and Codex hosts', () => {
 describe('withStructuredContent', () => {
   const ok = { content: [{ type: 'text', text: JSON.stringify({ summary: 's', invoice: { id: 'i' } }) }] }
 
-  it('mirrors the JSON text into structuredContent for card tools', () => {
+  it('repete o texto JSON em structuredContent para ferramentas com cartão', () => {
     expect(withStructuredContent('get_invoice', ok)).toEqual({
       ...ok,
       structuredContent: { summary: 's', invoice: { id: 'i' } },
     })
   })
 
-  it('leaves other tools, errors and non-JSON alone', () => {
+  it('mantém inalterados as demais ferramentas, os erros e o conteúdo que não é JSON', () => {
     expect(withStructuredContent('list_invoices', ok)).toBe(ok)
     const error = { ...ok, isError: true }
     expect(withStructuredContent('get_invoice', error)).toBe(error)
@@ -67,13 +67,13 @@ describe('withStructuredContent', () => {
 })
 
 describe('authErrorResult', () => {
-  it('carries a challenge with error and error_description, which ChatGPT needs to offer sign-in', () => {
-    const result = authErrorResult('Sign in to "Billr" again.', 'invalid_token')
+  it('inclui error e error_description no desafio, necessários para o ChatGPT oferecer autenticação', () => {
+    const result = authErrorResult('Entre no Faturador novamente.', 'invalid_token')
     expect(result.isError).toBe(true)
     const [challenge] = result._meta['mcp/www_authenticate']
     expect(challenge).toContain('resource_metadata="https://invoices.example.org/.well-known/oauth-protected-resource/api/mcp"')
     expect(challenge).toContain('error="invalid_token"')
-    expect(challenge).toContain('error_description="Sign in to Billr again."')
+    expect(challenge).toContain('error_description="Entre no Faturador novamente."')
   })
 })
 
@@ -110,30 +110,30 @@ describe('guardedServer', () => {
 
   const invoiceJson = { content: [{ type: 'text' as const, text: '{"summary":"s","invoice":{"id":"i"}}' }] }
 
-  it('adds host metadata to every registered tool', () => {
+  it('adiciona metadados do host a todas as ferramentas registradas', () => {
     const { guarded, registered } = setup({ revoked_at: null, expires_at: null, permissions: ['read'] })
-    guarded.registerTool('get_invoice', { title: 'Get Invoice' }, async () => invoiceJson)
+    guarded.registerTool('get_invoice', { title: 'Obter fatura' }, async () => invoiceJson)
     expect(registered.get('get_invoice')!.config._meta).toMatchObject({
       'openai/outputTemplate': WIDGET_TOOLS.get_invoice,
       securitySchemes: [{ type: 'oauth2', scopes: ['read'] }],
     })
   })
 
-  it('returns structuredContent from card tools', async () => {
+  it('retorna structuredContent nas ferramentas com cartão', async () => {
     const { guarded, registered } = setup({ revoked_at: null, expires_at: null, permissions: ['read'] })
     guarded.registerTool('get_invoice', {}, async () => invoiceJson)
     const result = (await registered.get('get_invoice')!.cb({})) as Record<string, unknown>
     expect(result.structuredContent).toEqual({ summary: 's', invoice: { id: 'i' } })
   })
 
-  it('answers a revoked connection with a sign-in challenge', async () => {
+  it('responde a uma conexão revogada com um desafio de autenticação', async () => {
     const { guarded, registered } = setup({ revoked_at: '2026-01-01', expires_at: null, permissions: ['read'] })
     guarded.registerTool('get_invoice', {}, async () => invoiceJson)
     const result = (await registered.get('get_invoice')!.cb({})) as { _meta?: Record<string, string[]> }
     expect(result._meta?.['mcp/www_authenticate']?.[0]).toContain('error="invalid_token"')
   })
 
-  it('answers a permission removed since connecting with insufficient_scope', async () => {
+  it('responde à remoção de uma permissão após a conexão com insufficient_scope', async () => {
     const { guarded, registered } = setup({ revoked_at: null, expires_at: null, permissions: ['write'] })
     guarded.registerTool('get_invoice', {}, async () => invoiceJson)
     const result = (await registered.get('get_invoice')!.cb({})) as { _meta?: Record<string, string[]> }
@@ -141,8 +141,8 @@ describe('guardedServer', () => {
   })
 })
 
-describe('Billr cards', () => {
-  it('registers one MCP Apps resource per card tool', async () => {
+describe('Cartões do Faturador', () => {
+  it('registra um recurso MCP Apps para cada ferramenta com cartão', async () => {
     const resources: { uri: string; read: () => Promise<{ contents: { mimeType: string; text: string }[] }> }[] = []
     registerBillrWidgets({
       registerResource(_n: string, uri: string, _c: unknown, read: () => Promise<never>) {
@@ -154,7 +154,7 @@ describe('Billr cards', () => {
     expect(contents[0].mimeType).toBe(WIDGET_MIME_TYPE)
   })
 
-  it('loads nothing from the network', () => {
+  it('não carrega conteúdo da rede', () => {
     for (const tool of Object.keys(WIDGET_TOOLS) as (keyof typeof WIDGET_TOOLS)[]) {
       const html = widgetHtml(tool)
       expect(html).not.toMatch(/<script[^>]+src=/i)

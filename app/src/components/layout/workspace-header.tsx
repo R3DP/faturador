@@ -6,12 +6,12 @@ import { ChevronRight } from 'lucide-react'
 import { workspaceNavigation } from './sidebar'
 
 const detailNames: Record<string, string> = {
-  new: 'Create new',
-  edit: 'Edit',
-  business: 'Business',
-  account: 'Account',
-  branding: 'Branding',
-  invoices: 'Invoice defaults',
+  new: 'Criar novo',
+  edit: 'Editar',
+  business: 'Empresa',
+  account: 'Conta',
+  branding: 'Identidade visual',
+  invoices: 'Padrões de fatura',
 }
 export function WorkspaceHeader() {
   const pathname = usePathname()
@@ -22,7 +22,7 @@ export function WorkspaceHeader() {
   if (!page) return null
   return (
     <div className="hidden h-14 shrink-0 items-center justify-between border-b border-zinc-100 px-8 lg:flex">
-      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs">
+      <nav aria-label="Caminho de navegação" className="flex items-center gap-2 text-xs">
         <page.icon size={14} className="text-zinc-400" />
         <Link href={page.href} className="text-zinc-500 hover:text-primary">
           {page.label}
@@ -31,12 +31,12 @@ export function WorkspaceHeader() {
           <span key={index} className="flex items-center gap-2">
             <ChevronRight size={12} className="text-zinc-300" />
             <span className="text-zinc-700">
-              {detailNames[part] || 'Details'}
+              {detailNames[part] || 'Detalhes'}
             </span>
           </span>
         ))}
       </nav>
-      <span className="text-[11px] text-zinc-400">Your billing workspace</span>
+      <span className="text-[11px] text-zinc-400">Seu espaço de trabalho de cobrança</span>
     </div>
   )
 }

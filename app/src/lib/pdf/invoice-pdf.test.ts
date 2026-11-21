@@ -1,75 +1,75 @@
 import { afterEach, describe, it, expect, vi } from 'vitest'
 
-// A public address, so the SSRF deny list is not what refuses anything below:
-// the origin pin is. Without the mock a made-up host simply fails to resolve
-// and the test would pass for the wrong reason.
+// Um endereço público, portanto a lista de bloqueio contra SSRF não é o que
+// recusa os casos abaixo: é a restrição à origem. Sem o mock, um host inventado
+// simplesmente não seria resolvido e o teste passaria pelo motivo errado.
 vi.mock('node:dns/promises', () => ({
   lookup: async () => [{ address: '93.184.216.34', family: 4 }],
 }))
 
 import { fetchLogo, isBlockedLogoAddress } from './invoice-pdf'
 
-describe('isBlockedLogoAddress (SSRF guard)', () => {
-  it('allows public IPv4 addresses', () => {
+describe('isBlockedLogoAddress (proteção contra SSRF)', () => {
+  it('permite endereços IPv4 públicos', () => {
     expect(isBlockedLogoAddress('8.8.8.8')).toBe(false)
     expect(isBlockedLogoAddress('1.1.1.1')).toBe(false)
     expect(isBlockedLogoAddress('93.184.216.34')).toBe(false)
   })
 
-  it('allows public IPv6 addresses', () => {
+  it('permite endereços IPv6 públicos', () => {
     expect(isBlockedLogoAddress('2606:4700:4700::1111')).toBe(false)
   })
 
-  it('rejects loopback 127/8', () => {
+  it('recusa endereços de loopback 127/8', () => {
     expect(isBlockedLogoAddress('127.0.0.1')).toBe(true)
     expect(isBlockedLogoAddress('127.1.2.3')).toBe(true)
   })
 
-  it('rejects private 10/8', () => {
+  it('recusa endereços privados 10/8', () => {
     expect(isBlockedLogoAddress('10.0.0.1')).toBe(true)
     expect(isBlockedLogoAddress('10.255.255.255')).toBe(true)
   })
 
-  it('rejects private 172.16/12', () => {
+  it('recusa endereços privados 172.16/12', () => {
     expect(isBlockedLogoAddress('172.16.0.1')).toBe(true)
     expect(isBlockedLogoAddress('172.31.255.255')).toBe(true)
-    // just outside the range stays allowed
+    // o endereço logo fora da faixa continua permitido
     expect(isBlockedLogoAddress('172.15.0.1')).toBe(false)
     expect(isBlockedLogoAddress('172.32.0.1')).toBe(false)
   })
 
-  it('rejects private 192.168/16', () => {
+  it('recusa endereços privados 192.168/16', () => {
     expect(isBlockedLogoAddress('192.168.0.1')).toBe(true)
     expect(isBlockedLogoAddress('192.168.1.100')).toBe(true)
   })
 
-  it('rejects link-local / cloud metadata 169.254/16', () => {
+  it('recusa endereços link-local e metadados de nuvem 169.254/16', () => {
     expect(isBlockedLogoAddress('169.254.169.254')).toBe(true)
   })
 
-  it('rejects 0.0.0.0', () => {
+  it('recusa 0.0.0.0', () => {
     expect(isBlockedLogoAddress('0.0.0.0')).toBe(true)
   })
 
-  it('rejects IPv6 loopback and unique-local/link-local', () => {
+  it('recusa loopback IPv6 e endereços unique-local/link-local', () => {
     expect(isBlockedLogoAddress('::1')).toBe(true)
     expect(isBlockedLogoAddress('fc00::1')).toBe(true)
     expect(isBlockedLogoAddress('fd12:3456::1')).toBe(true)
     expect(isBlockedLogoAddress('fe80::1')).toBe(true)
   })
 
-  it('rejects IPv4-mapped IPv6 loopback', () => {
+  it('recusa loopback IPv6 mapeado para IPv4', () => {
     expect(isBlockedLogoAddress('::ffff:127.0.0.1')).toBe(true)
   })
 })
 
 /**
- * The public PDF route reaches fetchLogo with no session at all,
- * and the URL comes from businesses.logo_url. Anything that is not this
- * installation's own storage origin must be refused before a single packet
- * leaves the server, so the route cannot be used to fetch an arbitrary host.
+ * A rota pública do PDF chama fetchLogo sem sessão, e a URL vem de
+ * businesses.logo_url. Qualquer endereço que não seja a origem de armazenamento
+ * desta instalação deve ser recusado antes que um pacote saia do servidor, para
+ * impedir que a rota seja usada para buscar conteúdo de um host arbitrário.
  */
-describe('fetchLogo origin pinning', () => {
+describe('restrição de origem de fetchLogo', () => {
   const SUPABASE = 'https://example-install.supabase.co'
   const good = `${SUPABASE}/storage/v1/object/public/logos/b1/logo.png`
 
@@ -103,7 +103,7 @@ describe('fetchLogo origin pinning', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('fetches a logo on this installation storage origin', async () => {
+  it('busca um logotipo na origem de armazenamento desta instalação', async () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', SUPABASE)
     const fetchMock = stubFetch()
 
@@ -113,7 +113,7 @@ describe('fetchLogo origin pinning', () => {
     expect(logo?.format).toBe('png')
   })
 
-  it('refuses everything when no Supabase URL is configured', async () => {
+  it('recusa tudo quando nenhuma URL do Supabase está configurada', async () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', '')
     const fetchMock = stubFetch()
 

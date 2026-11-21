@@ -1,8 +1,8 @@
-/** Preserve measured seconds; round money only after applying the agreed rate. */
+/** Preserve os segundos medidos; arredonde o valor somente após aplicar a tarifa acordada. */
 export function secondsFromHours(hours: number): number {
   const seconds = Math.round(hours * 3600)
   if (!Number.isFinite(hours) || seconds < 1 || seconds > 86400) {
-    throw new Error('Time must be between one second and 24 hours')
+    throw new Error('O tempo deve estar entre um segundo e 24 horas')
   }
   return seconds
 }
@@ -12,10 +12,10 @@ export function timeAmount(
   rate: number | null
 ): number | null {
   if (!Number.isSafeInteger(seconds) || seconds < 0)
-    throw new Error('Duration must be whole nonnegative seconds')
+    throw new Error('A duração deve ser expressa em segundos inteiros não negativos')
   if (rate === null) return null
   if (!Number.isFinite(rate) || rate < 0)
-    throw new Error('Rate must be nonnegative')
+    throw new Error('A tarifa não pode ser negativa')
   return Math.round(((seconds * rate) / 3600 + Number.EPSILON) * 100) / 100
 }
 

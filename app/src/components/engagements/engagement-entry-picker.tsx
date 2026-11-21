@@ -10,34 +10,34 @@ import { todayISO } from '@/lib/dates'
 import type { LineItemFormData } from '@/lib/validations/invoice'
 
 /**
- * "From engagements": the schedule entries this client has agreed and that are
- * ready to bill right now, offered as checkboxes on the new invoice page.
+ * "De contratos": itens do cronograma acordados com este cliente e que estão
+ * prontos para faturar, oferecidos como caixas de seleção na página de nova fatura.
  *
- * Ticking one writes a PREVIEW line into the form so the person sees the
- * description and the total they are about to send. That preview is not what
- * gets billed: on submit the page strips these lines back out and passes the
- * entry ids to create_invoice instead, and the database rebuilds the lines
- * from each entry's own agreed amount inside the same transaction that marks
- * the entry invoiced. A number typed over in the browser
- * therefore cannot change what the client is charged, and an entry cannot end
- * up on two invoices.
+ * Ao marcar um item, uma linha de PRÉ-VISUALIZAÇÃO é adicionada ao formulário para que a pessoa veja a
+ * descrição e o total que pretende enviar. Essa prévia não é o que
+ * será cobrado: ao enviar, a página remove essas linhas e passa os
+ * IDs dos itens para create_invoice; então o banco recria as linhas
+ * com os valores acordados de cada item, na mesma transação que o marca
+ * como faturado. Um valor digitado no navegador
+ * não altera o valor cobrado do cliente, e um item não pode acabar
+ * em duas faturas.
  */
 
-/** Marks a line item as standing in for an engagement entry, not typed by hand. */
+/** Marca um item como representação de um item de contrato, e não como algo digitado manualmente. */
 const ENGAGEMENT_LINE_PREFIX = 'engagement:'
 
 function engagementLineId(entryId: string): string {
   return `${ENGAGEMENT_LINE_PREFIX}${entryId}`
 }
 
-/** The entry ids behind the preview lines currently in the form. */
+/** IDs dos itens associados às linhas de pré-visualização que estão no formulário. */
 export function engagementEntryIdsOf(lineItems: LineItemFormData[]): string[] {
   return lineItems
     .filter((item) => item.id.startsWith(ENGAGEMENT_LINE_PREFIX))
     .map((item) => item.id.slice(ENGAGEMENT_LINE_PREFIX.length))
 }
 
-/** The lines a person actually typed, which are the only ones sent as lines. */
+/** Linhas digitadas pela pessoa; somente elas são enviadas como itens. */
 export function typedLineItemsOf(lineItems: LineItemFormData[]): LineItemFormData[] {
   return lineItems.filter((item) => !item.id.startsWith(ENGAGEMENT_LINE_PREFIX))
 }
@@ -55,13 +55,13 @@ export interface ReadyEntry {
 
 interface Props {
   businessId: string
-  /** The client the invoice is for. No client picked means nothing to offer. */
+  /** Cliente da fatura. Sem cliente selecionado, não há itens para oferecer. */
   clientId: string
-  /** The invoice currency. An engagement in another one cannot be billed here. */
+  /** Moeda da fatura. Um contrato em outra moeda não pode ser cobrado aqui. */
   currency: string
   lineItems: LineItemFormData[]
   setLineItems: (items: LineItemFormData[]) => void
-  /** Entry ids to tick on first load, from the ?engagement_entries= query. */
+  /** IDs dos itens a marcar no primeiro carregamento, vindos da consulta ?engagement_entries=. */
   preselected?: string[]
 }
 
@@ -90,8 +90,8 @@ export function EngagementEntryPicker({
       const { createClient } = await import('@/lib/supabase/client')
       const supabase = createClient()
 
-      // Same read path sweep the engagement pages run: an entry whose date has
-      // passed becomes billable when somebody looks, not on a cron.
+      // Usa a mesma verificação de leitura das páginas de contratos: um item cuja data já
+      // passou se torna faturável quando alguém acessa a página, sem depender de uma tarefa agendada.
       await supabase.rpc('promote_due_entries', { p_business_id: businessId })
 
       const { data } = await supabase
@@ -111,8 +111,8 @@ export function EngagementEntryPicker({
 
       setEntries(
         ((data ?? []) as unknown as Row[])
-          // A draft or cancelled engagement is not billable, and the database
-          // refuses it anyway; not offering it is just honesty up front.
+          // Um contrato em rascunho ou cancelado não pode ser faturado, e o banco de dados
+          // o rejeitaria de qualquer forma; não oferecê-lo é apenas ser transparente desde o início.
           .filter(
             (row) =>
               row.engagement &&
@@ -139,7 +139,7 @@ export function EngagementEntryPicker({
     return () => {
       cancelled = true
     }
-    // currency is read inside but must not re-fetch: it only affects display.
+    // a moeda é consultada internamente e não deve causar nova busca; ela afeta somente a exibição.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId, clientId])
 
@@ -155,8 +155,8 @@ export function EngagementEntryPicker({
 
       const line: LineItemFormData = {
         id: engagementLineId(entry.id),
-        // Spelled exactly the way the invoicing RPC spells it, so the preview
-        // and the invoice that gets written read the same.
+        // Usa exatamente a mesma formulação da RPC de faturamento, para que a prévia
+        // e a fatura gravada sejam iguais.
         description: `${entry.engagement_name}: ${entry.label}`,
         quantity: 1,
         rate: entry.amount,
@@ -167,8 +167,8 @@ export function EngagementEntryPicker({
         discount_amount: 0,
       }
 
-      // Drop the blank line the form starts with, so billing only an
-      // engagement does not leave an empty row failing validation.
+      // Remove a linha em branco inicial do formulário, para que faturar somente
+      // um contrato não deixe uma linha vazia que falhe na validação.
       const kept = withoutEntry.filter(
         (item) => item.description.trim().length > 0 || item.rate > 0,
       )
@@ -177,8 +177,8 @@ export function EngagementEntryPicker({
     [lineItems, setLineItems],
   )
 
-  // Anything handed in through the query string is ticked once, after the
-  // entries are known. Re-running it would fight the person unticking a box.
+  // Qualquer item recebido pela string de consulta é marcado uma vez, depois que os
+  // itens são carregados. Executar isso novamente impediria a pessoa de desmarcar uma opção.
   useEffect(() => {
     if (applied || isLoading || entries.length === 0 || preselected.length === 0) return
     setApplied(true)
@@ -220,17 +220,17 @@ export function EngagementEntryPicker({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Handshake className="h-4 w-4" />
-          From engagements
+          De contratos
         </CardTitle>
       </CardHeader>
       <CardContent>
         <p className="mb-4 text-sm text-muted-foreground">
-          Agreed work for this client that is ready to bill. Ticking one adds it as a line and
-          marks that part of the schedule invoiced when you save, so it cannot be billed twice.
+          Trabalho acordado com este cliente e pronto para faturar. Marcar um item o adiciona como linha e
+          marca essa parte do cronograma como faturada ao salvar, evitando uma cobrança duplicada.
         </p>
 
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <p className="text-sm text-muted-foreground">Carregando...</p>
         ) : (
           <div className="space-y-2">
             {entries.map((entry) => {
@@ -259,14 +259,14 @@ export function EngagementEntryPicker({
                       </Link>
                       {overdue && (
                         <Badge className="bg-amber-100 text-amber-700">
-                          Due {entry.due_on}
+                          Vence em {entry.due_on}
                         </Badge>
                       )}
                     </span>
                     {wrongCurrency && (
                       <span className="mt-1 block text-xs text-muted-foreground">
-                        Agreed in {entry.engagement_currency}. Set the invoice to that currency to
-                        bill it; Billr never converts money on its own.
+                        Valor acordado em {entry.engagement_currency}. Defina a fatura nessa moeda para
+                        cobrá-lo; o Faturador nunca converte valores automaticamente.
                       </span>
                     )}
                   </span>

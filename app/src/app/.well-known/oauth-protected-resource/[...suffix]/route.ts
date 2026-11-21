@@ -1,12 +1,12 @@
 import { matchesResourceSuffix, metadataResponse, protectedResourceMetadata } from '@/lib/oauth/metadata'
 
 /**
- * RFC 9728 path-suffix form: the resource's path is appended to the well-known
- * path, so an MCP server at https://example.org/api/mcp publishes its
- * metadata at https://example.org/.well-known/oauth-protected-resource/api/mcp.
+ * Formato de sufixo de caminho da RFC 9728: o caminho do recurso é anexado ao caminho well-known;
+ * assim, um servidor MCP em https://example.org/api/mcp publica seus
+ * metadados em https://example.org/.well-known/oauth-protected-resource/api/mcp.
  *
- * A suffix that names some other path is a question about a resource this
- * server does not protect, so it gets a 404 rather than this server's document.
+ * Um sufixo que indica outro caminho consulta um recurso que este servidor não protege;
+ * por isso, recebe 404 em vez do documento deste servidor.
  */
 export const dynamic = 'force-dynamic'
 

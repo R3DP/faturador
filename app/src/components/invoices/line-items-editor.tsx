@@ -29,7 +29,7 @@ export function LineItemsEditor({ items, onChange, currency = 'USD' }: LineItems
       [field]: value,
     }
 
-    // Recalculate amounts
+    // Recalcular valores
     if (['quantity', 'rate', 'tax_rate', 'discount_percent'].includes(field)) {
       newItems[index] = calculateLineItemAmount(newItems[index])
     }
@@ -49,36 +49,36 @@ export function LineItemsEditor({ items, onChange, currency = 'USD' }: LineItems
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* Cabeçalho */}
       <div className="hidden md:grid md:grid-cols-12 md:gap-4 text-sm font-medium text-muted-foreground">
-        <div className="col-span-5">Description</div>
-        <div className="col-span-2 text-right">Qty</div>
-        <div className="col-span-2 text-right">Rate</div>
-        <div className="col-span-2 text-right">Amount</div>
+        <div className="col-span-5">Descrição</div>
+        <div className="col-span-2 text-right">Qtd.</div>
+        <div className="col-span-2 text-right">Valor</div>
+        <div className="col-span-2 text-right">Valor total</div>
         <div className="col-span-1"></div>
       </div>
 
-      {/* Items */}
+      {/* Itens */}
       <div className="space-y-4">
         {items.map((item, index) => (
           <div
             key={item.id}
             className="group rounded-lg border bg-card p-4 md:p-0 md:border-0 md:bg-transparent"
           >
-            {/* Mobile Layout */}
+            {/* Layout para celular */}
             <div className="md:hidden space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Description</label>
+                <label className="text-sm font-medium">Descrição</label>
                 <Textarea
                   value={item.description}
                   onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                  placeholder="Item description"
+                  placeholder="Descrição do item"
                   rows={2}
                 />
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Qty</label>
+                  <label className="text-sm font-medium">Qtd.</label>
                   <Input
                     type="number"
                     step="0.01"
@@ -88,7 +88,7 @@ export function LineItemsEditor({ items, onChange, currency = 'USD' }: LineItems
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Rate</label>
+                  <label className="text-sm font-medium">Valor</label>
                   <Input
                     type="number"
                     step="0.01"
@@ -98,7 +98,7 @@ export function LineItemsEditor({ items, onChange, currency = 'USD' }: LineItems
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Amount</label>
+                  <label className="text-sm font-medium">Valor total</label>
                   <div className="flex h-10 items-center rounded-md border bg-muted px-3 text-sm">
                     {formatCurrency(item.amount)}
                   </div>
@@ -114,18 +114,18 @@ export function LineItemsEditor({ items, onChange, currency = 'USD' }: LineItems
                   className="text-destructive hover:text-destructive"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Remove
+                  Remover
                 </Button>
               </div>
             </div>
 
-            {/* Desktop Layout */}
+            {/* Layout para computador */}
             <div className="hidden md:grid md:grid-cols-12 md:gap-4 md:items-start">
               <div className="col-span-5">
                 <Textarea
                   value={item.description}
                   onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                  placeholder="Item description"
+                  placeholder="Descrição do item"
                   rows={1}
                   className="min-h-10 resize-none"
                 />
@@ -174,7 +174,7 @@ export function LineItemsEditor({ items, onChange, currency = 'USD' }: LineItems
         ))}
       </div>
 
-      {/* Add Item Button */}
+      {/* Botão para adicionar item */}
       <Button
         type="button"
         variant="outline"
@@ -182,7 +182,7 @@ export function LineItemsEditor({ items, onChange, currency = 'USD' }: LineItems
         className="w-full md:w-auto"
       >
         <Plus className="mr-2 h-4 w-4" />
-        Add Line Item
+        Adicionar item
       </Button>
     </div>
   )

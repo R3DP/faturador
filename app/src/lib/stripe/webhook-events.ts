@@ -1,6 +1,6 @@
 /**
- * The Stripe events Billr's webhook needs. Configure the endpoint at
- * /api/stripe/webhook to send exactly these.
+ * Eventos Stripe necessários ao webhook do Faturador. Configure o endpoint em
+ * /api/stripe/webhook para enviar exatamente estes eventos.
  */
 export const STRIPE_WEBHOOK_EVENTS = [
   'payment_intent.succeeded',

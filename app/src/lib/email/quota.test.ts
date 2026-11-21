@@ -14,7 +14,7 @@ function setEnv(values: Record<string, string | undefined>) {
   }
 }
 
-/** Records what the limiter was asked for, and answers with a fixed allowance. */
+/** Registra o que foi solicitado ao limitador e responde com uma cota fixa. */
 function fakeStore(limitHit = false) {
   const calls: Record<string, unknown>[] = []
   _setRateLimitStore(() => ({
@@ -40,16 +40,16 @@ afterEach(() => {
 })
 
 describe('emailDailyLimit', () => {
-  it('applies no cap when BILLR_EMAIL_DAILY_LIMIT is unset', () => {
+  it('não aplica limite quando BILLR_EMAIL_DAILY_LIMIT não está definido', () => {
     expect(emailDailyLimit({} as NodeJS.ProcessEnv)).toBeNull()
   })
 
-  it('honours the env override', () => {
+  it('respeita o valor definido na variável de ambiente', () => {
     setEnv({ BILLR_EMAIL_DAILY_LIMIT: '25' })
     expect(emailDailyLimit()).toBe(25)
   })
 
-  it('ignores a value that would silently switch email off', () => {
+  it('ignora um valor que desativaria os e-mails silenciosamente', () => {
     for (const bad of ['0', '-5', 'abc', '2.5', '   ']) {
       setEnv({ BILLR_EMAIL_DAILY_LIMIT: bad })
       expect(emailDailyLimit()).toBeNull()
@@ -58,7 +58,7 @@ describe('emailDailyLimit', () => {
 })
 
 describe('consumeEmailQuota', () => {
-  it('spends one send per business per day when a cap is set', async () => {
+  it('consome um envio por empresa por dia quando há um limite definido', async () => {
     setEnv({ BILLR_EMAIL_DAILY_LIMIT: '200' })
     const calls = fakeStore()
     await consumeEmailQuota('business-1')
@@ -72,7 +72,7 @@ describe('consumeEmailQuota', () => {
     ])
   })
 
-  it('keeps each business on its own allowance', async () => {
+  it('mantém uma cota separada para cada empresa', async () => {
     setEnv({ BILLR_EMAIL_DAILY_LIMIT: '200' })
     const calls = fakeStore()
     await consumeEmailQuota('business-1')
@@ -80,25 +80,25 @@ describe('consumeEmailQuota', () => {
     expect(calls[0].p_bucket).not.toBe(calls[1].p_bucket)
   })
 
-  it('does not even reach the limiter when no cap is set', async () => {
+  it('nem sequer consulta o limitador quando não há limite', async () => {
     const calls = fakeStore()
     await consumeEmailQuota('business-1')
     expect(calls).toEqual([])
   })
 
-  it('explains the wait instead of failing generically', async () => {
+  it('informa o tempo de espera em vez de falhar com uma mensagem genérica', async () => {
     setEnv({ BILLR_EMAIL_DAILY_LIMIT: '200' })
     fakeStore(true)
     await expect(consumeEmailQuota('business-1')).rejects.toThrow(
-      'Daily email limit reached for this business, resets in about 7 hours'
+      'O limite diário de e-mails desta empresa foi atingido. A cota será renovada em cerca de 7 horas.'
     )
     await expect(consumeEmailQuota('business-1')).rejects.toBeInstanceOf(EmailQuotaError)
   })
 
-  it('fails closed when the limiter store is unreachable', async () => {
+  it('bloqueia o envio quando o armazenamento do limitador está inacessível', async () => {
     setEnv({ BILLR_EMAIL_DAILY_LIMIT: '200' })
     _setRateLimitStore(() => ({
-      rpc: async () => ({ data: null, error: { message: 'database unavailable' } }),
+      rpc: async () => ({ data: null, error: { message: 'banco de dados indisponível' } }),
     }))
     await expect(consumeEmailQuota('business-1')).rejects.toBeInstanceOf(EmailQuotaError)
   })

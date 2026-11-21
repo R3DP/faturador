@@ -46,8 +46,8 @@ export default function EngagementsPage() {
 
 function EngagementsPageInner() {
   const { currentBusiness } = useBusiness()
-  // The dashboard "Ready to bill" card links here with ?ready=1, so the
-  // reminder lands on exactly the engagements it was counting.
+  // O cartão "Pronto para faturar" do painel aponta para cá com ?ready=1, para que o
+  // lembrete mostre exatamente os contratos que estavam sendo contabilizados.
   const readyOnly = useSearchParams().get('ready') === '1'
   const [engagements, setEngagements] = useState<EngagementListRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -60,9 +60,9 @@ function EngagementsPageInner() {
     const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
-    // The scheduled-date sweep runs on the read path rather than on a cron,
-    // so opening this page is what makes a payment whose
-    // date has passed show up as ready to bill.
+    // A verificação de vencimentos do cronograma ocorre durante a consulta, não por cron;
+    // então é ao abrir esta página que um pagamento cuja
+    // data já passou aparece como pronto para faturar.
     await supabase.rpc('promote_due_entries', { p_business_id: currentBusiness.id })
 
     const [{ data: rows }, { data: clients }] = await Promise.all([
@@ -105,13 +105,13 @@ function EngagementsPageInner() {
   return (
     <div className="p-6 lg:p-8">
       <PageHeader
-        title="Engagements"
-        description="Agreed work with a total and a payment schedule. Nothing here is ever sent to a client on its own."
+        title="Contratos"
+        description="Trabalho acordado com valor total e cronograma de pagamentos. Nada daqui é enviado ao cliente sem uma ação sua."
       >
         <Button asChild>
           <Link href="/engagements/new">
             <Plus className="mr-2 h-4 w-4" />
-            New Engagement
+            Novo contrato
           </Link>
         </Button>
       </PageHeader>
@@ -120,7 +120,7 @@ function EngagementsPageInner() {
         <div className="relative flex-1 sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search engagements..."
+            placeholder="Buscar contratos..."
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             className="pl-9"
@@ -128,10 +128,10 @@ function EngagementsPageInner() {
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
+            <SelectValue placeholder="Filtrar por status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="all">Todos os status</SelectItem>
             {ENGAGEMENT_STATUSES.map((status) => (
               <SelectItem key={status} value={status}>
                 {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -141,13 +141,13 @@ function EngagementsPageInner() {
         </Select>
         {readyOnly ? (
           <Badge className="bg-emerald-100 text-emerald-700" asChild>
-            <Link href="/engagements">Ready to bill only. Show all</Link>
+            <Link href="/engagements">Somente prontos para faturar. Mostrar todos</Link>
           </Badge>
         ) : (
           readyTotal > 0 && (
             <Link href="/engagements?ready=1">
               <Badge className="bg-emerald-100 text-emerald-700">
-                {readyTotal} ready to bill
+                {readyTotal} prontos para faturar
               </Badge>
             </Link>
           )
@@ -165,18 +165,22 @@ function EngagementsPageInner() {
               <EmptyState
                 icon={Handshake}
                 title={
-                  searchQuery || statusFilter !== 'all'
-                    ? 'No engagements found'
-                    : 'No engagements yet'
+                  readyOnly
+                    ? 'Nenhum contrato pronto para faturar'
+                    : searchQuery || statusFilter !== 'all'
+                      ? 'Nenhum contrato encontrado'
+                      : 'Nenhum contrato cadastrado'
                 }
                 description={
-                  searchQuery || statusFilter !== 'all'
-                    ? 'Try adjusting your search or filter'
-                    : 'Record an agreed total once, then bill it off a schedule instead of remembering what is left'
+                  readyOnly
+                    ? 'Não há contratos prontos para faturar com os filtros atuais.'
+                    : searchQuery || statusFilter !== 'all'
+                      ? 'Ajuste a busca ou o filtro'
+                      : 'Registre o valor acordado uma vez e fature conforme o cronograma, sem precisar lembrar quanto falta.'
                 }
                 action={
-                  !searchQuery && statusFilter === 'all'
-                    ? { label: 'New Engagement', href: '/engagements/new' }
+                  !readyOnly && !searchQuery && statusFilter === 'all'
+                    ? { label: 'Novo contrato', href: '/engagements/new' }
                     : undefined
                 }
               />
@@ -188,12 +192,12 @@ function EngagementsPageInner() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Engagement</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Contrato</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Situação</TableHead>
                     <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Billed</TableHead>
-                    <TableHead className="text-right">Remaining</TableHead>
+                    <TableHead className="text-right">Faturado</TableHead>
+                    <TableHead className="text-right">Restante</TableHead>
                     <TableHead />
                   </TableRow>
                 </TableHeader>
@@ -209,7 +213,7 @@ function EngagementsPageInner() {
                         </Link>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {engagement.client_name ?? 'Unknown client'}
+                        {engagement.client_name ?? 'Cliente desconhecido'}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -234,7 +238,7 @@ function EngagementsPageInner() {
                       <TableCell className="text-right">
                         {(engagement.ready_count ?? 0) > 0 && (
                           <Badge className="bg-emerald-100 text-emerald-700">
-                            Ready to bill
+                            Pronto para faturar
                           </Badge>
                         )}
                       </TableCell>

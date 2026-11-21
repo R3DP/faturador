@@ -13,107 +13,107 @@ import {
   toISODate,
 } from '@/lib/reports/date-ranges'
 
-// A Thursday, mid-quarter, so month/quarter/year boundaries are all distinct.
-const TODAY = new Date(2026, 7, 27) // 27 Aug 2026, local
+// Uma quinta-feira no meio do trimestre, para que os limites de mês, trimestre e ano sejam distintos.
+const TODAY = new Date(2026, 7, 27) // 27 de ago. de 2026, horário local
 
 describe('parseDay', () => {
-  it('parses to LOCAL midnight, so the calendar day never shifts', () => {
+  it('converte para meia-noite LOCAL, sem deslocar o dia do calendário', () => {
     const d = parseDay('2026-03-01')
     expect(d.getFullYear()).toBe(2026)
     expect(d.getMonth()).toBe(2)
     expect(d.getDate()).toBe(1)
     expect(d.getHours()).toBe(0)
   })
-  it('round-trips through toISODate', () => {
+  it('faz a conversão de ida e volta por toISODate', () => {
     expect(toISODate(parseDay('2025-12-31'))).toBe('2025-12-31')
   })
 })
 
 describe('resolveRange', () => {
-  it('this month runs from the 1st to today', () => {
+  it('o mês atual vai do dia 1 até hoje', () => {
     expect(resolveRange('this_month', TODAY)).toEqual({ start: '2026-08-01', end: '2026-08-27' })
   })
-  it('last month is a whole calendar month', () => {
+  it('o mês anterior corresponde a um mês-calendário completo', () => {
     expect(resolveRange('last_month', TODAY)).toEqual({ start: '2026-07-01', end: '2026-07-31' })
   })
-  it('quarter to date starts at the quarter boundary', () => {
+  it('o trimestre até hoje começa no início do trimestre', () => {
     expect(resolveRange('quarter_to_date', TODAY)).toEqual({ start: '2026-07-01', end: '2026-08-27' })
   })
-  it('year to date starts on 1 January', () => {
+  it('o ano até hoje começa em 1º de janeiro', () => {
     expect(resolveRange('year_to_date', TODAY)).toEqual({ start: '2026-01-01', end: '2026-08-27' })
   })
-  it('last 12 months starts 11 months back at the month boundary', () => {
+  it('os últimos 12 meses começam 11 meses atrás, no início do mês', () => {
     expect(resolveRange('last_12_months', TODAY)).toEqual({ start: '2025-09-01', end: '2026-08-27' })
   })
-  it('custom passes the caller range through', () => {
+  it('o intervalo personalizado mantém o intervalo informado pela chamada', () => {
     const custom = { start: '2026-02-03', end: '2026-02-09' }
     expect(resolveRange('custom', TODAY, custom)).toEqual(custom)
   })
 })
 
 describe('previousRange', () => {
-  it('this month compares to the same stretch of last month', () => {
+  it('o mês atual é comparado ao mesmo período do mês anterior', () => {
     const range = resolveRange('this_month', TODAY)
     expect(previousRange(range, 'this_month')).toEqual({ start: '2026-07-01', end: '2026-07-27' })
   })
-  it('clamps a long month back into a short one', () => {
-    // 1-31 March compared to February, which has 28 days in 2026.
+  it('ajusta um mês longo ao mês anterior, mais curto', () => {
+    // De 1 a 31 de março comparado a fevereiro, que tem 28 dias em 2026.
     const range = { start: '2026-03-01', end: '2026-03-31' }
     expect(previousRange(range, 'this_month')).toEqual({ start: '2026-02-01', end: '2026-02-28' })
   })
-  it('last month compares to the whole month before it', () => {
+  it('o mês anterior é comparado ao mês completo que veio antes dele', () => {
     const range = resolveRange('last_month', TODAY)
     expect(previousRange(range, 'last_month')).toEqual({ start: '2026-06-01', end: '2026-06-30' })
   })
-  it('quarter to date compares to the same stretch of the previous quarter', () => {
+  it('o trimestre até hoje é comparado ao mesmo período do trimestre anterior', () => {
     const range = resolveRange('quarter_to_date', TODAY)
     expect(previousRange(range, 'quarter_to_date')).toEqual({ start: '2026-04-01', end: '2026-05-28' })
   })
-  it('year to date compares to the same stretch of last year', () => {
+  it('o ano até hoje é comparado ao mesmo período do ano passado', () => {
     const range = resolveRange('year_to_date', TODAY)
     expect(previousRange(range, 'year_to_date')).toEqual({ start: '2025-01-01', end: '2025-08-27' })
   })
-  it('a custom range compares to the equal-length window immediately before it', () => {
+  it('um intervalo personalizado é comparado ao período de mesma duração imediatamente anterior', () => {
     const range = { start: '2026-02-10', end: '2026-02-19' } // 10 days
     const prev = previousRange(range, 'custom')
     expect(prev).toEqual({ start: '2026-01-31', end: '2026-02-09' })
     expect(rangeLengthInDays(prev)).toBe(rangeLengthInDays(range))
   })
-  it('never overlaps the range it compares against', () => {
+  it('nunca se sobrepõe ao intervalo usado na comparação', () => {
     const range = { start: '2026-05-01', end: '2026-05-31' }
     expect(previousRange(range, 'custom').end < range.start).toBe(true)
   })
 })
 
 describe('chooseBucket', () => {
-  it('uses days for a month or less', () => {
+  it('usa dias para períodos de até um mês', () => {
     expect(chooseBucket({ start: '2026-08-01', end: '2026-08-27' })).toBe('day')
     expect(chooseBucket({ start: '2026-01-01', end: '2026-01-31' })).toBe('day')
   })
-  it('uses weeks for a quarter', () => {
+  it('usa semanas para um trimestre', () => {
     expect(chooseBucket({ start: '2026-01-01', end: '2026-03-31' })).toBe('week')
   })
-  it('uses months for anything longer', () => {
+  it('usa meses para períodos mais longos', () => {
     expect(chooseBucket({ start: '2025-09-01', end: '2026-08-27' })).toBe('month')
   })
 })
 
 describe('enumerateBuckets', () => {
-  it('emits one month start per month, inclusive of both ends', () => {
+  it('gera o início de cada mês, incluindo as duas extremidades', () => {
     expect(enumerateBuckets({ start: '2026-01-15', end: '2026-03-02' }, 'month')).toEqual([
       '2026-01-01',
       '2026-02-01',
       '2026-03-01',
     ])
   })
-  it('starts weeks on Monday, matching Postgres date_trunc', () => {
-    // 2026-08-27 is a Thursday; its week starts Monday 2026-08-24.
+  it('começa as semanas na segunda-feira, como date_trunc do Postgres', () => {
+    // 2026-08-27 é uma quinta-feira; a semana começa na segunda-feira, 2026-08-24.
     expect(enumerateBuckets({ start: '2026-08-27', end: '2026-09-01' }, 'week')).toEqual([
       '2026-08-24',
       '2026-08-31',
     ])
   })
-  it('emits every day for a day bucket', () => {
+  it('gera todos os dias em um agrupamento diário', () => {
     expect(enumerateBuckets({ start: '2026-02-27', end: '2026-03-01' }, 'day')).toEqual([
       '2026-02-27',
       '2026-02-28',
@@ -123,23 +123,23 @@ describe('enumerateBuckets', () => {
 })
 
 describe('bucketKeyFor', () => {
-  it('maps a date onto its bucket start', () => {
+  it('mapeia uma data para o início do agrupamento correspondente', () => {
     expect(bucketKeyFor('2026-08-27', 'month')).toBe('2026-08-01')
     expect(bucketKeyFor('2026-08-27', 'week')).toBe('2026-08-24')
     expect(bucketKeyFor('2026-08-27', 'day')).toBe('2026-08-27')
   })
 })
 
-describe('labels and validation', () => {
-  it('labels buckets by unit', () => {
-    expect(formatBucketLabel('2026-08-01', 'month')).toBe('Aug 2026')
-    expect(formatBucketLabel('2026-08-24', 'week')).toBe('Aug 24')
+describe('rótulos e validação', () => {
+  it('rotula os agrupamentos conforme a unidade', () => {
+    expect(formatBucketLabel('2026-08-01', 'month')).toBe('ago. de 2026')
+    expect(formatBucketLabel('2026-08-24', 'week')).toBe('24 de ago.')
   })
-  it('drops the repeated year in a same-year range label', () => {
-    expect(formatRangeLabel({ start: '2026-01-01', end: '2026-03-31' })).toBe('Jan 1 to Mar 31, 2026')
-    expect(formatRangeLabel({ start: '2025-12-01', end: '2026-01-31' })).toBe('Dec 1, 2025 to Jan 31, 2026')
+  it('omite o ano repetido no rótulo de um intervalo dentro do mesmo ano', () => {
+    expect(formatRangeLabel({ start: '2026-01-01', end: '2026-03-31' })).toBe('1 de jan. a 31 de mar. de 2026')
+    expect(formatRangeLabel({ start: '2025-12-01', end: '2026-01-31' })).toBe('1 de dez. de 2025 a 31 de jan. de 2026')
   })
-  it('rejects malformed or inverted custom ranges', () => {
+  it('recusa intervalos personalizados inválidos ou invertidos', () => {
     expect(isValidRange({ start: '2026-01-01', end: '2026-01-31' })).toBe(true)
     expect(isValidRange({ start: '2026-02-01', end: '2026-01-31' })).toBe(false)
     expect(isValidRange({ start: '', end: '2026-01-31' })).toBe(false)

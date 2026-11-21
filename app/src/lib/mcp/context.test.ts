@@ -8,8 +8,8 @@ const { getMcpContext } = await import('./context')
 beforeEach(() => {
   resolveApiKey.mockReset()
   vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://invoices.example.org')
-  // createScopedDb builds a service client on the success path; it only needs
-  // these to be present, never reachable.
+  // createScopedDb cria um cliente de serviço no caminho de sucesso; ele só precisa
+  // que estes valores existam, sem precisar acessá-los.
   vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://example.supabase.co')
   vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'test-service-role-key')
 })
@@ -24,7 +24,7 @@ function request(auth?: string): Request {
 }
 
 describe('MCP 401', () => {
-  it('points the client at the protected-resource document', async () => {
+  it('direciona o cliente ao documento do recurso protegido', async () => {
     resolveApiKey.mockResolvedValue({ error: 'invalid' })
     const res = (await getMcpContext(request())) as Response
 
@@ -33,18 +33,18 @@ describe('MCP 401', () => {
       'Bearer realm="billr", resource_metadata="https://invoices.example.org/.well-known/oauth-protected-resource/api/mcp"'
     )
     const body = await res.json()
-    expect(body.error).toBe('Missing or invalid access token')
+    expect(body.error).toBe('Token de acesso ausente ou inválido')
     expect(body.error_description).toMatch(/OAuth/)
   })
 
-  it('still rate limits without advertising discovery', async () => {
+  it('continua limitando as requisições sem anunciar a descoberta', async () => {
     resolveApiKey.mockResolvedValue({ error: 'rate_limited' })
     const res = (await getMcpContext(request())) as Response
     expect(res.status).toBe(429)
     expect(res.headers.get('Retry-After')).toBe('60')
   })
 
-  it('passes an OAuth-issued key through unchanged, like any other key', async () => {
+  it('repassa sem alterações uma chave emitida por OAuth, como qualquer outra chave', async () => {
     resolveApiKey.mockResolvedValue({
       userId: 'u1',
       keyId: 'k1',

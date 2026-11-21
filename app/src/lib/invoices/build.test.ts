@@ -2,15 +2,15 @@ import { describe, it, expect } from 'vitest'
 import { computeInvoiceTotals, nextInvoiceNumber } from '@/lib/invoices/build'
 
 describe('computeInvoiceTotals', () => {
-  it('computes plain lines with no discount/tax/shipping', () => {
+  it('calcula itens simples sem desconto, imposto ou frete', () => {
     const result = computeInvoiceTotals([
-      { description: 'Design', quantity: 2, rate: 100 },
-      { description: 'Dev', quantity: 3, rate: 50 },
+      { description: 'Projeto', quantity: 2, rate: 100 },
+      { description: 'Desenvolvimento', quantity: 3, rate: 50 },
     ])
 
     expect(result.line_items).toEqual([
-      { description: 'Design', quantity: 2, rate: 100, amount: 200 },
-      { description: 'Dev', quantity: 3, rate: 50, amount: 150 },
+      { description: 'Projeto', quantity: 2, rate: 100, amount: 200 },
+      { description: 'Desenvolvimento', quantity: 3, rate: 50, amount: 150 },
     ])
     expect(result.subtotal).toBe(350)
     expect(result.discount_amount).toBe(0)
@@ -18,10 +18,10 @@ describe('computeInvoiceTotals', () => {
     expect(result.total).toBe(350)
   })
 
-  it('rounds quantity x rate to 2dp per line, but sums the RAW (unrounded) amounts for the subtotal', () => {
+  it('arredonda quantidade x preço para 2 casas por item, mas soma os valores BRUTOS (sem arredondar) no subtotal', () => {
     const result = computeInvoiceTotals([
-      { description: 'Consulting', quantity: 1.1, rate: 33.333 },
-      { description: 'Support', quantity: 3, rate: 10.005 },
+      { description: 'Consultoria', quantity: 1.1, rate: 33.333 },
+      { description: 'Suporte', quantity: 3, rate: 10.005 },
     ])
 
     expect(result.line_items[0].amount).toBe(36.67)
@@ -30,11 +30,11 @@ describe('computeInvoiceTotals', () => {
     expect(result.subtotal).toBe(66.69)
   })
 
-  it('keeps displayed lines, discount, tax and total arithmetically consistent', () => {
+  it('mantém itens exibidos, desconto, imposto e total aritmeticamente consistentes', () => {
     const result = computeInvoiceTotals(
       [
-        { description: 'Consulting', quantity: 1.1, rate: 33.333 },
-        { description: 'Support', quantity: 3, rate: 10.005 },
+        { description: 'Consultoria', quantity: 1.1, rate: 33.333 },
+        { description: 'Suporte', quantity: 3, rate: 10.005 },
       ],
       { discount_type: 'percentage', discount_value: 15, tax_rate: 8.25, shipping_amount: 2.5 }
     )
@@ -45,7 +45,7 @@ describe('computeInvoiceTotals', () => {
     expect(result.total).toBe(63.87)
   })
 
-  it('computes tax from the displayed subtotal less the displayed discount', () => {
+  it('calcula o imposto sobre o subtotal exibido menos o desconto exibido', () => {
     const result = computeInvoiceTotals(
       [
         { description: 'A', quantity: 1, rate: 12.345 },
@@ -60,9 +60,9 @@ describe('computeInvoiceTotals', () => {
     expect(result.total).toBe(27.75)
   })
 
-  it('applies a percentage discount on the subtotal', () => {
+  it('aplica um desconto percentual sobre o subtotal', () => {
     const result = computeInvoiceTotals(
-      [{ description: 'Widget', quantity: 10, rate: 100 }],
+      [{ description: 'Produto', quantity: 10, rate: 100 }],
       { discount_type: 'percentage', discount_value: 15 }
     )
 
@@ -71,9 +71,9 @@ describe('computeInvoiceTotals', () => {
     expect(result.total).toBe(850)
   })
 
-  it('applies a fixed discount clamped to the subtotal', () => {
+  it('aplica um desconto fixo limitado ao subtotal', () => {
     const result = computeInvoiceTotals(
-      [{ description: 'Widget', quantity: 1, rate: 40 }],
+      [{ description: 'Produto', quantity: 1, rate: 40 }],
       { discount_type: 'fixed', discount_value: 500 }
     )
 
@@ -82,9 +82,9 @@ describe('computeInvoiceTotals', () => {
     expect(result.total).toBe(0)
   })
 
-  it('computes tax on the post-discount subtotal, not the raw subtotal', () => {
+  it('calcula o imposto sobre o subtotal após o desconto, não sobre o subtotal bruto', () => {
     const result = computeInvoiceTotals(
-      [{ description: 'Widget', quantity: 1, rate: 1000 }],
+      [{ description: 'Produto', quantity: 1, rate: 1000 }],
       { discount_type: 'percentage', discount_value: 10, tax_rate: 8 }
     )
 
@@ -93,9 +93,9 @@ describe('computeInvoiceTotals', () => {
     expect(result.total).toBe(972)
   })
 
-  it('adds shipping after discount and tax', () => {
+  it('adiciona o frete após o desconto e o imposto', () => {
     const result = computeInvoiceTotals(
-      [{ description: 'Widget', quantity: 1, rate: 100 }],
+      [{ description: 'Produto', quantity: 1, rate: 100 }],
       { tax_rate: 10, shipping_amount: 25 }
     )
 
@@ -104,7 +104,7 @@ describe('computeInvoiceTotals', () => {
     expect(result.total).toBe(135)
   })
 
-  it('handles zero line items', () => {
+  it('lida com zero itens', () => {
     const result = computeInvoiceTotals([], { tax_rate: 10, shipping_amount: 5 })
 
     expect(result.line_items).toEqual([])
@@ -116,15 +116,15 @@ describe('computeInvoiceTotals', () => {
 })
 
 describe('nextInvoiceNumber', () => {
-  it('formats a prefix and number padded to 4 digits', () => {
+  it('formata um prefixo e um número preenchido com zeros até 4 dígitos', () => {
     expect(nextInvoiceNumber('INV', 1146)).toBe('INV-1146')
   })
 
-  it('pads small numbers with leading zeros', () => {
+  it('preenche números pequenos com zeros à esquerda', () => {
     expect(nextInvoiceNumber('INV', 4)).toBe('INV-0004')
   })
 
-  it('does not truncate numbers wider than 4 digits', () => {
+  it('não trunca números com mais de 4 dígitos', () => {
     expect(nextInvoiceNumber('INV', 12345)).toBe('INV-12345')
   })
 })

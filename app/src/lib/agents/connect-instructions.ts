@@ -1,32 +1,33 @@
 /**
- * Single source of truth for the per-client "how do I connect this thing"
- * steps. Both the in-app Agents → Connect panel and the public
- * /docs/connect page render from here, so the two can never drift, the same
- * way the MCP tool list lives in src/lib/mcp/tool-catalog.ts.
+ * Fonte única das etapas de "como conecto isto" para cada cliente. Tanto o
+ * painel Agentes → Conectar no app quanto a página pública /docs/connect são
+ * renderizados daqui, para que nunca divirjam, assim como a lista de ferramentas
+ * MCP fica em src/lib/mcp/tool-catalog.ts.
  *
- * Every client's steps were checked against the vendor's own documentation on
- * 2026-09-21. The page that was read is recorded in `source` on each client.
- * If you change a menu path or a command here, re-read the vendor page first
- * and update `source` and `verifiedOn`. Never write a step from memory.
+ * As etapas de cada cliente foram conferidas na documentação do próprio
+ * fornecedor em 2026-09-21. A página consultada está registrada em `source`
+ * para cada cliente. Se alterar um caminho de menu ou comando aqui, consulte
+ * novamente a página do fornecedor e atualize `source` e `verifiedOn`. Nunca
+ * escreva uma etapa de memória.
  */
 
 import { mcpUrl } from '@/lib/deployment'
 
-/** A copyable command or configuration block attached to a step. */
+/** Um comando ou bloco de configuração copiável associado a uma etapa. */
 export interface ConnectCode {
-  /** Shown above the block, for example "TERMINAL" or ".cursor/mcp.json". */
+  /** Exibido acima do bloco, por exemplo, "TERMINAL" ou ".cursor/mcp.json". */
   label: string
   text: string
 }
 
 export interface ConnectStep {
   title: string
-  /** One or two sentences of context. Optional when the title says it all. */
+  /** Uma ou duas frases de contexto. Opcional quando o título já explica tudo. */
   detail?: string
   code?: ConnectCode
 }
 
-/** The manual `billr_sk_` path, shown behind a disclosure under the steps. */
+/** O fluxo manual `billr_sk_`, exibido em uma seção expansível abaixo das etapas. */
 interface ConnectFallback {
   summary: string
   detail: string
@@ -35,30 +36,30 @@ interface ConnectFallback {
 
 export interface ConnectClient {
   id: string
-  /** Tab label. */
+  /** Rótulo da aba. */
   name: string
-  /** Basename of the mark under /public/agents. */
+  /** Nome-base do ícone em /public/agents. */
   mark: string
-  /** Longer heading inside the tab. */
+  /** Título mais longo dentro da aba. */
   title: string
-  /** The "What you need" line. */
+  /** A linha "O que você precisa". */
   requirements: string
   steps: ConnectStep[]
-  /** The first thing to ask the agent once it is connected. */
+  /** A primeira coisa a pedir ao agente depois de conectado. */
   verify: string
   fallback?: ConnectFallback
-  /** Vendor documentation page these steps were read from, when there is one. */
+  /** Página da documentação do fornecedor consultada para estas etapas, se houver. */
   source?: string
   verifiedOn: string
 }
 
-/** What the Billr consent screen asks for, quoted by both surfaces. */
+/** O que a tela de consentimento do Faturador solicita, usado nas duas interfaces. */
 export const CONSENT_SUMMARY =
-  'Signing in shows a consent screen that asks which business the agent may work in and which permissions it gets, with read and write on by default and send, payments and delete optional. Every connection shows up under Agents → API Keys and can be revoked there at any time.'
+  'Ao entrar, uma tela de consentimento pergunta em qual empresa o agente pode trabalhar e quais permissões terá. Leitura e gravação vêm ativadas por padrão; envio, pagamentos e exclusão são opcionais. Todas as conexões aparecem em Agentes → Chaves de API e podem ser revogadas a qualquer momento.'
 
-/** Read-only prompt that proves the connection without writing anything. */
+/** Solicitação somente de leitura para comprovar a conexão sem gravar nada. */
 export const FIRST_PROMPT =
-  'List my Billr clients and tell me what is still unbilled.'
+  'Liste meus clientes no Faturador e diga o que ainda não foi faturado.'
 
 const VERIFIED_ON = '2026-09-21'
 
@@ -68,38 +69,38 @@ export function connectClients(url: string = mcpUrl()): ConnectClient[] {
       id: 'claude',
       name: 'Claude',
       mark: 'claude',
-      title: 'Add Billr as a custom connector',
+      title: 'Adicione o Faturador como conector personalizado',
       requirements:
-        'A Claude account on any plan. Free accounts can add one custom connector. On Team and Enterprise only an Owner can add the connector, after which each member connects for themselves.',
+        'Uma conta do Claude em qualquer plano. Contas gratuitas podem adicionar um conector personalizado. Nos planos Team e Enterprise, somente um Owner pode adicionar o conector; depois, cada membro faz a própria conexão.',
       steps: [
         {
-          title: 'Open your connector list',
+          title: 'Abra a lista de conectores',
           detail:
-            'In claude.ai or Claude Desktop, go to Customize, then Connectors. Team and Enterprise Owners add it from Organization settings, then Connectors.',
+            'No claude.ai ou no Claude Desktop, acesse Personalizar (Customize) e depois Conectores (Connectors). Owners dos planos Team e Enterprise adicionam o conector em Organization settings e depois Conectores (Connectors).',
         },
         {
-          title: 'Add a custom connector',
+          title: 'Adicione um conector personalizado',
           detail:
-            'Click the plus button, then "Add custom connector". Team and Enterprise Owners click "Add", hover "Custom" and select "Web".',
+            'Clique no botão de mais e depois em "Add custom connector". Owners dos planos Team e Enterprise clicam em "Add", passam o cursor sobre "Custom" e selecionam "Web".',
         },
         {
-          title: 'Paste the Billr MCP URL',
+          title: 'Cole a URL MCP do Faturador',
           detail:
-            'The URL is the only field you need. Leave Advanced settings empty: Billr registers Claude as a client on its own, so there is no client ID or secret to paste.',
-          code: { label: 'MCP SERVER URL', text: url },
+            'A URL é o único campo necessário. Deixe Configurações avançadas (Advanced settings) em branco: o Faturador registra o Claude como cliente automaticamente, então não há client ID nem segredo para colar.',
+          code: { label: 'URL DO SERVIDOR MCP', text: url },
         },
         {
-          title: 'Click Add, then Connect',
+          title: 'Clique em Add e depois em Connect',
           detail:
-            'Claude sends you to Billr to sign in and approve the connection. Pick the business and the permissions, then approve.',
+            'O Claude direciona você ao Faturador para entrar e aprovar a conexão. Escolha a empresa e as permissões e confirme.',
         },
         {
-          title: 'Switch Billr on in a chat',
+          title: 'Ative o Faturador em uma conversa',
           detail:
-            'Use the plus button at the bottom of the chat, choose Connectors, and toggle Billr on for that conversation.',
+            'Use o botão de mais na parte inferior da conversa, escolha Conectores (Connectors) e ative o Faturador para essa conversa.',
         },
       ],
-      verify: `Ask Claude: "${FIRST_PROMPT}" It reads only, so nothing is created or sent.`,
+      verify: `Peça ao Claude: "${FIRST_PROMPT}" A consulta é somente de leitura, então nada será criado nem enviado.`,
       source:
         'https://support.claude.com/en/articles/11175166-getting-started-with-custom-connectors-using-remote-mcp',
       verifiedOn: VERIFIED_ON,
@@ -108,47 +109,47 @@ export function connectClients(url: string = mcpUrl()): ConnectClient[] {
       id: 'claude-code',
       name: 'Claude Code',
       mark: 'claude',
-      title: 'Add Billr from your terminal',
+      title: 'Adicione o Faturador pelo terminal',
       requirements:
-        'Claude Code installed, and a terminal open in any project directory.',
+        'Claude Code instalado e um terminal aberto em qualquer diretório de projeto.',
       steps: [
         {
-          title: 'Add the server',
+          title: 'Adicione o servidor',
           detail:
-            'Run this once. Add --scope user to make Billr available in every project instead of only this one.',
+            'Execute uma vez. Adicione --scope user para disponibilizar o Faturador em todos os projetos, em vez de somente neste.',
           code: {
             label: 'TERMINAL',
-            text: `claude mcp add --transport http billr ${url}`,
+            text: `claude mcp add --transport http faturador ${url}`,
           },
         },
         {
-          title: 'Start Claude Code and run /mcp',
+          title: 'Inicie o Claude Code e execute /mcp',
           detail:
-            'Pick billr from the list and choose to authenticate. Claude Code opens Billr in your browser.',
-          code: { label: 'IN CLAUDE CODE', text: '/mcp' },
+            'Escolha faturador na lista e selecione a opção de autenticação. O Claude Code abre o Faturador no navegador.',
+          code: { label: 'NO CLAUDE CODE', text: '/mcp' },
         },
         {
-          title: 'Approve in the browser',
+          title: 'Aprove no navegador',
           detail:
-            'Sign in to Billr, choose the business and the permissions, and approve. Then go back to your terminal.',
+            'Entre no Faturador, escolha a empresa e as permissões e confirme. Depois, volte ao terminal.',
         },
         {
-          title: 'Check it is connected',
-          detail: 'billr should be listed as connected.',
+          title: 'Confira se está conectado',
+          detail: 'faturador deve aparecer como conectado.',
           code: { label: 'TERMINAL', text: 'claude mcp list' },
         },
       ],
-      verify: `Ask Claude Code: "${FIRST_PROMPT}" It reads only, so nothing is created or sent.`,
+      verify: `Peça ao Claude Code: "${FIRST_PROMPT}" A consulta é somente de leitura, então nada será criado nem enviado.`,
       fallback: {
-        summary: 'Use an API key instead',
+        summary: 'Use uma chave de API',
         detail:
-          'Create a key under Agents → API Keys, then pass it as a bearer token when you add the server. Replace YOUR_KEY with the key you copied.',
+          'Crie uma chave em Agentes → Chaves de API e passe-a como bearer token ao adicionar o servidor. Substitua YOUR_KEY pela chave copiada.',
         steps: [
           {
-            title: 'Add the server with a key',
+            title: 'Adicione o servidor com uma chave',
             code: {
               label: 'TERMINAL',
-              text: `claude mcp add --transport http billr ${url} --header "Authorization: Bearer YOUR_KEY"`,
+              text: `claude mcp add --transport http faturador ${url} --header "Authorization: Bearer YOUR_KEY"`,
             },
           },
         ],
@@ -160,40 +161,40 @@ export function connectClients(url: string = mcpUrl()): ConnectClient[] {
       id: 'codex',
       name: 'Codex',
       mark: 'codex',
-      title: 'Add Billr to the Codex CLI',
-      requirements: 'The Codex CLI installed and signed in.',
+      title: 'Adicione o Faturador à CLI do Codex',
+      requirements: 'CLI do Codex instalada e sessão iniciada.',
       steps: [
         {
-          title: 'Add the server',
+          title: 'Adicione o servidor',
           code: {
             label: 'TERMINAL',
-            text: `codex mcp add billr --url ${url}`,
+            text: `codex mcp add faturador --url ${url}`,
           },
         },
         {
-          title: 'Sign in',
+          title: 'Entre na sua conta',
           detail:
-            'Codex opens Billr in your browser. Choose the business and the permissions, then approve.',
-          code: { label: 'TERMINAL', text: 'codex mcp login billr' },
+            'O Codex abre o Faturador no navegador. Escolha a empresa e as permissões e confirme.',
+          code: { label: 'TERMINAL', text: 'codex mcp login faturador' },
         },
         {
-          title: 'Check it is connected',
+          title: 'Confira se está conectado',
           detail:
-            'billr should appear in the list. Inside the Codex TUI, /mcp shows the same thing.',
+            'faturador deve aparecer na lista. Na TUI do Codex, /mcp mostra a mesma informação.',
           code: { label: 'TERMINAL', text: 'codex mcp list' },
         },
       ],
-      verify: `Ask Codex: "${FIRST_PROMPT}" It reads only, so nothing is created or sent.`,
+      verify: `Peça ao Codex: "${FIRST_PROMPT}" A consulta é somente de leitura, então nada será criado nem enviado.`,
       fallback: {
-        summary: 'Use an API key instead',
+        summary: 'Use uma chave de API',
         detail:
-          'Create a key under Agents → API Keys and export it as BILLR_API_KEY in the shell that starts Codex, then add this table to ~/.codex/config.toml, or to .codex/config.toml for one project.',
+          'Crie uma chave em Agentes → Chaves de API e exporte-a como BILLR_API_KEY no shell que inicia o Codex. Depois, adicione esta tabela a ~/.codex/config.toml ou a .codex/config.toml para um único projeto.',
         steps: [
           {
-            title: 'Configure a bearer token',
+            title: 'Configure um bearer token',
             code: {
               label: '~/.codex/config.toml',
-              text: `[mcp_servers.billr]\nurl = "${url}"\nbearer_token_env_var = "BILLR_API_KEY"`,
+              text: `[mcp_servers.faturador]\nurl = "${url}"\nbearer_token_env_var = "BILLR_API_KEY"`,
             },
           },
         ],
@@ -205,41 +206,41 @@ export function connectClients(url: string = mcpUrl()): ConnectClient[] {
       id: 'cursor',
       name: 'Cursor',
       mark: 'cursor',
-      title: 'Add Billr to your Cursor config',
+      title: 'Adicione o Faturador à configuração do Cursor',
       requirements:
-        'Cursor, and a project folder if you want Billr only in that project.',
+        'Cursor e uma pasta de projeto, caso queira usar o Faturador somente naquele projeto.',
       steps: [
         {
-          title: 'Create the config file',
+          title: 'Crie o arquivo de configuração',
           detail:
-            'Use .cursor/mcp.json in the project root for one project, or ~/.cursor/mcp.json for every project.',
+            'Use .cursor/mcp.json na raiz do projeto para configurá-lo individualmente ou ~/.cursor/mcp.json para todos os projetos.',
         },
         {
-          title: 'Paste the server entry',
+          title: 'Cole a entrada do servidor',
           detail:
-            'A url entry is all Cursor needs. Cursor registers itself with Billr automatically, so there is no client ID to fill in.',
+            'O Cursor precisa apenas de uma entrada url. Ele se registra automaticamente no Faturador, portanto não é necessário preencher client ID.',
           code: {
             label: '.cursor/mcp.json',
-            text: `{\n  "mcpServers": {\n    "billr": {\n      "url": "${url}"\n    }\n  }\n}`,
+            text: `{\n  "mcpServers": {\n    "faturador": {\n      "url": "${url}"\n    }\n  }\n}`,
           },
         },
         {
-          title: 'Save the file and sign in',
+          title: 'Salve o arquivo e entre na sua conta',
           detail:
-            'Billr appears in the MCP list on the Customize page. Cursor supports OAuth for servers that require it, so it opens Billr in your browser. Choose the business and the permissions, then approve.',
+            'O Faturador aparece na lista MCP da página Personalizar (Customize). O Cursor oferece suporte a OAuth para servidores que exigem autenticação e, por isso, abre o Faturador no navegador. Escolha a empresa e as permissões e confirme.',
         },
       ],
-      verify: `Ask Cursor: "${FIRST_PROMPT}" It reads only, so nothing is created or sent.`,
+      verify: `Peça ao Cursor: "${FIRST_PROMPT}" A consulta é somente de leitura, então nada será criado nem enviado.`,
       fallback: {
-        summary: 'Use an API key instead',
+        summary: 'Use uma chave de API',
         detail:
-          'Create a key under Agents → API Keys and set BILLR_API_KEY in the environment Cursor starts from, then send it as a header. Cursor reads ${env:NAME} in header values, so the key never sits in the file.',
+          'Crie uma chave em Agentes → Chaves de API e defina BILLR_API_KEY no ambiente em que o Cursor é iniciado; depois, envie-a em um cabeçalho. O Cursor interpreta ${env:NAME} nos valores dos cabeçalhos, então a chave nunca fica armazenada no arquivo.',
         steps: [
           {
-            title: 'Send the key as a header',
+            title: 'Envie a chave em um cabeçalho',
             code: {
               label: '.cursor/mcp.json',
-              text: `{\n  "mcpServers": {\n    "billr": {\n      "url": "${url}",\n      "headers": {\n        "Authorization": "Bearer \${env:BILLR_API_KEY}"\n      }\n    }\n  }\n}`,
+              text: `{\n  "mcpServers": {\n    "faturador": {\n      "url": "${url}",\n      "headers": {\n        "Authorization": "Bearer \${env:BILLR_API_KEY}"\n      }\n    }\n  }\n}`,
             },
           },
         ],
@@ -251,69 +252,69 @@ export function connectClients(url: string = mcpUrl()): ConnectClient[] {
       id: 'chatgpt',
       name: 'ChatGPT',
       mark: 'chatgpt',
-      title: 'Connect Billr in developer mode',
+      title: 'Conecte o Faturador no modo de desenvolvedor',
       requirements:
-        'A ChatGPT account with developer mode available. OpenAI documents the steps below but does not list which plans include developer mode, so check your own Settings first.',
+        'Uma conta do ChatGPT com developer mode disponível. A OpenAI documenta as etapas abaixo, mas não informa quais planos incluem esse modo; confira primeiro em Settings.',
       steps: [
         {
-          title: 'Turn on developer mode',
+          title: 'Ative o developer mode',
           detail:
-            'In ChatGPT, open Settings, then "Security and login", and turn on Developer mode.',
+            'No ChatGPT, abra Settings, depois "Security and login" e ative Developer mode.',
         },
         {
-          title: 'Open the plugin list',
-          detail: 'Go to ChatGPT Plugins and select the plus button.',
+          title: 'Abra a lista de plugins',
+          detail: 'Acesse ChatGPT Plugins e selecione o botão de mais.',
         },
         {
-          title: 'Connect the Billr MCP URL',
-          detail: 'Paste the URL and connect the server in developer mode.',
-          code: { label: 'MCP SERVER URL', text: url },
+          title: 'Conecte a URL MCP do Faturador',
+          detail: 'Cole a URL e conecte o servidor no developer mode.',
+          code: { label: 'URL DO SERVIDOR MCP', text: url },
         },
         {
-          title: 'Sign in to Billr',
+          title: 'Entre no Faturador',
           detail:
-            'ChatGPT runs an OAuth flow against Billr. Choose the business and the permissions, then approve. There is no API key option here: OAuth is the only way in.',
+            'O ChatGPT inicia um fluxo OAuth com o Faturador. Escolha a empresa e as permissões e confirme. Não há opção de chave de API aqui: OAuth é a única forma de conexão.',
         },
       ],
-      verify: `Ask ChatGPT: "${FIRST_PROMPT}" It reads only, so nothing is created or sent.`,
+      verify: `Peça ao ChatGPT: "${FIRST_PROMPT}" A consulta é somente de leitura, então nada será criado nem enviado.`,
       source: 'https://developers.openai.com/api/docs/mcp',
       verifiedOn: VERIFIED_ON,
     },
     {
       id: 'other',
-      name: 'Other / API key',
+      name: 'Outro / chave de API',
       mark: 'mcp',
-      title: 'Connect any other MCP client',
+      title: 'Conecte outro cliente MCP',
       requirements:
-        'Any client that can talk to a remote MCP server over streamable HTTP.',
+        'Qualquer cliente que consiga se comunicar com um servidor MCP remoto por HTTP streamable.',
       steps: [
         {
-          title: 'Add a remote HTTP MCP server with this URL',
+          title: 'Adicione um servidor MCP HTTP remoto usando esta URL',
           detail:
-            'If the client supports MCP authorization, that is everything it needs. It discovers the Billr sign-in page from the URL and asks you to approve a business and a set of permissions.',
-          code: { label: 'MCP SERVER URL', text: url },
+            'Se o cliente oferecer suporte à autorização MCP, isso é tudo de que ele precisa. Ele encontra a página de acesso do Faturador pela URL e solicita que você aprove uma empresa e um conjunto de permissões.',
+          code: { label: 'URL DO SERVIDOR MCP', text: url },
         },
         {
-          title: 'Sign in when the client opens Billr',
+          title: 'Entre quando o cliente abrir o Faturador',
           detail:
-            'Choose the business and the permissions, then approve. The connection then shows up under Agents → API Keys.',
+            'Escolha a empresa e as permissões e confirme. A conexão aparecerá em Agentes → Chaves de API.',
         },
         {
-          title: 'If the client cannot sign in, use a key',
+          title: 'Se o cliente não conseguir autenticar, use uma chave',
           detail:
-            'Clients with no OAuth support can still connect with a bearer token. Open the panel below.',
+            'Clientes sem suporte a OAuth ainda podem se conectar com um bearer token. Abra o painel abaixo.',
         },
       ],
-      verify: `Ask your agent: "${FIRST_PROMPT}" It reads only, so nothing is created or sent.`,
+      verify: `Peça ao seu agente: "${FIRST_PROMPT}" A consulta é somente de leitura, então nada será criado nem enviado.`,
       fallback: {
-        summary: 'Use an API key instead',
+        summary: 'Use uma chave de API',
         detail:
-          'Create a key under Agents → API Keys, copy it once, and give the client the URL plus an Authorization header. A wrong or revoked key gets a 401 rather than an empty list, so a bad key never looks like an empty account.',
+          'Crie uma chave em Agentes → Chaves de API, copie-a uma única vez e forneça ao cliente a URL e um cabeçalho Authorization. Uma chave incorreta ou revogada retorna 401 em vez de uma lista vazia, para que uma chave inválida nunca pareça uma conta sem dados.',
         steps: [
           {
-            title: 'URL and header',
+            title: 'URL e cabeçalho',
             code: {
-              label: 'MCP CONFIGURATION',
+              label: 'CONFIGURAÇÃO MCP',
               text: `URL: ${url}\nAuthorization: Bearer YOUR_KEY`,
             },
           },

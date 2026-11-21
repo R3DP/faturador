@@ -1,11 +1,11 @@
-/** Shown wherever a new account is refused. Plain module: client pages import it. */
+/** Exibida sempre que uma conta nova é recusada. Módulo simples, importado pelas páginas do cliente. */
 export const SIGNUP_CLOSED_MESSAGE =
-  'Sign-up is closed on this Billr. Ask the person who runs it to let you in.'
+  'O cadastro neste Faturador está fechado. Peça à pessoa responsável para permitir seu acesso.'
 
 /**
- * Shown when the database could not answer whether an account may use this
- * Billr. The account is refused either way, but it is not told sign-up is
- * closed, because that may not be true.
+ * Exibida quando o banco de dados não consegue informar se uma conta pode usar
+ * este Faturador. A conta é recusada de qualquer forma, mas a mensagem não diz que
+ * o cadastro está fechado, pois isso pode não ser verdade.
  */
 export const ACCESS_CHECK_FAILED_MESSAGE =
-  'We could not check access to this install. Try again in a moment.'
+  'Não foi possível verificar o acesso a esta instalação. Tente novamente daqui a pouco.'

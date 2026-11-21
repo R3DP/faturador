@@ -3,8 +3,8 @@ import { createFakeSupabase, type FakeSupabase } from '@/lib/mcp/fake-supabase'
 import { BUSINESS_ID } from './action-fixture'
 
 /**
- * Settings writes: profile, invoice defaults and branding, each writing only
- * the columns it names.
+ * Gravações das configurações: perfil, padrões de fatura e identidade visual;
+ * cada operação altera somente as colunas que declara.
  */
 
 const { createClientMock } = vi.hoisted(() => ({ createClientMock: vi.fn() }))
@@ -42,8 +42,8 @@ beforeEach(() => {
   setup()
 })
 
-describe('business settings writes', () => {
-  it('save, writing only the columns they name', async () => {
+describe('gravações das configurações da empresa', () => {
+  it('salva apenas as colunas indicadas', async () => {
     expect(await updateBusinessProfileAction(BUSINESS_ID, profile)).toEqual({ ok: true })
     expect(await updateInvoiceDefaultsAction(BUSINESS_ID, defaults)).toEqual({ ok: true })
     expect(await updateBrandingAction(BUSINESS_ID, { primary_color: '#2563eb' })).toEqual({
@@ -52,36 +52,36 @@ describe('business settings writes', () => {
 
     const updates = db.calls.filter((call) => call.op === 'update')
     expect(updates).toHaveLength(3)
-    // Empty optional fields become NULL, and the currency is normalised.
+    // Campos opcionais vazios viram NULL, e a moeda é normalizada.
     expect(updates[0].payload).toMatchObject({ email: null, website: null })
     expect(updates[1].payload).toMatchObject({ default_currency: 'USD' })
     expect(updates[2].payload).toEqual({ primary_color: '#2563eb' })
   })
 
-  it('report a refusal rather than a silent success when RLS returns no rows', async () => {
+  it('informa a recusa em vez de aparentar sucesso quando o RLS retorna zero linhas', async () => {
     db = createFakeSupabase({
       'businesses.update': { data: [], error: null },
     })
     createClientMock.mockResolvedValue(db)
 
     expect(await updateBusinessProfileAction(BUSINESS_ID, profile)).toEqual({
-      error: 'You cannot change that business.',
+      error: 'Você não pode alterar essa empresa.',
     })
   })
 
-  it('refuse a branding call that would write nothing', async () => {
-    expect(await updateBrandingAction(BUSINESS_ID, {})).toEqual({ error: 'Nothing to update.' })
+  it('recusa uma chamada de identidade visual sem alterações', async () => {
+    expect(await updateBrandingAction(BUSINESS_ID, {})).toEqual({ error: 'Nada para atualizar.' })
   })
 })
 
 /**
- * The old schema was z.string().url(), which in zod 4 accepts
- * javascript:, data:, file: and vbscript:, and accepts any external host. The
- * value is rendered as an <img src> on the public document pages and fetched
- * server-side by the unauthenticated public PDF route, so it is constrained to
- * this installation's own storage.
+ * O esquema anterior era z.string().url(), que no zod 4 aceita
+ * javascript:, data:, file:, vbscript: e qualquer host externo. O valor é
+ * exibido como <img src> nas páginas públicas dos documentos e buscado no
+ * servidor pela rota pública de PDF, sem autenticação; por isso, fica restrito
+ * ao armazenamento desta instalação.
  */
-describe('branding logo_url', () => {
+describe('logo_url da identidade visual', () => {
   const STORAGE = 'https://example-install.supabase.co'
   const uploaded = `${STORAGE}/storage/v1/object/public/logos/${BUSINESS_ID}/logo-1.png`
 
@@ -89,7 +89,7 @@ describe('branding logo_url', () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', STORAGE)
   })
 
-  it('accepts an upload on this installation storage origin', async () => {
+  it('aceita um arquivo enviado para a origem de armazenamento desta instalação', async () => {
     expect(await updateBrandingAction(BUSINESS_ID, { logo_url: uploaded })).toEqual({ ok: true })
     const update = db.calls.find((call) => call.op === 'update')
     expect(update?.payload).toEqual({ logo_url: uploaded })
@@ -108,7 +108,7 @@ describe('branding logo_url', () => {
     expect(db.calls.some((call) => call.op === 'update')).toBe(false)
   })
 
-  it('clears the logo to NULL rather than storing an empty string', async () => {
+  it('limpa o logotipo para NULL em vez de armazenar uma string vazia', async () => {
     expect(await updateBrandingAction(BUSINESS_ID, { logo_url: '' })).toEqual({ ok: true })
     const update = db.calls.find((call) => call.op === 'update')
     expect(update?.payload).toEqual({ logo_url: null })

@@ -21,12 +21,12 @@ interface BusinessOption {
 }
 
 /**
- * The consent screen.
+ * A tela de consentimento.
  *
- * It grants LESS than the application asked for whenever the person says so:
- * the requested scope only pre-ticks boxes. Every claim next to a checkbox is
- * the plain consequence of the permission ("Emails invoices to your clients"),
- * because "write scope" means nothing to the person being asked.
+ * Ela concede MENOS do que o aplicativo pediu sempre que a pessoa escolher assim:
+ * o escopo solicitado apenas deixa algumas opções pré-selecionadas. Cada explicação ao lado de uma caixa
+ * descreve em linguagem simples o efeito daquela permissão ("Envia faturas aos seus clientes"),
+ * pois "escopo de escrita" não significa nada para quem está sendo consultado.
  */
 export function ConsentForm({
   clientName,
@@ -61,7 +61,7 @@ export function ConsentForm({
   }
 
   function leave(url: string) {
-    // A cross-origin hand-back, so a hard navigation rather than the router.
+    // O retorno é entre origens, então usamos navegação completa em vez do roteador.
     window.location.replace(url)
   }
 
@@ -85,7 +85,7 @@ export function ConsentForm({
       }
       leave(result.redirect)
     } catch {
-      setError('Could not complete the connection. Please try again.')
+      setError('Não foi possível concluir a conexão. Tente novamente.')
       setBusy(null)
     }
   }
@@ -102,7 +102,7 @@ export function ConsentForm({
       }
       leave(result.redirect)
     } catch {
-      setError('Could not send your answer back to the application.')
+      setError('Não foi possível enviar sua resposta de volta ao aplicativo.')
       setBusy(null)
     }
   }
@@ -110,12 +110,12 @@ export function ConsentForm({
   return (
     <div>
       <h1 className="text-xl font-bold tracking-tight text-foreground">
-        Connect {clientName} to Billr
+        Conectar {clientName} ao Faturador
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-        {clientName} is asking to use your Billr account through{' '}
-        <span className="font-mono text-xs">{resourceLabel}</span>. Choose what it may do. You
-        can revoke this at any time in Agents.
+        {clientName} está solicitando acesso à sua conta Faturador por meio de{' '}
+        <span className="font-mono text-xs">{resourceLabel}</span>. Escolha o que ele poderá fazer. Você
+        pode revogar esse acesso a qualquer momento em Agentes.
       </p>
 
       {error && (
@@ -125,7 +125,7 @@ export function ConsentForm({
       )}
 
       <div className="mt-6 space-y-2">
-        <Label htmlFor="consent-business">Business</Label>
+        <Label htmlFor="consent-business">Empresa</Label>
         <select
           id="consent-business"
           className="w-full rounded border bg-background p-2 text-sm"
@@ -139,12 +139,12 @@ export function ConsentForm({
           ))}
         </select>
         <p className="text-xs text-muted-foreground">
-          The connection can only see and change this business.
+          A conexão só poderá visualizar e alterar esta empresa.
         </p>
       </div>
 
       <fieldset className="mt-6 space-y-3">
-        <legend className="text-sm font-medium text-foreground">Permissions</legend>
+        <legend className="text-sm font-medium text-foreground">Permissões</legend>
         {CONSENT_CHOICES.map((choice) => {
           const checked = choice.fixed || granted.includes(choice.permission)
           return (
@@ -175,11 +175,11 @@ export function ConsentForm({
       <div className="mt-6 flex gap-3">
         <Button variant="outline" className="flex-1" onClick={deny} disabled={busy !== null}>
           {busy === 'deny' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Deny
+          Negar
         </Button>
         <Button className="flex-1" onClick={approve} disabled={busy !== null || !businessId}>
           {busy === 'approve' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Allow access
+          Permitir acesso
         </Button>
       </div>
     </div>

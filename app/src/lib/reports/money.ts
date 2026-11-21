@@ -1,18 +1,18 @@
 /**
- * Money primitives for the reports layer. No React, no I/O - pure functions
- * so the arithmetic can be unit-tested.
+ * Primitivas monetárias da camada de relatórios. Sem React nem entrada/saída: são
+ * funções puras para que os cálculos possam ser testados isoladamente.
  *
- * Two rules this module exists to enforce:
+ * Este módulo existe para garantir duas regras:
  *
- * 1. PostgREST hands numeric/DECIMAL columns back as STRINGS. Anything that
- *    reaches a calculation goes through toNumber() first; nothing in this
- *    layer assumes a value is already a number.
- * 2. Round ONCE, at the end of an accumulation, never per step. Rounding each
- *    addend and then summing drifts by a cent per row, which has already bitten
- *    this repo once.
+ * 1. O PostgREST retorna colunas numéricas/DECIMAL como STRINGS. Antes de entrar
+ *    em qualquer cálculo, tudo passa por toNumber(); esta camada nunca presume
+ *    que um valor já seja numérico.
+ * 2. Arredonde UMA VEZ, ao final da acumulação, nunca a cada etapa. Arredondar
+ *    cada parcela antes de somar gera um desvio de um centavo por linha, um
+ *    problema que já ocorreu neste repositório.
  */
 
-/** Coerces a PostgREST numeric (string), a JSON number, or null/undefined to a finite number. */
+/** Converte um valor numérico do PostgREST (string), número JSON ou null/undefined em um número finito. */
 export function toNumber(value: unknown): number {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0
   if (typeof value === 'string') {
@@ -22,16 +22,16 @@ export function toNumber(value: unknown): number {
   return 0
 }
 
-/** Rounds to cents. Call this once, on a finished total - not on each addend. */
+/** Arredonda para centavos. Use uma vez no total final, não em cada parcela. */
 export function roundMoney(value: number): number {
   if (!Number.isFinite(value)) return 0
-  // Scale before rounding so 1.005 does not fall to 1.00 through float error.
+  // Multiplica antes de arredondar, para que 1,005 não caia para 1,00 por erro de ponto flutuante.
   return Math.round((value + Number.EPSILON) * 100) / 100
 }
 
 /**
- * Sums raw (possibly string) money values, accumulating at full precision and
- * rounding exactly once.
+ * Soma valores monetários brutos (possivelmente strings), acumulando com
+ * precisão total e arredondando uma única vez.
  */
 export function sumMoney(values: readonly unknown[]): number {
   let total = 0
@@ -39,24 +39,24 @@ export function sumMoney(values: readonly unknown[]): number {
   return roundMoney(total)
 }
 
-/** Share of a total, 0-100. Returns 0 rather than NaN/Infinity when the total is 0. */
+/** Participação em um total, de 0 a 100. Retorna 0, em vez de NaN/Infinity, quando o total é 0. */
 export function percentOf(part: number, total: number): number {
   if (!Number.isFinite(part) || !Number.isFinite(total) || total === 0) return 0
   return (part / total) * 100
 }
 
 export interface Delta {
-  /** current - previous, rounded once. */
+  /** atual - anterior, arredondado uma vez. */
   absolute: number
-  /** Percentage change, or null when the previous period was zero (no meaningful percentage). */
+  /** Variação percentual, ou null quando o período anterior foi zero (não há percentual significativo). */
   percent: number | null
   direction: 'up' | 'down' | 'flat'
 }
 
 /**
- * Period-over-period delta. A zero previous period yields a null percent
- * rather than Infinity or a fabricated "+100%", so the UI can say "no
- * comparable activity" instead of printing a number that is not true.
+ * Variação entre períodos. Se o período anterior foi zero, o percentual é null,
+ * em vez de Infinity ou de um "+100%" inventado; assim a interface pode
+ * informar "sem atividade comparável" em vez de exibir um número falso.
  */
 export function computeDelta(current: number, previous: number): Delta {
   const absolute = roundMoney(current - previous)
@@ -65,7 +65,7 @@ export function computeDelta(current: number, previous: number): Delta {
   return { absolute, percent, direction }
 }
 
-/** Minutes to decimal hours, rounded to two places for display. */
+/** Converte minutos em horas decimais, arredondadas a duas casas para exibição. */
 export function minutesToHours(minutes: number): number {
   if (!Number.isFinite(minutes)) return 0
   return Math.round((minutes / 60) * 100) / 100
@@ -73,35 +73,35 @@ export function minutesToHours(minutes: number): number {
 
 export function formatMoney(amount: number, currency: string): string {
   try {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount)
   } catch {
-    return `${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
+    return `${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
   }
 }
 
-/** Compact form for axis ticks and stat tiles: $4.2K, $1.3M. */
+/** Formato compacto para marcas dos eixos e cartões de indicadores: $4.2K, $1.3M. */
 export function formatMoneyCompact(amount: number, currency: string): string {
   try {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency,
       notation: 'compact',
       maximumFractionDigits: 1,
     }).format(amount)
   } catch {
-    return `${Math.round(amount).toLocaleString('en-US')} ${currency}`
+    return `${Math.round(amount).toLocaleString('pt-BR')} ${currency}`
   }
 }
 
 export function formatHours(hours: number): string {
-  return `${hours.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}h`
+  return `${hours.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}h`
 }
 
 export function formatPercent(value: number, digits = 0): string {
-  return `${value.toFixed(digits)}%`
+  return `${value.toFixed(digits).replace('.', ',')}%`
 }

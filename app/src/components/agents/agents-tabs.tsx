@@ -36,12 +36,12 @@ export function AgentsTabs() {
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange}>
       <TabsList>
-        <TabsTrigger value="connect">Connect</TabsTrigger>
-        <TabsTrigger value="keys">API Keys</TabsTrigger>
-        <TabsTrigger value="payments">Payments</TabsTrigger>
-        <TabsTrigger value="activity">Activity</TabsTrigger>
-        <TabsTrigger value="audit">Audit</TabsTrigger>
-        <TabsTrigger value="recipes">Recipes</TabsTrigger>
+        <TabsTrigger value="connect">Conectar</TabsTrigger>
+        <TabsTrigger value="keys">Chaves de API</TabsTrigger>
+        <TabsTrigger value="payments">Pagamentos</TabsTrigger>
+        <TabsTrigger value="activity">Atividade</TabsTrigger>
+        <TabsTrigger value="audit">Auditoria</TabsTrigger>
+        <TabsTrigger value="recipes">Receitas</TabsTrigger>
       </TabsList>
 
       <TabsContent value="connect" className="mt-6">

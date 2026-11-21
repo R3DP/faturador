@@ -2,9 +2,10 @@ import type { Database } from '@/types/database'
 import type { BillingMode, DueRule, EngagementStatus, EntryStatus } from './schedule'
 
 /**
- * Row shapes the engagement pages read, narrowed from the generated database
- * types so the string columns carry their real unions (a status is one of five
- * things, not any string) without a second hand-written copy of the schema.
+ * Formatos de linha lidos pelas páginas de contratos, restringidos a partir
+ * dos tipos gerados do banco de dados para que as colunas de texto carreguem
+ * suas uniões reais (um status é uma entre cinco opções, não qualquer texto),
+ * sem uma segunda cópia manual do esquema.
  */
 export type EngagementRow = Omit<
   Database['public']['Tables']['engagements']['Row'],
@@ -30,7 +31,7 @@ export type EngagementSummaryRow = Omit<
   billing_mode: BillingMode | null
 }
 
-/** A summary row with the client name already resolved, for the list page. */
+/** Linha de resumo com o nome do cliente já resolvido, para a página de lista. */
 export interface EngagementListRow extends EngagementSummaryRow {
   client_name: string | null
 }
@@ -51,24 +52,24 @@ export const ENTRY_STATUS_COLORS: Record<EntryStatus, string> = {
 }
 
 export const ENTRY_STATUS_LABELS: Record<EntryStatus, string> = {
-  pending: 'Pending',
-  ready_to_bill: 'Ready to bill',
-  invoiced: 'Invoiced',
-  waived: 'Waived',
+  pending: 'Pendente',
+  ready_to_bill: 'Pronto para faturar',
+  invoiced: 'Faturado',
+  waived: 'Dispensado',
 }
 
-/** How each due rule reads to a person looking at the schedule. */
+/** Como cada regra de vencimento aparece para quem consulta o cronograma. */
 export const DUE_RULE_LABELS: Record<DueRule, string> = {
-  on_start: 'When work starts',
-  on_complete: 'On completion',
-  on_milestone: 'When marked complete',
-  on_date: 'On a date',
-  manual: 'When you decide',
+  on_start: 'Quando o trabalho começar',
+  on_complete: 'Na conclusão',
+  on_milestone: 'Quando marcado como concluído',
+  on_date: 'Em uma data',
+  manual: 'Quando você decidir',
 }
 
 export const BILLING_MODE_LABELS: Record<BillingMode, string> = {
-  percent_split: 'Percentage split',
-  equal_installments: 'Equal installments',
-  milestones: 'Milestones',
+  percent_split: 'Divisão percentual',
+  equal_installments: 'Parcelas iguais',
+  milestones: 'Etapas',
   manual: 'Manual',
 }

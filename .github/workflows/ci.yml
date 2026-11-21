@@ -27,8 +27,9 @@ jobs:
       - run: npm run typecheck
       - run: npm run check:unused
       - run: npm run build
-      # Runtime dependencies must be clean at high. Dev tooling is held to
-      # critical, because its advisories can lack a fixed release.
+      # Dependências de execução não podem ter vulnerabilidades de nível alto.
+      # Ferramentas de desenvolvimento são limitadas a críticas, pois pode não
+      # haver uma versão corrigida para alguns avisos.
       - run: npm audit --omit=dev --audit-level=high
       - run: npm audit --audit-level=critical
       - run: npm ci && npm run build
@@ -48,10 +49,10 @@ jobs:
           version: 2.67.1
       - run: supabase start -x studio,realtime,imgproxy,edge-runtime,logflare,vector,supavisor
         env:
-          # Use the official Docker Hub images when GHCR rate-limits CI.
+          # Use as imagens oficiais do Docker Hub quando o GHCR limitar a taxa da CI.
           SUPABASE_INTERNAL_IMAGE_REGISTRY: docker.io
       - run: npm run test:sql
-      - name: Generated database types are current
+      - name: Os tipos gerados do banco de dados estão atualizados
         run: |
           supabase gen types typescript --local --schema public > /tmp/database.ts
           diff -u src/types/database.ts /tmp/database.ts
@@ -62,14 +63,14 @@ jobs:
         working-directory: app
     steps:
       - uses: actions/checkout@v7
-      - name: Build the production image
+      - name: Construir a imagem de produção
         run: >-
           docker build
           --build-arg NEXT_PUBLIC_APP_URL=http://localhost:3000
           --build-arg NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:56421
           --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_build_placeholder
           -t billr-ci .
-      - name: Start it and wait for the health endpoint
+      - name: Iniciar e aguardar o endpoint de saúde
         run: |
           docker run -d --name billr-ci -p 127.0.0.1:3000:3000 \
             --add-host host.docker.internal:host-gateway \

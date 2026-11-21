@@ -1,27 +1,27 @@
 /**
- * The sender for invoice and estimate email: RESEND_INVOICE_FROM, an address
- * on a domain you verified in your own Resend account.
+ * Remetente de e-mails de faturas e orçamentos: RESEND_INVOICE_FROM, um
+ * endereço em um domínio verificado na sua própria conta do Resend.
  */
 export function invoiceFromEmail(): string {
   const value = process.env.RESEND_INVOICE_FROM?.trim()
   if (!value)
     throw new Error(
-      'Configure RESEND_INVOICE_FROM, an address on a domain you verified in Resend',
+      'Configure RESEND_INVOICE_FROM com um endereço em um domínio verificado no Resend',
     )
   return value
 }
 
 /**
- * Wraps an address in a display name, defensively.
+ * Envolve um endereço com um nome de exibição, de forma preventiva.
  *
- * A display name lands in the From header, so a CR, LF or angle bracket in it
- * would let the caller append headers of their own. None of the current call
- * sites pass untrusted text, but this is the function that builds the header
- * so this is where the guarantee belongs.
+ * O nome de exibição aparece no cabeçalho From; portanto, CR, LF ou sinais
+ * de menor/maior permitiriam que quem chama acrescentasse outros cabeçalhos.
+ * Nenhum ponto de chamada atual passa texto não confiável, mas esta função
+ * monta o cabeçalho, então é aqui que essa garantia deve ser assegurada.
  */
 export function formatFromAddress(displayName: string, email: string): string {
   const name = displayName.replace(/[\r\n<>"]/g, '').trim()
   const address = email.replace(/[\r\n<>]/g, '').trim()
-  if (!address) throw new Error('An email sender address is required')
+  if (!address) throw new Error('É necessário informar um endereço de e-mail remetente')
   return name ? `${name} <${address}>` : address
 }

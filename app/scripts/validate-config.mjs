@@ -1,8 +1,8 @@
 import { pathToFileURL } from 'node:url'
 import dotenv from 'dotenv'
 
-// Hosts that mean "this machine". Inside a container every one of them is the
-// container itself.
+// Hosts que significam "esta máquina". Dentro de um contêiner, cada um deles é o
+// próprio contêiner.
 const LOOPBACK = ['localhost', '127.0.0.1', '[::1]', '0.0.0.0']
 
 export function validateConfig(env) {
@@ -17,7 +17,7 @@ export function validateConfig(env) {
       !env[key]?.trim() ||
       /replace-with|your_supabase|your-project/.test(env[key])
     )
-      throw Error(`Configure ${key} for your installation`)
+      throw Error(`Configure ${key} para sua instalação`)
   }
   const origin = (value, name) => {
     const url = new URL(value)
@@ -29,25 +29,25 @@ export function validateConfig(env) {
       url.search ||
       url.hash
     )
-      throw Error(`${name} must be an HTTP(S) origin`)
+      throw Error(`${name} deve ser uma origem HTTP(S)`)
     if (
       url.protocol !== 'https:' &&
       !LOOPBACK.includes(url.hostname)
     )
-      throw Error(`${name} must use HTTPS outside localhost`)
+      throw Error(`${name} deve usar HTTPS fora de localhost`)
     return url
   }
   const app = origin(env.NEXT_PUBLIC_APP_URL, 'NEXT_PUBLIC_APP_URL')
   const db = origin(env.NEXT_PUBLIC_SUPABASE_URL, 'NEXT_PUBLIC_SUPABASE_URL')
-  // The server-to-server origin may be plain HTTP: it is usually a Docker
-  // network name or the host gateway, never something a browser sees.
+  // A origem entre servidores pode usar HTTP puro: geralmente é um nome de rede Docker
+  // ou o gateway do host, nunca algo visível para o navegador.
   const internal = env.SUPABASE_INTERNAL_URL?.trim()
   if (internal) {
     let url
     try {
       url = new URL(internal)
     } catch {
-      throw Error('SUPABASE_INTERNAL_URL must be an HTTP(S) origin')
+      throw Error('SUPABASE_INTERNAL_URL deve ser uma origem HTTP(S)')
     }
     if (
       !['http:', 'https:'].includes(url.protocol) ||
@@ -57,7 +57,7 @@ export function validateConfig(env) {
       url.search ||
       url.hash
     )
-      throw Error('SUPABASE_INTERNAL_URL must be an HTTP(S) origin')
+      throw Error('SUPABASE_INTERNAL_URL deve ser uma origem HTTP(S)')
   }
   if (
     env.BILLR_CONTAINER === 'true' &&
@@ -65,13 +65,13 @@ export function validateConfig(env) {
     LOOPBACK.includes(db.hostname)
   )
     throw Error(
-      `Inside the container, ${db.hostname} is the container itself, not your machine. Set SUPABASE_INTERNAL_URL to an address the container can reach; for the local development database that is http://host.docker.internal:${db.port || '80'} (see docs/self-hosting.md)`,
+      `Dentro do contêiner, ${db.hostname} é o próprio contêiner, não a sua máquina. Defina SUPABASE_INTERNAL_URL com um endereço que o contêiner possa alcançar; para o banco de dados de desenvolvimento local, use http://host.docker.internal:${db.port || '80'} (consulte docs/self-hosting.md)`,
     )
   if (env.NEXT_PUBLIC_SUPABASE_ANON_KEY === env.SUPABASE_SERVICE_ROLE_KEY)
-    throw Error('The public and service-role keys must be different')
+    throw Error('As chaves pública e de função de serviço devem ser diferentes')
   const publicKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (publicKey.startsWith('sb_secret_'))
-    throw Error('A Supabase secret cannot be used as the browser key')
+    throw Error('Um segredo do Supabase não pode ser usado como chave do navegador')
   if (publicKey.split('.').length === 3) {
     let payload
     try {
@@ -79,25 +79,25 @@ export function validateConfig(env) {
         Buffer.from(publicKey.split('.')[1], 'base64url').toString(),
       )
     } catch {
-      throw Error('Invalid public Supabase key')
+      throw Error('Chave pública do Supabase inválida')
     }
     if (payload.role !== 'anon')
-      throw Error('The browser JWT must have the anon role')
+      throw Error('O JWT do navegador deve ter a função anon')
   }
   if (
     env.RESEND_API_KEY &&
     !env.RESEND_INVOICE_FROM
   )
-    throw Error('Configure your own verified invoice email sender')
+    throw Error('Configure seu próprio remetente verificado de e-mail de faturas')
   const openSignup = env.BILLR_OPEN_SIGNUP?.trim().toLowerCase()
   if (openSignup && !['true', 'false'].includes(openSignup))
-    throw Error('BILLR_OPEN_SIGNUP must be true, false or empty')
-  // Card payments: the three Stripe values come as a set, from one mode.
+    throw Error('BILLR_OPEN_SIGNUP deve ser true, false ou vazio')
+  // Pagamentos com cartão: os três valores do Stripe devem vir juntos e do mesmo modo.
   const stripe = ['STRIPE_SECRET_KEY', 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', 'STRIPE_WEBHOOK_SECRET']
   const stripeSet = stripe.filter((key) => env[key]?.trim())
   if (stripeSet.length && stripeSet.length < stripe.length)
     throw Error(
-      `Card payments need all three of ${stripe.join(', ')}; missing ${stripe
+      `Pagamentos com cartão exigem os três valores de ${stripe.join(', ')}; faltam ${stripe
         .filter((key) => !env[key]?.trim())
         .join(', ')}`,
     )
@@ -112,13 +112,13 @@ export function validateConfig(env) {
     const secret = mode(env.STRIPE_SECRET_KEY.trim(), ['sk', 'rk'])
     const publishable = mode(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.trim(), ['pk'])
     if (!secret)
-      throw Error('STRIPE_SECRET_KEY must start with sk_test_, sk_live_, rk_test_ or rk_live_')
+      throw Error('STRIPE_SECRET_KEY deve começar com sk_test_, sk_live_, rk_test_ ou rk_live_')
     if (!publishable)
-      throw Error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY must start with pk_test_ or pk_live_')
+      throw Error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY deve começar com pk_test_ ou pk_live_')
     if (secret !== publishable)
-      throw Error('The Stripe secret and publishable keys are from different modes (one test, one live)')
+      throw Error('As chaves secreta e publicável do Stripe são de modos diferentes (uma de teste e outra ativa)')
     if (!env.STRIPE_WEBHOOK_SECRET.trim().startsWith('whsec_'))
-      throw Error('STRIPE_WEBHOOK_SECRET must start with whsec_')
+      throw Error('STRIPE_WEBHOOK_SECRET deve começar com whsec_')
   }
   return { app: app.origin }
 }
@@ -131,7 +131,7 @@ if (
   try {
     validateConfig(process.env)
     console.log(
-      'Installation configuration validated (no secret values printed).',
+      'Configuração da instalação validada (nenhum valor secreto foi exibido).',
     )
   } catch (error) {
     console.error(error.message)

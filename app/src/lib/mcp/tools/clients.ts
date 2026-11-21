@@ -19,13 +19,13 @@ const ZERO_FINANCIALS: ClientFinancials = {
 }
 
 /**
- * Computes per-client invoiced/outstanding totals from the invoices table.
+ * Calcula os totais faturados/em aberto por cliente a partir da tabela de faturas.
  *
- * The clients table has stored total_invoiced/outstanding_balance columns, but
- * nothing in the app maintains them, so they are permanently stale. These
- * tools derive the figures instead, in one query per call, scoped to the
- * caller's businesses. Non-draft, non-cancelled invoices only, matching
- * revenue_summary's EXCLUDED_FROM_TOTALS rule.
+ * A tabela clients tem as colunas total_invoiced/outstanding_balance armazenadas,
+ * mas nada no app as mantém, então estão permanentemente desatualizadas. Estas
+ * ferramentas calculam os valores em vez disso, em uma consulta por chamada,
+ * limitadas às empresas de quem chamou. Apenas faturas que não sejam rascunho
+ * nem canceladas, conforme a regra EXCLUDED_FROM_TOTALS de revenue_summary.
  */
 async function computeClientFinancials(
   ctx: McpCtx,
@@ -43,44 +43,44 @@ async function computeClientFinancials(
 }
 
 const clientMutableFields = {
-  name: z.string().min(1).max(200).describe('Client name (person or company).'),
-  email: z.string().email().max(320).optional().describe("Client's email address."),
-  phone: z.string().max(50).optional().describe("Client's phone number."),
-  address_line1: z.string().max(200).optional().describe('Street address, line 1.'),
-  address_line2: z.string().max(200).optional().describe('Street address, line 2 (suite, unit, etc).'),
-  city: z.string().max(100).optional().describe('City.'),
-  state: z.string().max(100).optional().describe('State or province.'),
-  postal_code: z.string().max(20).optional().describe('Postal or ZIP code.'),
-  country: z.string().max(100).optional().describe('Country.'),
-  currency: z.string().max(10).optional().describe('ISO currency code for this client, e.g. "USD". Defaults to the business currency if omitted.'),
-  notes: z.string().max(2000).optional().describe('Free-form internal notes about this client.'),
+  name: z.string().min(1).max(200).describe('Nome do cliente (pessoa ou empresa).'),
+  email: z.string().email().max(320).optional().describe('Endereço de e-mail do cliente.'),
+  phone: z.string().max(50).optional().describe('Número de telefone do cliente.'),
+  address_line1: z.string().max(200).optional().describe('Endereço, linha 1.'),
+  address_line2: z.string().max(200).optional().describe('Endereço, linha 2 (sala, unidade etc.).'),
+  city: z.string().max(100).optional().describe('Cidade.'),
+  state: z.string().max(100).optional().describe('Estado ou província.'),
+  postal_code: z.string().max(20).optional().describe('Código postal.'),
+  country: z.string().max(100).optional().describe('País.'),
+  currency: z.string().max(10).optional().describe('Código de moeda ISO deste cliente, por exemplo "USD". Se omitido, usa a moeda da empresa.'),
+  notes: z.string().max(2000).optional().describe('Observações internas livres sobre este cliente.'),
 }
 
 /**
- * Registers the four client-management tools (list, get, create, update) on
- * the given MCP server, scoped to the businesses in ctx.db.scope.
+ * Registra as quatro ferramentas de gerenciamento de clientes (listar, consultar,
+ * criar e atualizar) no servidor MCP informado, limitadas às empresas em ctx.db.scope.
  */
 export function registerClientTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'list_clients',
     {
-      title: 'List Clients',
+      title: 'Listar clientes',
       description:
-        "List clients for one of the caller's businesses, ordered by name. Optionally filter by a case-insensitive substring search on name or email.",
+        'Lista os clientes de uma das empresas de quem chamou, em ordem alfabética. Opcionalmente, filtra por trecho sem distinção entre maiúsculas e minúsculas no nome ou e-mail.',
       inputSchema: z.object({
-        offset: z.number().int().min(0).max(1000000).optional().describe('Page offset. Start at 0, then use next_offset until it is null. Keep other filters unchanged.'),
+        offset: z.number().int().min(0).max(1000000).optional().describe('Deslocamento da página. Comece em 0 e use next_offset até que seja null. Mantenha os demais filtros inalterados.'),
         business_id: z
           .string()
           .uuid()
           .optional()
           .describe(
-            'Id of the business whose clients to list. Optional when the API key is scoped to exactly one business; required if scoped to multiple.'
+            'ID da empresa cujos clientes serão listados. Opcional quando a chave de API está limitada a exatamente uma empresa; obrigatório quando está limitada a várias.'
           ),
         search: z
           .string()
           .max(200)
           .optional()
-          .describe('Case-insensitive substring to filter clients by name or email.'),
+          .describe('Trecho de texto, sem distinção entre maiúsculas e minúsculas, para filtrar clientes por nome ou e-mail.'),
       }),
     },
     async ({ offset, business_id, search }) => {
@@ -88,7 +88,7 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
       try {
         resolvedId = ctx.db.resolveBusinessId(business_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
       }
 
       let query = ctx.db.svc
@@ -101,9 +101,9 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
         .range(offset ?? 0, (offset ?? 0) + CLIENTS_LIMIT - 1)
 
       if (search) {
-        // likeAnyFilter quotes the term: `.or()` takes a raw PostgREST filter
-        // expression, so an unquoted search containing a comma or a dot became
-        // extra filters of the agent's choosing.
+        // likeAnyFilter delimita o termo entre aspas: `.or()` recebe uma expressão
+        // de filtro bruta do PostgREST, então uma busca sem aspas com vírgula
+        // ou ponto poderia virar filtros adicionais escolhidos pelo agente.
         query = query.or(likeAnyFilter(['name', 'email'], search))
       }
 
@@ -111,7 +111,7 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
 
       if (error) {
         console.error('list_clients:', error)
-        return errorResult('Could not list clients.')
+        return errorResult('Não foi possível listar os clientes.')
       }
 
       const rows = data ?? []
@@ -124,7 +124,7 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
           rows.map((c) => c.id)
         )
       } catch {
-        return errorResult('Could not compute client totals.')
+        return errorResult('Não foi possível calcular os totais do cliente.')
       }
 
       const clients = rows.map((c) => {
@@ -144,7 +144,7 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
       const result = {
         offset: offset ?? 0,
         next_offset: (data ?? []).length === CLIENTS_LIMIT ? (offset ?? 0) + CLIENTS_LIMIT : null,
-        summary: `${clients.length} client${clients.length === 1 ? '' : 's'} found.${truncated ? truncationNote(CLIENTS_LIMIT) : ''}`,
+        summary: `${clients.length} cliente${clients.length === 1 ? '' : 's'} encontrado${clients.length === 1 ? '' : 's'}.${truncated ? truncationNote(CLIENTS_LIMIT) : ''}`,
         clients,
         ...(truncated ? { truncated: true } : {}),
       }
@@ -156,11 +156,11 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'get_client',
     {
-      title: 'Get Client',
+      title: 'Consultar cliente',
       description:
-        "Fetch full details for one client, including their five most recent invoices. The client must belong to one of the caller's businesses.",
+        'Busca os dados completos de um cliente, incluindo suas cinco faturas mais recentes. O cliente precisa pertencer a uma das empresas de quem chamou.',
       inputSchema: z.object({
-        client_id: z.string().uuid().describe('Id of the client to fetch.'),
+        client_id: z.string().uuid().describe('ID do cliente a consultar.'),
       }),
     },
     async ({ client_id }) => {
@@ -168,7 +168,7 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
       try {
         client = await ctx.db.assertClientAccess(client_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access client.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar o cliente.')
       }
 
       const { data: invoices, error } = await ctx.db.svc
@@ -181,7 +181,7 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
 
       if (error) {
         console.error('get_client:', error)
-        return errorResult('Could not load recent invoices.')
+        return errorResult('Não foi possível carregar as faturas recentes.')
       }
 
       let financials: ClientFinancials
@@ -189,11 +189,11 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
         const map = await computeClientFinancials(ctx, [client.business_id], [client.id])
         financials = map.get(`${client.id}:${client.currency}`) ?? { ...ZERO_FINANCIALS }
       } catch {
-        return errorResult('Could not compute client totals.')
+        return errorResult('Não foi possível calcular os totais do cliente.')
       }
 
       const result = {
-        summary: `${client.name}: outstanding ${financials.outstanding_balance} ${client.currency}, total invoiced ${financials.total_invoiced} ${client.currency}.`,
+        summary: `${client.name}: saldo em aberto de ${financials.outstanding_balance} ${client.currency}, total faturado de ${financials.total_invoiced} ${client.currency}.`,
         client: {
           id: client.id,
           business_id: client.business_id,
@@ -229,16 +229,16 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'create_client',
     {
-      title: 'Create Client',
+      title: 'Criar cliente',
       description:
-        "Create a new client under one of the caller's businesses. Fails with an instructive error if a client with the same name already exists in that business. Use update_client instead in that case.",
+        'Cria um cliente em uma das empresas de quem chamou. Se já existir nessa empresa um cliente com o mesmo nome, retorna uma mensagem explicativa. Nesse caso, use update_client.',
       inputSchema: z.object({
         business_id: z
           .string()
           .uuid()
           .optional()
           .describe(
-            'Id of the business to create the client under. Optional when the API key is scoped to exactly one business; required if scoped to multiple.'
+            'ID da empresa à qual o cliente será associado. Opcional quando a chave de API está limitada a exatamente uma empresa; obrigatório quando está limitada a várias.'
           ),
         ...clientMutableFields,
       }),
@@ -248,7 +248,7 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
       try {
         resolvedId = ctx.db.resolveBusinessId(business_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not resolve business.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível identificar a empresa.')
       }
 
       const { data: existing, error: existingError } = await ctx.db.svc
@@ -260,12 +260,12 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
 
       if (existingError) {
         console.error('create_client (duplicate check):', existingError)
-        return errorResult('Could not verify client uniqueness.')
+        return errorResult('Não foi possível verificar se o cliente já existe.')
       }
 
       if (existing) {
         return errorResult(
-          `A client named "${fields.name}" already exists in this business (id ${existing.id}). Use update_client with client_id "${existing.id}" instead of creating a duplicate.`
+          `Já existe um cliente chamado "${fields.name}" nesta empresa (id ${existing.id}). Use update_client com client_id "${existing.id}" em vez de criar um registro duplicado.`
         )
       }
 
@@ -282,11 +282,11 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
 
       if (error || !created) {
         console.error('create_client:', error)
-        return errorResult('Could not create client.')
+        return errorResult('Não foi possível criar o cliente.')
       }
 
       const result = {
-        summary: `Created client "${created.name}".`,
+        summary: `Cliente "${created.name}" criado.`,
         client: {
           id: created.id,
           business_id: created.business_id,
@@ -312,28 +312,28 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
   server.registerTool(
     'update_client',
     {
-      title: 'Update Client',
+      title: 'Atualizar cliente',
       description:
-        "Update fields on an existing client. Only fields provided are changed; omitted fields are left as-is. The client must belong to one of the caller's businesses.",
+        'Atualiza campos de um cliente existente. Apenas os campos informados são alterados; os omitidos permanecem como estão. O cliente precisa pertencer a uma das empresas de quem chamou.',
       inputSchema: z.object({
-        client_id: z.string().uuid().describe('Id of the client to update.'),
-        name: z.string().min(1).max(200).optional().describe('Client name (person or company).'),
-        email: z.string().email().max(320).optional().describe("Client's email address."),
-        phone: z.string().max(50).optional().describe("Client's phone number."),
-        address_line1: z.string().max(200).optional().describe('Street address, line 1.'),
-        address_line2: z.string().max(200).optional().describe('Street address, line 2 (suite, unit, etc).'),
-        city: z.string().max(100).optional().describe('City.'),
-        state: z.string().max(100).optional().describe('State or province.'),
-        postal_code: z.string().max(20).optional().describe('Postal or ZIP code.'),
-        country: z.string().max(100).optional().describe('Country.'),
-        currency: z.string().max(10).optional().describe('ISO currency code for this client, e.g. "USD".'),
-        notes: z.string().max(2000).optional().describe('Free-form internal notes about this client.'),
+        client_id: z.string().uuid().describe('ID do cliente a atualizar.'),
+        name: z.string().min(1).max(200).optional().describe('Nome do cliente (pessoa ou empresa).'),
+        email: z.string().email().max(320).optional().describe('Endereço de e-mail do cliente.'),
+        phone: z.string().max(50).optional().describe('Número de telefone do cliente.'),
+        address_line1: z.string().max(200).optional().describe('Endereço, linha 1.'),
+        address_line2: z.string().max(200).optional().describe('Endereço, linha 2 (sala, unidade etc.).'),
+        city: z.string().max(100).optional().describe('Cidade.'),
+        state: z.string().max(100).optional().describe('Estado ou província.'),
+        postal_code: z.string().max(20).optional().describe('Código postal.'),
+        country: z.string().max(100).optional().describe('País.'),
+        currency: z.string().max(10).optional().describe('Código de moeda ISO deste cliente, por exemplo "USD".'),
+        notes: z.string().max(2000).optional().describe('Observações internas livres sobre este cliente.'),
       }),
     },
     async ({ client_id, ...fields }) => {
       if (Object.keys(fields).length === 0) {
         return errorResult(
-          'No fields to update. Provide at least one of name, email, phone, address_line1, address_line2, city, state, postal_code, country, currency, or notes.'
+          'Nenhum campo para atualizar. Informe pelo menos um entre name, email, phone, address_line1, address_line2, city, state, postal_code, country, currency ou notes.'
         )
       }
 
@@ -341,7 +341,7 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
       try {
         existing = await ctx.db.assertClientAccess(client_id)
       } catch (err) {
-        return errorResult(err instanceof ScopeError ? err.message : 'Could not access client.')
+        return errorResult(err instanceof ScopeError ? err.message : 'Não foi possível acessar o cliente.')
       }
 
       if (fields.name && fields.name.toLowerCase() !== existing.name.toLowerCase()) {
@@ -355,12 +355,12 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
 
         if (dupeError) {
           console.error('update_client (duplicate check):', dupeError)
-          return errorResult('Could not verify client uniqueness.')
+          return errorResult('Não foi possível verificar se o cliente já existe.')
         }
 
         if (dupe) {
           return errorResult(
-            `A client named "${fields.name}" already exists in this business (id ${dupe.id}). Choose a different name or update that client instead.`
+            `Já existe um cliente chamado "${fields.name}" nesta empresa (id ${dupe.id}). Escolha outro nome ou atualize esse cliente.`
           )
         }
       }
@@ -374,11 +374,11 @@ export function registerClientTools(server: McpServer, ctx: McpCtx) {
 
       if (error || !updated) {
         console.error('update_client:', error)
-        return errorResult('Could not update client.')
+        return errorResult('Não foi possível atualizar o cliente.')
       }
 
       const result = {
-        summary: `Updated client "${updated.name}".`,
+        summary: `Cliente "${updated.name}" atualizado.`,
         client: {
           id: updated.id,
           business_id: updated.business_id,

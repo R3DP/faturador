@@ -1,22 +1,22 @@
 /**
- * Accounts-receivable aging. Pure - no React, no I/O.
+ * Faixas de atraso das contas a receber. Puro: sem React e sem E/S.
  *
- * Aging is a SNAPSHOT as of a given day, not a windowed report: money owed
- * from eighteen months ago is still owed today, so the selected date range
- * never filters these invoices.
+ * O envelhecimento é uma FOTOGRAFIA na data informada, não um relatório por
+ * período: valores devidos há dezoito meses continuam devidos hoje, então o
+ * intervalo de datas selecionado nunca filtra estas faturas.
  *
- * Bucket boundaries are the part that has to be exactly right, because they
- * decide which invoice a person chases first. The convention here (and the one
- * the tests pin):
+ * Os limites das faixas precisam estar exatos, pois determinam qual fatura
+ * será cobrada primeiro. A convenção usada aqui (e fixada pelos testes) é:
  *
- *   daysPastDue <= 0   -> "Not yet due"   (due today counts as not yet due)
- *   1  .. 30           -> "1 to 30 days"
- *   31 .. 60           -> "31 to 60 days"
- *   61 .. 90           -> "61 to 90 days"
- *   91+                -> "90+ days"
+ *   daysPastDue <= 0   -> "Ainda não vencida" (vencimento hoje conta como em dia)
+ *   1  .. 30           -> "1 a 30 dias"
+ *   31 .. 60           -> "31 a 60 dias"
+ *   61 .. 90           -> "61 a 90 dias"
+ *   91+                -> "Mais de 90 dias"
  *
- * So an invoice due exactly 30 days ago is in 1-30, and one due exactly 31
- * days ago is in 31-60. Boundaries are closed on both ends and never overlap.
+ * Assim, uma fatura vencida exatamente há 30 dias fica na faixa de 1 a 30, e
+ * uma vencida há 31 dias fica na de 31 a 60. Os limites são inclusivos e nunca
+ * se sobrepõem.
  */
 
 import { differenceInCalendarDays } from 'date-fns'
@@ -29,9 +29,9 @@ export type AgingBucketId = 'current' | 'd1_30' | 'd31_60' | 'd61_90' | 'd90_plu
 interface AgingBucketMeta {
   id: AgingBucketId
   label: string
-  /** Short form for chart axes and legends. */
+  /** Forma curta para eixos de gráficos e legendas. */
   short: string
-  /** Plain-language explanation used in tooltips and the table view. */
+  /** Explicação em linguagem simples usada em dicas e na tabela. */
   description: string
   overdue: boolean
 }
@@ -39,48 +39,48 @@ interface AgingBucketMeta {
 const AGING_BUCKETS: AgingBucketMeta[] = [
   {
     id: 'current',
-    label: 'Not yet due',
-    short: 'Not due',
-    description: 'Open invoices whose due date has not passed',
+    label: 'Ainda não vencida',
+    short: 'Em dia',
+    description: 'Faturas em aberto cujo vencimento ainda não passou',
     overdue: false,
   },
   {
     id: 'd1_30',
-    label: '1 to 30 days',
+    label: '1 a 30 dias',
     short: '1-30',
-    description: 'Overdue by 1 to 30 days',
+    description: 'Vencida há 1 a 30 dias',
     overdue: true,
   },
   {
     id: 'd31_60',
-    label: '31 to 60 days',
+    label: '31 a 60 dias',
     short: '31-60',
-    description: 'Overdue by 31 to 60 days',
+    description: 'Vencida há 31 a 60 dias',
     overdue: true,
   },
   {
     id: 'd61_90',
-    label: '61 to 90 days',
+    label: '61 a 90 dias',
     short: '61-90',
-    description: 'Overdue by 61 to 90 days',
+    description: 'Vencida há 61 a 90 dias',
     overdue: true,
   },
   {
     id: 'd90_plus',
-    label: 'More than 90 days',
+    label: 'Mais de 90 dias',
     short: '90+',
-    description: 'Overdue by more than 90 days',
+    description: 'Vencida há mais de 90 dias',
     overdue: true,
   },
 ]
 
-/** Calendar days between a due date and the reference day. Negative when not yet due. */
+/** Dias corridos entre o vencimento e a data de referência. Negativo se ainda não venceu. */
 export function daysPastDue(dueDate: string, asOf: string): number {
   if (!dueDate) return 0
   return differenceInCalendarDays(parseDay(asOf), parseDay(dueDate))
 }
 
-/** Maps a days-past-due count to its bucket. Closed intervals, no overlap. */
+/** Associa a quantidade de dias de atraso à faixa correspondente. Intervalos inclusivos, sem sobreposição. */
 export function agingBucketFor(days: number): AgingBucketId {
   if (days <= 0) return 'current'
   if (days <= 30) return 'd1_30'
@@ -97,7 +97,7 @@ export interface AgedInvoice extends OpenInvoice {
 interface AgingBucketResult extends AgingBucketMeta {
   amount: number
   count: number
-  /** Share of total receivable, 0-100. */
+  /** Participação no total a receber, de 0 a 100. */
   share: number
   invoices: AgedInvoice[]
 }
@@ -106,19 +106,19 @@ export interface AgingReport {
   asOf: string
   currency: string
   buckets: AgingBucketResult[]
-  /** Every open invoice, aged, newest due date first. */
+  /** Todas as faturas em aberto, agrupadas por atraso, da data de vencimento mais recente à mais antiga. */
   invoices: AgedInvoice[]
-  /** Everything open, due or not. */
+  /** Tudo o que está em aberto, vencido ou não. */
   totalOutstanding: number
-  /** Open and past its due date. */
+  /** Em aberto e com vencimento ultrapassado. */
   totalOverdue: number
-  /** Open but not yet due. */
+  /** Em aberto, mas ainda não vencido. */
   totalCurrent: number
-  /** Balance-weighted average days past due across overdue invoices, 0 when none. */
+  /** Média de dias de atraso ponderada pelo saldo das faturas vencidas; zero se não houver nenhuma. */
   averageDaysOverdue: number
-  /** The single most overdue invoice, or null. */
+  /** A fatura com maior atraso, ou null. */
   oldest: AgedInvoice | null
-  /** True when the RPC capped the row set, so these figures are a floor. */
+  /** True quando o RPC limitou o conjunto de linhas; os valores são, portanto, mínimos. */
   truncated: boolean
   invoiceCount: number
 }
@@ -140,8 +140,8 @@ export function buildAgingReport(
     }
   })
 
-  // Accumulate at full precision, round once per bucket. Rounding each
-  // invoice first and then adding drifts the bucket totals off the ledger.
+  // Acumula com precisão total e arredonda uma vez por faixa. Arredondar cada
+  // fatura antes de somar causa divergência entre os totais e o livro contábil.
   const rawByBucket = new Map<AgingBucketId, number>()
   const rowsByBucket = new Map<AgingBucketId, AgedInvoice[]>()
   let rawTotal = 0
@@ -197,9 +197,9 @@ export function buildAgingReport(
 }
 
 /**
- * Clients ranked by what they owe, with their worst bucket. This is the
- * "who do I call first" list, so it sorts by overdue balance, then by how
- * long that balance has been outstanding.
+ * Clientes ordenados pelo que devem, com sua pior faixa de atraso. Esta é a
+ * lista de "quem devo cobrar primeiro": ordena pelo saldo vencido e, depois,
+ * pelo tempo de atraso desse saldo.
  */
 export interface AgingClientRow {
   clientId: string | null

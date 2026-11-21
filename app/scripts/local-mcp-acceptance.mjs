@@ -1,4 +1,4 @@
-// Local-only acceptance. Creates fictional records and never contacts Stripe/email.
+// Teste de aceitação apenas local. Cria registros fictícios e nunca contata o Stripe nem envia e-mails.
 import 'dotenv/config'
 import { createClient } from '@supabase/supabase-js'
 import { randomBytes, randomUUID, createHash } from 'node:crypto'
@@ -7,8 +7,8 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import assert from 'node:assert/strict'
 import { writeFile } from 'node:fs/promises'
 const api = process.env.NEXT_PUBLIC_SUPABASE_URL,
-  // Defaults to the app origin setup:local wrote, so a BILLR_LOCAL_APP_PORT
-  // chosen there is followed here without repeating it.
+  // Usa como padrão a origem do app gravada por setup:local, para que uma BILLR_LOCAL_APP_PORT
+  // escolhida lá seja usada aqui sem precisar repeti-la.
   app =
     process.env.BILLR_LOCAL_APP_URL ||
     new URL('/api/mcp', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').href
@@ -18,10 +18,10 @@ for (const raw of [api, app]) {
     !['localhost', '127.0.0.1'].includes(u.hostname) ||
     u.protocol !== 'http:'
   )
-    throw Error('Acceptance scripts require local HTTP endpoints')
+    throw Error('Os scripts de aceitação exigem endpoints HTTP locais')
 }
 if (new URL(api).port !== (process.env.BILLR_LOCAL_DB_PORT || '56421'))
-  throw Error('Use the explicitly selected local Billr database port')
+  throw Error('Use a porta local do banco de dados do Faturador selecionada explicitamente')
 const db = createClient(api, process.env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 })
@@ -180,7 +180,7 @@ try {
         2,
       ) + '\n'
     if (serialized.includes(secret) || serialized.includes(email))
-      throw Error('Unexpected private data in tool metadata')
+      throw Error('Dados privados inesperados nos metadados da ferramenta')
     await writeFile(
       new URL(
         '../../packages/agent-kit/src/tool-contracts.json',
@@ -195,7 +195,7 @@ try {
     .eq('id', keyId)
   await assert.rejects(() => client.listTools())
   console.log(
-    'PASS: scoped SDK connection, revoked key, work/invoice retries, estimate creation, approved task pricing, usage markup, human draft approval and audit records.',
+    'PASS: conexão do SDK com escopo limitado, chave revogada, novas tentativas de registro de horas/faturas, criação de estimativa, preço de tarefa aprovado, margem de uso, aprovação humana de rascunho e registros de auditoria.',
   )
 } finally {
   await client.close()

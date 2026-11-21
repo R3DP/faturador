@@ -12,7 +12,7 @@ export async function GET(
   const { id } = await params
   const supabase = await createClient()
 
-  // RLS scopes this to invoices the signed-in user can access
+  // O RLS limita a consulta às faturas que a pessoa autenticada pode acessar
   const { data: invoice, error } = await supabase
     .from('invoices')
     .select(
@@ -22,7 +22,7 @@ export async function GET(
     .single()
 
   if (error || !invoice) {
-    return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Fatura não encontrada.' }, { status: 404 })
   }
 
   const data = buildInvoicePdfData(
@@ -34,8 +34,8 @@ export async function GET(
   )
   const pdf = await renderInvoicePdf(data, invoice.business?.logo_url)
 
-  // Sanitize for the Content-Disposition header: strip anything outside a safe
-  // filename charset (and any CR/LF) to prevent header injection.
+  // Para evitar injeção de cabeçalho, remova do Content-Disposition qualquer caractere que não pertença ao conjunto seguro de
+  // nomes de arquivo (incluindo CR/LF).
   const safeName = String(invoice.invoice_number).replace(/[^A-Za-z0-9._-]/g, '_') || 'invoice'
 
   return new NextResponse(new Uint8Array(pdf), {

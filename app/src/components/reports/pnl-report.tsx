@@ -1,16 +1,16 @@
 'use client'
 
 /**
- * Profit and loss for the selected range.
+ * Resultado do período selecionado.
  *
- * This one is deliberately NOT a chart. A P&L is a statement: a reader wants
- * the exact figures, line by line, and a chart of "revenue, expenses, profit"
- * is three bars restating three numbers. The chart of the same data over time
- * already exists above, in Revenue over time.
+ * Este relatório propositalmente NÃO é um gráfico. Uma demonstração de resultado deve mostrar
+ * os valores exatos, linha a linha; um gráfico de receita, despesas e lucro resultaria em três
+ * barras repetindo os mesmos números. A evolução desses dados ao longo do tempo já aparece
+ * acima, em Receitas ao longo do tempo.
  *
- * The basis switch is the honest part. Accrual counts revenue when it is
- * invoiced, cash when the money lands; freelancers usually file cash-basis and
- * plan accrual-basis, so the page offers both rather than quietly picking one.
+ * A escolha do regime contábil é importante. No regime de competência, a receita é contabilizada
+ * quando é faturada; no regime de caixa, quando o dinheiro entra. Profissionais autônomos costumam
+ * declarar pelo regime de caixa e planejar pelo regime de competência; por isso, a página oferece ambos.
  */
 
 import { Button } from '@/components/ui/button'
@@ -40,21 +40,21 @@ export function PnlReport({
     filename: csvFilename(`profit-and-loss-${basis}`, data.range),
     build: () => {
       const rows: { line: string; amount: number; previous: number | null }[] = [
-        { line: basis === 'cash' ? 'Revenue (collected)' : 'Revenue (invoiced)', amount: pnl.revenue, previous: pnl.previousRevenue },
-        ...pnl.lines.map((line) => ({ line: `Expense: ${line.label}`, amount: -line.amount, previous: null })),
-        { line: 'Total expenses', amount: -pnl.expenses, previous: -pnl.previousExpenses },
-        { line: 'Net profit', amount: pnl.profit, previous: pnl.previousProfit },
+        { line: basis === 'cash' ? 'Receita (recebida)' : 'Receita (faturada)', amount: pnl.revenue, previous: pnl.previousRevenue },
+        ...pnl.lines.map((line) => ({ line: `Despesa: ${line.label}`, amount: -line.amount, previous: null })),
+        { line: 'Total de despesas', amount: -pnl.expenses, previous: -pnl.previousExpenses },
+        { line: 'Resultado líquido', amount: pnl.profit, previous: pnl.previousProfit },
       ]
       return withReportContext(
         toCsv(rows, [
-          { header: 'Line', value: (row) => row.line },
-          { header: `Amount (${currency})`, value: (row) => row.amount },
+          { header: 'Descrição', value: (row) => row.line },
+          { header: `Valor (${currency})`, value: (row) => row.amount },
           ...(compare
-            ? [{ header: `Previous period (${currency})`, value: (row: (typeof rows)[number]) => row.previous ?? '' }]
+            ? [{ header: `Período anterior (${currency})`, value: (row: (typeof rows)[number]) => row.previous ?? '' }]
             : []),
         ]),
         {
-          title: `Profit and loss (${basis} basis)`,
+          title: `Resultado do período (regime de ${basis === 'cash' ? 'caixa' : 'competência'})`,
           range: data.range,
           currency,
         }
@@ -64,35 +64,35 @@ export function PnlReport({
 
   return (
     <ReportCard
-      title="Profit and loss"
+      title="Resultado"
       description={
         basis === 'cash'
-          ? 'Money collected minus money spent in this period'
-          : 'Revenue invoiced minus money spent in this period'
+          ? 'Valores recebidos menos valores gastos neste período'
+          : 'Receitas faturadas menos valores gastos neste período'
       }
       csv={csv}
       headerExtra={
-        <div role="group" aria-label="Accounting basis" className="flex items-center rounded-md border border-border p-0.5">
+        <div role="group" aria-label="Regime contábil" className="flex items-center rounded-md border border-border p-0.5">
           <BasisButton active={basis === 'accrual'} onClick={() => onBasisChange('accrual')}>
-            Accrual
+            Competência
           </BasisButton>
           <BasisButton active={basis === 'cash'} onClick={() => onBasisChange('cash')}>
-            Cash
+            Caixa
           </BasisButton>
         </div>
       }
       footer={
         <span>
           {basis === 'cash'
-            ? 'Cash basis: revenue counted on the payment date.'
-            : 'Accrual basis: revenue counted on the invoice issue date.'}{' '}
-          Expenses are counted on their expense date in both.
+            ? 'Regime de caixa: receita contabilizada na data do pagamento.'
+            : 'Regime de competência: receita contabilizada na data de emissão da fatura.'}{' '}
+          As despesas são contabilizadas na data em que ocorreram, nos dois regimes.
         </span>
       }
     >
       <dl className="divide-y divide-border">
         <StatementRow
-          label={basis === 'cash' ? 'Revenue collected' : 'Revenue invoiced'}
+          label={basis === 'cash' ? 'Receita recebida' : 'Receita faturada'}
           amount={pnl.revenue}
           currency={currency}
           delta={compare ? pnl.revenueDelta : null}
@@ -101,7 +101,7 @@ export function PnlReport({
 
         {pnl.lines.length > 0 ? (
           <div className="py-3">
-            <p className="text-sm font-medium text-foreground">Expenses</p>
+            <p className="text-sm font-medium text-foreground">Despesas</p>
             <ul className="mt-2 space-y-1.5">
               {pnl.lines.map((line) => (
                 <li key={line.category} className="flex items-baseline gap-3 text-sm">
@@ -119,7 +119,7 @@ export function PnlReport({
         ) : null}
 
         <StatementRow
-          label="Total expenses"
+          label="Total de despesas"
           amount={pnl.expenses}
           currency={currency}
           delta={compare ? pnl.expensesDelta : null}
@@ -127,10 +127,10 @@ export function PnlReport({
         />
 
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-4">
-          <dt className="text-base font-semibold text-foreground">Net profit</dt>
+          <dt className="text-base font-semibold text-foreground">Resultado líquido</dt>
           {pnl.margin !== null ? (
             <dd className="text-xs text-muted-foreground tabular-nums">
-              {formatPercent(pnl.margin, 1)} margin
+              {formatPercent(pnl.margin, 1)} de margem
             </dd>
           ) : null}
           <dd
@@ -143,7 +143,7 @@ export function PnlReport({
           </dd>
           {compare ? (
             <dd className="w-full text-right text-xs text-muted-foreground tabular-nums">
-              Previous period {formatMoney(pnl.previousProfit, currency)}
+              Período anterior: {formatMoney(pnl.previousProfit, currency)}
             </dd>
           ) : null}
         </div>
@@ -181,7 +181,7 @@ function StatementRow({
           {delta.percent === null
             ? `${delta.absolute >= 0 ? '+' : ''}${formatMoney(delta.absolute, currency)}`
             : `${delta.percent >= 0 ? '+' : ''}${delta.percent.toFixed(1)}%`}{' '}
-          vs previous
+          em relação ao período anterior
         </dd>
       ) : null}
       <dd className="ml-auto text-sm font-medium tabular-nums text-foreground">

@@ -53,7 +53,7 @@ export default function TasksPage() {
         .order('name'),
     ])
     if (results.some((r) => r.error)) {
-      setLoadError('Could not load task billing. Try again.')
+      setLoadError('Não foi possível carregar o faturamento das tarefas. Tente novamente.')
     } else {
       setPolicies(results[0].data || [])
       setTasks(results[1].data || [])
@@ -82,10 +82,10 @@ export default function TasksPage() {
         budget: String(f.get('budget')),
       })
       form.reset()
-      toast.success('Pricing approved for new tasks')
+      toast.success('Preço aprovado para novas tarefas')
       await refresh()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not approve pricing')
+      toast.error(e instanceof Error ? e.message : 'Não foi possível aprovar o preço')
     } finally {
       setBusy(false)
     }
@@ -101,10 +101,10 @@ export default function TasksPage() {
       }
       await reviewTaskInvoice(currentBusiness.id, task.id, id)
       requests.current.delete(task.id)
-      toast.success('Draft invoice created')
+      toast.success('Rascunho da fatura criado')
       await refresh()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not create draft')
+      toast.error(e instanceof Error ? e.message : 'Não foi possível criar o rascunho')
     } finally {
       setBusy(false)
     }
@@ -112,8 +112,8 @@ export default function TasksPage() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <PageHeader
-        title="Task billing"
-        description="Agree on pricing, track agent work, and review costs before invoicing."
+        title="Faturamento de tarefas"
+        description="Defina preços, acompanhe o trabalho dos agentes e confira os custos antes de faturar."
       />
       {loadError && (
         <div
@@ -122,7 +122,7 @@ export default function TasksPage() {
         >
           {loadError}
           <Button variant="outline" size="sm" onClick={refresh}>
-            Retry
+            Tentar novamente
           </Button>
         </div>
       )}
@@ -135,10 +135,10 @@ export default function TasksPage() {
             <Plus size={17} className="text-primary" />
             <span>
               <span className="block text-sm font-semibold">
-                Approve pricing
+                Aprovar preços
               </span>
               <span className="mt-1 block text-xs text-muted-foreground">
-                Set a client’s rate, usage multiplier, and task budget.
+                Defina o valor por hora do cliente, o multiplicador de uso e o orçamento por tarefa.
               </span>
             </span>
           </span>
@@ -148,26 +148,24 @@ export default function TasksPage() {
           />
         </summary>
         <p className="text-sm text-muted-foreground">
-          Each task using this policy gets the budget below. Approval is
-          restricted to business owners and admins. To change pricing, create a
-          new policy; existing tasks keep their original rates.
+          Cada tarefa que usar esta política terá o orçamento abaixo. A aprovação é restrita a proprietários e administradores da empresa. Para alterar os preços, crie uma nova política; as tarefas existentes mantêm os valores originais.
         </p>
         <form
           onSubmit={approve}
           className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
           <div className="space-y-2">
-            <Label htmlFor="policy-name">Policy name</Label>
+            <Label htmlFor="policy-name">Nome da política</Label>
             <Input
               id="policy-name"
               name="name"
               required
               maxLength={200}
-              placeholder="Development work"
+              placeholder="Trabalho de desenvolvimento"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="policy-client">Client</Label>
+            <Label htmlFor="policy-client">Cliente</Label>
             <select
               className="w-full rounded-md border p-2 text-sm bg-background"
               id="policy-client"
@@ -176,7 +174,7 @@ export default function TasksPage() {
               defaultValue=""
             >
               <option value="" disabled>
-                Select a client
+                Selecione um cliente
               </option>
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -186,7 +184,7 @@ export default function TasksPage() {
             </select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="policy-currency">Currency</Label>
+            <Label htmlFor="policy-currency">Moeda</Label>
             <Input
               id="policy-currency"
               name="currency"
@@ -197,7 +195,7 @@ export default function TasksPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="policy-rate">Hourly rate</Label>
+            <Label htmlFor="policy-rate">Valor por hora</Label>
             <Input
               id="policy-rate"
               name="rate"
@@ -206,11 +204,11 @@ export default function TasksPage() {
               min="0"
               max="999999"
               step="0.0001"
-              placeholder="Explicit rate, including 0"
+              placeholder="Valor explícito, inclusive 0"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="policy-multiplier">Usage cost multiplier</Label>
+            <Label htmlFor="policy-multiplier">Multiplicador do custo de uso</Label>
             <Input
               id="policy-multiplier"
               name="multiplier"
@@ -219,11 +217,11 @@ export default function TasksPage() {
               min="0"
               max="100"
               step="0.0001"
-              placeholder="1 = pass through cost"
+              placeholder="1 = repassar o custo"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="policy-budget">Budget per task</Label>
+            <Label htmlFor="policy-budget">Orçamento por tarefa</Label>
             <Input
               id="policy-budget"
               name="budget"
@@ -235,15 +233,15 @@ export default function TasksPage() {
             />
           </div>
           <Button disabled={busy || !clients.length} type="submit">
-            Approve pricing for agents
+            Aprovar preços para agentes
           </Button>
         </form>
       </details>
       <details className="task-surface group">
         <summary className="flex items-center justify-between text-sm font-semibold">
-          Approved policies{' '}
+          Políticas aprovadas{' '}
           <span className="flex items-center gap-3 text-xs font-normal text-zinc-400">
-            {policies.length} policies
+            {policies.length} políticas
             <ChevronDown size={15} className="group-open:rotate-180" />
           </span>
         </summary>
@@ -255,13 +253,13 @@ export default function TasksPage() {
             >
               <strong>{p.name}</strong>
               <p>
-                {formatCurrency(p.hourly_rate, p.currency)}/hour + usage ×{' '}
-                {p.usage_multiplier}; budget{' '}
-                {formatCurrency(p.budget, p.currency)} per task.
+                {formatCurrency(p.hourly_rate, p.currency)}/hora + uso ×{' '}
+                {p.usage_multiplier}; orçamento{' '}
+                {formatCurrency(p.budget, p.currency)} por tarefa.
               </p>
               <details className="mt-3">
                 <summary className="text-xs text-zinc-400">
-                  Policy reference
+                  Referência da política
                 </summary>
                 <p className="mt-2 break-all font-mono text-[11px] text-zinc-500">
                   {p.id}
@@ -272,25 +270,24 @@ export default function TasksPage() {
         </div>
         {!loading && !policies.length && (
           <p className="text-muted-foreground">
-            Approve a policy above, then ask your agent to list billing policies
-            and create a task.
+            Aprove uma política acima e peça ao seu agente para listar as políticas de cobrança e criar uma tarefa.
           </p>
         )}
       </details>
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Recent tasks</h2>
+          <h2 className="text-lg font-semibold">Tarefas recentes</h2>
           <Button variant="outline" onClick={refresh}>
-            Refresh
+            Atualizar
           </Button>
         </div>
-        {loading && <p>Loading tasks…</p>}
+        {loading && <p>Carregando tarefas…</p>}
         {tasks.map((t) => {
           const p = t.pricing
           if (!p)
             return (
               <p key={t.id}>
-                Pricing unavailable for {t.title}. Refresh before reviewing.
+                Preços indisponíveis para {t.title}. Atualize a página antes de revisar.
               </p>
             )
           const time =
@@ -304,11 +301,11 @@ export default function TasksPage() {
                 <h3 className="font-semibold">{t.title}</h3>
                 <p className="text-sm text-muted-foreground">
                   {t.status} · {Math.floor(t.active_seconds / 60)}m{' '}
-                  {t.active_seconds % 60}s active · {p.name}
+                  {t.active_seconds % 60}s ativos · {p.name}
                 </p>
               </div>
               <p className="rounded-lg bg-zinc-50 px-4 py-3 text-sm">
-                Time {formatCurrency(time, p.currency)} + reported usage{' '}
+                Tempo {formatCurrency(time, p.currency)} + uso informado{' '}
                 {formatCurrency(usageAmount, p.currency)} ={' '}
                 <strong>
                   {formatCurrency(time + usageAmount, p.currency)}
@@ -317,13 +314,13 @@ export default function TasksPage() {
               <TaskUsageReview taskId={t.id} />
               {t.status === 'completed' && (
                 <Button disabled={busy} onClick={() => invoice(t)}>
-                  Approve costs & create draft invoice
+                  Aprovar custos e criar fatura em rascunho
                 </Button>
               )}
               {t.invoice_id && (
                 <Button asChild variant="outline">
                   <Link href={`/invoices/${t.invoice_id}`}>
-                    View draft invoice
+                    Ver fatura em rascunho
                   </Link>
                 </Button>
               )}
@@ -334,21 +331,18 @@ export default function TasksPage() {
           <div className="task-surface flex flex-col items-center py-14 text-center">
             <Timer size={24} strokeWidth={1.5} className="mb-4 text-zinc-400" />
             <h3 className="text-sm font-semibold">
-              Your agent’s work, accounted for
+              O trabalho do seu agente, contabilizado
             </h3>
             <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-500">
-              Approve a pricing policy, then connect an agent to start tracking
-              work.
+              Aprove uma política de preços e conecte um agente para começar a acompanhar o trabalho.
             </p>
             <Button asChild variant="outline" className="mt-5">
-              <Link href="/agents">Connect an agent</Link>
+              <Link href="/agents">Conectar um agente</Link>
             </Button>
           </div>
         )}
         <p className="text-xs text-muted-foreground">
-          Showing the 100 most recent tasks and policies. Active time and usage
-          are separate charges. Provider costs are reported by your agent and
-          need your review.
+          Exibindo as 100 tarefas e políticas mais recentes. O tempo ativo e o uso são cobrados separadamente. Os custos do provedor são informados pelo agente e precisam ser revisados por você.
         </p>
       </section>
     </div>

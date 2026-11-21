@@ -6,24 +6,24 @@ import { stripePaymentsConfigured } from '@/lib/stripe/config'
 
 export const runtime = 'nodejs'
 
-// Public download keyed on unguessable public_id, via the SECURITY DEFINER RPC
+// Download público identificado pelo public_id imprevisível, por meio da RPC SECURITY DEFINER
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ publicId: string }> }
 ) {
   const { publicId } = await params
 
-  // Unauthenticated and expensive: every hit renders a PDF. Limited per
-  // document and per IP against the durable store, so
-  // neither one link nor one source can turn this into a CPU sink. The per-IP
-  // key ignores the spoofable first x-forwarded-for entry. Fails closed.
+  // Sem autenticação e custoso: cada requisição gera um PDF. Limitado por
+  // documento e por IP no armazenamento persistente, para que
+  // nem um link nem uma origem sobrecarreguem a CPU. A chave por IP
+  // ignora o primeiro valor falsificável de x-forwarded-for. Em caso de falha, bloqueia.
   const limited = await consumeRateLimits([
     { bucket: rateLimitKey('pdf:invoice', publicId), policy: RATE_LIMITS.publicDocument },
     { bucket: ipKey('pdf:invoice:ip', clientIpFrom(req.headers)), policy: RATE_LIMITS.publicDocumentIp },
   ])
   if (!limited.allowed) {
     return NextResponse.json(
-      { error: 'Too many requests. Please wait a moment and try again.' },
+      { error: 'Muitas solicitações. Aguarde um momento e tente novamente.' },
       { status: 429, headers: { 'Retry-After': String(limited.retryAfterSeconds) } }
     )
   }
@@ -36,7 +36,7 @@ export async function GET(
 
   const payload = data as { invoice: Record<string, unknown>; line_items: Record<string, unknown>[] } | null
   if (error || !payload?.invoice) {
-    return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Fatura não encontrada.' }, { status: 404 })
   }
 
   const invoice = payload.invoice
@@ -52,8 +52,8 @@ export async function GET(
   )
   const pdf = await renderInvoicePdf(pdfData, business?.logo_url as string | undefined)
 
-  // Sanitize for the Content-Disposition header: strip anything outside a safe
-  // filename charset (and any CR/LF) to prevent header injection.
+  // Para evitar injeção de cabeçalho, remova do Content-Disposition qualquer caractere que não pertença ao conjunto seguro de
+  // nomes de arquivo (incluindo CR/LF).
   const safeName = String(invoice.invoice_number).replace(/[^A-Za-z0-9._-]/g, '_') || 'invoice'
 
   return new NextResponse(new Uint8Array(pdf), {

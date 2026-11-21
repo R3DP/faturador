@@ -2,13 +2,24 @@
 
 import Link from 'next/link'
 import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { FileText, ArrowRight } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { invoiceStatusColors } from '@/types'
-import type { Invoice, Client } from '@/types'
+import type { Invoice, Client, InvoiceStatus } from '@/types'
 import { parseDay } from '@/lib/dates'
+
+const invoiceStatusLabels: Record<InvoiceStatus, string> = {
+  draft: 'Rascunho',
+  sent: 'Enviada',
+  viewed: 'Visualizada',
+  paid: 'Paga',
+  partial: 'Parcial',
+  overdue: 'Atrasada',
+  cancelled: 'Cancelada',
+}
 
 interface RecentInvoicesProps {
   invoices: (Invoice & { client: Client })[]
@@ -16,7 +27,7 @@ interface RecentInvoicesProps {
 
 export function RecentInvoices({ invoices }: RecentInvoicesProps) {
   const formatCurrency = (amount: number, currency = 'USD') => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency,
     }).format(amount)
@@ -26,16 +37,16 @@ export function RecentInvoices({ invoices }: RecentInvoicesProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Recent invoices</CardTitle>
+          <CardTitle>Faturas recentes</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <FileText className="h-10 w-10 text-muted-foreground" />
             <p className="mt-2 text-sm text-muted-foreground">
-              No invoices yet. Create your first invoice to get started.
+              Você ainda não tem faturas. Crie sua primeira fatura para começar.
             </p>
             <Button className="mt-4" asChild>
-              <Link href="/invoices/new">Create Invoice</Link>
+              <Link href="/invoices/new">Criar fatura</Link>
             </Button>
           </div>
         </CardContent>
@@ -46,10 +57,10 @@ export function RecentInvoices({ invoices }: RecentInvoicesProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Recent invoices</CardTitle>
+        <CardTitle>Faturas recentes</CardTitle>
         <Button variant="ghost" size="sm" asChild>
           <Link href="/invoices">
-            View all
+            Ver todas
             <ArrowRight className="ml-1 h-4 w-4" />
           </Link>
         </Button>
@@ -81,14 +92,14 @@ export function RecentInvoices({ invoices }: RecentInvoicesProps) {
                     {formatCurrency(invoice.total, invoice.currency)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Due {format(parseDay(invoice.due_date), 'MMM d')}
+                    Vence em {format(parseDay(invoice.due_date), 'd MMM', { locale: ptBR })}
                   </p>
                 </div>
                 <Badge
                   variant="secondary"
                   className={invoiceStatusColors[invoice.status]}
                 >
-                  {invoice.status}
+                  {invoiceStatusLabels[invoice.status]}
                 </Badge>
               </div>
             </Link>

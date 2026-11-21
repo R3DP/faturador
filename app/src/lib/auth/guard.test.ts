@@ -9,7 +9,7 @@ vi.mock('next/headers', () => ({
 import { _setRateLimitStore, type RateLimitStore } from '@/lib/rate-limit'
 import { guardAuthAttempt, recordAuthFailure } from './guard'
 
-/** Same contract as the consume_rate_limit / peek_rate_limit RPCs. */
+/** Mesmo contrato das RPCs consume_rate_limit / peek_rate_limit. */
 function fakeStore() {
   const rows = new Map<string, number>()
   const store: RateLimitStore & { hitsFor: (prefix: string) => number } = {
@@ -49,9 +49,9 @@ let store: ReturnType<typeof fakeStore>
 beforeEach(() => {
   store = fakeStore()
   _setRateLimitStore(() => store)
-  // clientIpFrom only believes x-vercel-forwarded-for when it is actually
-  // running on Vercel, which is the platform that overwrites it. These cases
-  // run behind Vercel's edge, so say so.
+  // clientIpFrom só confia em x-vercel-forwarded-for quando está executando
+  // na Vercel, plataforma que sobrescreve esse cabeçalho. Estes casos simulam
+  // a execução na borda da Vercel, então indicamos isso.
   vi.stubEnv('VERCEL', '1')
   headerStore.value = new Headers({ 'x-vercel-forwarded-for': '203.0.113.5' })
 })
@@ -63,23 +63,24 @@ afterEach(() => {
 })
 
 describe('guardAuthAttempt', () => {
-  it('passes a first attempt and reports the resolved IP', async () => {
+  it('permite a primeira tentativa e informa o IP resolvido', async () => {
     const result = await guardAuthAttempt('signin', 'user@example.com')
     expect(result.blocked).toBe(false)
     if (!result.blocked) expect(result.ip).toBe('203.0.113.5')
   })
 
-  it('treats an identifier case-insensitively', async () => {
+  it('trata o identificador sem distinção entre maiúsculas e minúsculas', async () => {
     for (let i = 0; i < 10; i += 1) await guardAuthAttempt('signin', 'user@example.com')
-    // The 11th attempt on the same account, spelled differently, must still be
-    // the 11th attempt.
+    // A 11ª tentativa na mesma conta, escrita de outra forma, ainda deve ser
+    // considerada a 11ª tentativa.
     const result = await guardAuthAttempt('signin', 'USER@Example.COM')
     expect(result.blocked).toBe(true)
   })
 
-  it('caps attempts per IP so rotating the email address buys nothing', async () => {
-    // Each attempt uses a fresh address, so the per-identifier bucket is never
-    // near its limit. The per-IP bucket (30 / 15 min) must still stop it.
+  it('limita as tentativas por IP para que trocar o endereço de e-mail não adiante', async () => {
+    // Cada tentativa usa um endereço novo, então o limite por identificador
+    // nunca fica próximo do máximo. O limite por IP (30 / 15 min) ainda deve
+    // interromper as tentativas.
     let blockedAt = -1
     for (let i = 0; i < 40; i += 1) {
       const result = await guardAuthAttempt('signin', `throwaway-${i}@example.com`)
@@ -88,42 +89,42 @@ describe('guardAuthAttempt', () => {
     expect(blockedAt).toBe(30)
   })
 
-  it('does not let one IP exhaust another IP', async () => {
+  it('não permite que um IP esgote o limite de outro IP', async () => {
     for (let i = 0; i < 40; i += 1) await guardAuthAttempt('signin', `a-${i}@example.com`)
     headerStore.value = new Headers({ 'x-vercel-forwarded-for': '198.51.100.9' })
     const result = await guardAuthAttempt('signin', 'fresh@example.com')
     expect(result.blocked).toBe(false)
   })
 
-  it('locks the account out after enough recorded failures', async () => {
-    // 8 failures / hour on the identifier bucket.
+  it('bloqueia a conta após registrar falhas suficientes', async () => {
+    // 8 falhas por hora no limite do identificador.
     for (let i = 0; i < 8; i += 1) await recordAuthFailure('victim@example.com', '203.0.113.5')
 
     const result = await guardAuthAttempt('signin', 'victim@example.com')
     expect(result.blocked).toBe(true)
-    if (result.blocked) expect(result.message).toContain('failed attempts')
+    if (result.blocked) expect(result.message).toContain('malsucedidas')
   })
 
-  it('checks a standing lockout without deepening it', async () => {
+  it('verifica um bloqueio ativo sem prolongá-lo', async () => {
     for (let i = 0; i < 8; i += 1) await recordAuthFailure('victim@example.com', '203.0.113.5')
     const before = store.hitsFor('authfail:id')
 
     for (let i = 0; i < 5; i += 1) await guardAuthAttempt('signin', 'victim@example.com')
 
-    // peek, not consume: a locked-out caller banging on the door must not be
-    // able to extend their own lockout indefinitely.
+    // peek, não consume: quem está bloqueado não pode prolongar o próprio
+    // bloqueio indefinidamente insistindo na tentativa.
     expect(store.hitsFor('authfail:id')).toBe(before)
   })
 
-  it('keeps sign-in, sign-up and reset attempt buckets separate per identifier', async () => {
+  it('mantém limites de tentativa separados por identificador para entrada, cadastro e redefinição', async () => {
     for (let i = 0; i < 10; i += 1) await guardAuthAttempt('signin', 'user@example.com')
     expect((await guardAuthAttempt('signin', 'user@example.com')).blocked).toBe(true)
-    // Different action, same address: still allowed by the identifier bucket
-    // (the shared per-IP bucket is the layer that spans actions).
+    // Outra ação, mesmo endereço: ainda permitido pelo limite do identificador
+    // (o limite compartilhado por IP é a camada comum às ações).
     expect((await guardAuthAttempt('reset', 'user@example.com')).blocked).toBe(false)
   })
 
-  it('fails closed when the counter store is unreachable', async () => {
+  it('recusa as tentativas quando o armazenamento do contador está inacessível', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     _setRateLimitStore(() => ({
       rpc: async () => ({ data: null, error: { message: 'connection refused' } }),
@@ -133,7 +134,7 @@ describe('guardAuthAttempt', () => {
     expect(result.blocked).toBe(true)
   })
 
-  it('still applies a limit when no IP can be resolved', async () => {
+  it('continua aplicando um limite quando nenhum IP pode ser resolvido', async () => {
     headerStore.value = new Headers()
     let blocked = false
     for (let i = 0; i < 40; i += 1) {

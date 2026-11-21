@@ -1,12 +1,12 @@
 /**
- * Cross-cutting helpers shared by every MCP tool file, so route.ts stays a
- * thin registrar and each tool file doesn't redefine the same primitives.
+ * Funções auxiliares compartilhadas por todos os arquivos de ferramentas MCP, para que route.ts continue sendo um
+ * registrador enxuto e cada arquivo de ferramenta não redefina os mesmos recursos.
  *
- * Tool registration pattern (copy for new tools):
+ * Padrão de registro de ferramentas (copie ao criar novas ferramentas):
  *   server.registerTool(name, { title, description, inputSchema: z.object({...}) }, async (input) => {...})
- * Every handler must resolve business access via ctx.db (resolveBusinessId /
- * assertClientAccess / assertInvoiceAccess) before querying ctx.db.svc; a
- * bare ctx.db.svc query without one of those scoping calls is not allowed.
+ * Todo handler deve resolver o acesso à empresa por ctx.db (resolveBusinessId /
+ * assertClientAccess / assertInvoiceAccess) antes de consultar ctx.db.svc; uma
+ * consulta direta a ctx.db.svc sem uma dessas chamadas de definição de escopo não é permitida.
  */
 
 import { appOrigin } from '@/lib/deployment'
@@ -15,10 +15,10 @@ import { todayISO } from '@/lib/dates'
 export const serverInfo = { name: 'billr', version: '1.0.0' }
 
 /**
- * Base URL for both app links (e.g. /invoices/:id) and public/shareable
- * links (e.g. /i/:publicId, /api/public/invoices/:publicId/pdf). Single
- * source so every tool file resolves the same env var with the same
- * fallback rather than each hardcoding its own copy.
+ * URL base para links do aplicativo (por exemplo, /invoices/:id) e links públicos/compartilháveis
+ * (por exemplo, /i/:publicId, /api/public/invoices/:publicId/pdf). Fonte única
+ * para que todos os arquivos de ferramentas usem a mesma variável de ambiente e o mesmo
+ * valor alternativo, em vez de cada um definir seu próprio valor fixo.
  */
 export function appUrl(): string {
   return appOrigin()
@@ -33,39 +33,39 @@ export function pdfUrl(publicId: string): string {
 }
 
 /**
- * Escapes PostgREST `ilike` wildcards (% and _) so a literal value containing
- * either character (e.g. "50% Off Co") is matched exactly rather than as a
- * pattern. Single source shared by every ilike call site (client lookup in
- * invoices-write.ts, duplicate-name checks in clients.ts) so escaping can't
- * drift between them.
+ * Escapa curingas `ilike` do PostgREST (% e _) para que um valor literal que contenha
+ * qualquer um desses caracteres (por exemplo, "50% Off Co") seja localizado exatamente, e não como um
+ * padrão. Fonte única usada em todas as chamadas ilike (busca de clientes em
+ * invoices-write.ts e verificação de nomes duplicados em clients.ts), para evitar que o escape
+ * fique inconsistente entre elas.
  */
 export function escapeLike(value: string): string {
   return value.replace(/[%_]/g, (m) => `\\${m}`)
 }
 
 /**
- * Wraps a value so PostgREST reads it as a literal inside a logic tree.
+ * Envolve um valor para que o PostgREST o interprete como literal dentro de uma árvore lógica.
  *
- * `escapeLike` only neutralises SQL's `%` and `_`. It does nothing about
- * PostgREST's OWN grammar, and `.or()` takes a raw filter expression, so a
- * search term containing a comma or a dot is parsed as more filters:
+ * `escapeLike` neutraliza apenas `%` e `_` do SQL. Ele não afeta
+ * a gramática PRÓPRIA do PostgREST, e `.or()` recebe uma expressão de filtro bruta; assim, um
+ * termo de busca com vírgula ou ponto é interpretado como vários filtros:
  *
  *     search = 'a,nosuchcol.eq.1,name.ilike.'
  *     or=(name.ilike.%a,nosuchcol.eq.1,name.ilike.%,email.ilike.%a,...%)
- *     => 42703 column clients.nosuchcol does not exist
+ *     => 42703 a coluna clients.nosuchcol não existe
  *
- * Double quotes make the whole thing one literal. Inside them PostgREST
- * unescapes `\"` and `\\`, so those two are the only characters that need
- * escaping here; `\%` (what escapeLike emits) survives quoting untouched.
+ * Aspas duplas fazem com que tudo seja um único literal. Dentro delas, o PostgREST
+ * remove o escape de `\"` e `\\`; por isso, esses são os únicos caracteres que precisam
+ * ser escapados aqui; `\%` (gerado por escapeLike) permanece intacto entre aspas.
  */
 export function quoteFilterValue(value: string): string {
   return `"${value.replace(/["\\]/g, (m) => `\\${m}`)}"`
 }
 
 /**
- * A PostgREST `or` expression matching `search` as a substring of any of
- * `columns`. Built here rather than at each call site so the quoting above can
- * never be forgotten by the next one.
+ * Uma expressão `or` do PostgREST que busca `search` como trecho de qualquer uma das
+ * `columns`. Ela é criada aqui, em vez de em cada ponto de chamada, para que o escape acima
+ * nunca seja esquecido em novas chamadas.
  */
 export function likeAnyFilter(columns: readonly string[], search: string): string {
   const pattern = quoteFilterValue(`%${escapeLike(search)}%`)
@@ -73,12 +73,12 @@ export function likeAnyFilter(columns: readonly string[], search: string): strin
 }
 
 /**
- * Appends a truncation notice to a summary when a query came back exactly at
- * its row cap, so callers know derived totals may be incomplete rather than
- * silently trusting a partial set.
+ * Acrescenta um aviso de truncamento ao resumo quando uma consulta retorna exatamente o
+ * limite de registros, para que quem chama saiba que os totais calculados podem estar incompletos, em vez de
+ * confiar silenciosamente em um conjunto parcial.
  */
 export function truncationNote(cap: number): string {
-  return ` (results truncated at ${cap}; totals may be incomplete)`
+  return ` (resultados truncados no limite de ${cap}; os totais podem estar incompletos)`
 }
 
 export function errorResult(text: string) {
@@ -96,8 +96,8 @@ export function formatCurrency(amount: number, currency: string): string {
       currency,
     }).format(amount)
   } catch {
-    // Unknown/invalid currency code: fall back to a labeled plain number
-    // rather than letting Intl throw.
+    // Código de moeda desconhecido ou inválido: usa um número simples com rótulo
+    // em vez de deixar Intl lançar um erro.
     return `${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
   }
 }

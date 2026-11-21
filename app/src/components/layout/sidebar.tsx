@@ -24,6 +24,7 @@ import {
   Timer,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -39,68 +40,68 @@ import { Logo } from '@/components/brand/logo'
 
 export const workspaceNavigation = [
   {
-    label: 'Workspace',
+    label: 'Espaço de trabalho',
     items: [
       {
         href: '/dashboard',
-        label: 'Overview',
+        label: 'Visão geral',
         icon: LayoutDashboard,
         tourId: 'dashboard',
       },
       {
         href: '/invoices',
-        label: 'Invoices',
+        label: 'Faturas',
         icon: FileText,
         tourId: 'invoices',
       },
       {
         href: '/engagements',
-        label: 'Engagements',
+        label: 'Contratos',
         icon: Handshake,
         tourId: 'engagements',
       },
       {
         href: '/estimates',
-        label: 'Estimates',
+        label: 'Orçamentos',
         icon: FileCheck,
         tourId: 'estimates',
       },
-      { href: '/clients', label: 'Clients', icon: Users, tourId: 'clients' },
-      { href: '/items', label: 'Saved items', icon: Package, tourId: 'items' },
+      { href: '/clients', label: 'Clientes', icon: Users, tourId: 'clients' },
+      { href: '/items', label: 'Itens salvos', icon: Package, tourId: 'items' },
     ],
   },
   {
-    label: 'Work & money',
+    label: 'Trabalho e finanças',
     items: [
-      { href: '/tasks', label: 'Task billing', icon: Timer, tourId: 'tasks' },
-      { href: '/time', label: 'Time entries', icon: Clock, tourId: 'time' },
+      { href: '/tasks', label: 'Cobrança de tarefas', icon: Timer, tourId: 'tasks' },
+      { href: '/time', label: 'Registros de tempo', icon: Clock, tourId: 'time' },
       {
         href: '/expenses',
-        label: 'Expenses',
+        label: 'Despesas',
         icon: Receipt,
         tourId: 'expenses',
       },
       {
         href: '/payments',
-        label: 'Payments',
+        label: 'Pagamentos',
         icon: CreditCard,
         tourId: 'payments',
       },
       {
         href: '/reports',
-        label: 'Reports',
+        label: 'Relatórios',
         icon: BarChart3,
         tourId: 'reports',
       },
     ],
   },
   {
-    label: 'Manage',
+    label: 'Gerenciar',
     items: [
-      { href: '/agents', label: 'Agents', icon: Bot, tourId: 'agents' },
+      { href: '/agents', label: 'Agentes', icon: Bot, tourId: 'agents' },
       {
         href: '/settings',
-        label: 'Settings',
+        label: 'Configurações',
         icon: Settings,
         tourId: 'settings',
       },
@@ -114,12 +115,21 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { currentBusiness, businesses, profile, setCurrentBusiness } =
     useBusiness()
   async function signOut() {
-    await createClient().auth.signOut()
+    try {
+      const { error } = await createClient().auth.signOut()
+      if (error) {
+        toast.error('Não foi possível sair da conta. Tente novamente.')
+        return
+      }
+    } catch {
+      toast.error('Não foi possível sair da conta. Tente novamente.')
+      return
+    }
     onNavigate?.()
     router.push('/login')
     router.refresh()
   }
-  const initials = (profile?.full_name || 'Your account')
+  const initials = (profile?.full_name || 'Sua conta')
     .split(' ')
     .map((n) => n[0])
     .join('')
@@ -131,7 +141,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <Link
           href="/dashboard"
           onClick={onNavigate}
-          aria-label="Billr overview"
+          aria-label="Visão geral do Faturador"
         >
           <Logo size="sm" />
         </Link>
@@ -149,10 +159,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 </span>
                 <span className="min-w-0 text-left">
                   <span className="block text-[10px] font-normal text-zinc-400">
-                    Workspace
+                    Espaço de trabalho
                   </span>
                   <span className="block truncate text-xs font-medium">
-                    {currentBusiness?.name || 'Select business'}
+                    {currentBusiness?.name || 'Selecione uma empresa'}
                   </span>
                 </span>
               </span>
@@ -174,14 +184,14 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             <DropdownMenuItem asChild>
               <Link href="/settings/business?new=true" onClick={onNavigate}>
                 <Plus className="mr-2 h-4 w-4" />
-                Add business
+                Adicionar empresa
               </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
       <nav
-        aria-label="Workspace navigation"
+        aria-label="Navegação do espaço de trabalho"
         className="flex-1 space-y-5 overflow-y-auto px-3 pb-4"
         data-tour="nav"
       >
@@ -223,7 +233,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           target="_blank"
           className="mb-2 flex items-center justify-between rounded-lg px-3 py-2 text-xs text-zinc-500 hover:bg-white"
         >
-          Help & documentation
+          Ajuda e documentação
           <ArrowUpRight size={13} />
         </Link>
         <DropdownMenu>
@@ -238,7 +248,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 </AvatarFallback>
               </Avatar>
               <span className="min-w-0 flex-1 truncate text-left text-xs font-medium">
-                {profile?.full_name || 'Your account'}
+                {profile?.full_name || 'Sua conta'}
               </span>
               <ChevronDown size={13} className="text-zinc-400" />
             </Button>
@@ -247,13 +257,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             <DropdownMenuItem asChild>
               <Link href="/settings/account" onClick={onNavigate}>
                 <Settings className="mr-2 h-4 w-4" />
-                Account settings
+                Configurações da conta
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={signOut}>
               <LogOut className="mr-2 h-4 w-4" />
-              Sign out
+              Sair
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

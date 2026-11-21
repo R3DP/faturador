@@ -8,7 +8,7 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 
 import { createItemAction, deleteItemAction, updateItemAction } from './items'
 
-const input = { name: 'Design hour', description: null, rate: 150, unit: 'hour' }
+const input = { name: 'Hora de design', description: null, rate: 150, unit: 'hour' }
 
 let db: FakeSupabase
 
@@ -26,13 +26,13 @@ beforeEach(() => {
   setup()
 })
 
-describe('item writes', () => {
-  it('go through', async () => {
+describe('gravações de itens', () => {
+  it('são executadas com sucesso', async () => {
     expect(await createItemAction(BUSINESS_ID, input)).toEqual({ ok: true })
     expect(await updateItemAction(ROW_ID, input)).toEqual({ ok: true })
     expect(await deleteItemAction(ROW_ID)).toEqual({ ok: true })
 
     const insert = db.calls.find((call) => call.op === 'insert')
-    expect(insert?.payload).toMatchObject({ business_id: BUSINESS_ID, name: 'Design hour' })
+    expect(insert?.payload).toMatchObject({ business_id: BUSINESS_ID, name: 'Hora de design' })
   })
 })
